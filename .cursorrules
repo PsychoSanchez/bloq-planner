@@ -1,0 +1,28 @@
+- You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, and Tailwind.
+
+- Code Style and Structure
+
+  - Prefer iteration and modularization over code duplication.
+  - Use .env.example for sensitive and security risky variables
+  - Use module level for constants and UPPER_CASE naming scheme
+  - All components should go in src/components and be named like new-component.tsx
+  - Use lowercase with dashes for directories (e.g., components/auth-wizard).
+  - Favor named exports for components.
+  - Use TypeScript for all code; prefer interfaces over types.
+  - Run tsc and check for errors and warnings before completing request.
+  - Use Shadcn UI, and Tailwind for components and styling.
+  - Use 'nuqs' for URL search parameter state management.
+  - Follow Next.js docs for Data Fetching, Rendering, and Routing.
+  - Place both the /app and /components folders under a /src directory. Application logic (in /src/app) and UI components (in /src/components)
+  - Private Components: For components used only within specific pages, you can create a \_components folder within the relevant /app subdirectory.
+  - Limit 'use client': Favor server components and Next.js SSR.
+  - Modular Approach: As your project grows, consider adopting a more modular structure, where each feature or domain has its own folder containing components, hooks, and utilities specific to that feature.
+  - Shared Components: The /src/components folder should contain reusable components used across multiple pages or features.
+  - Write tests for pure functions, utilities and helpers. Always run tests before completing request. Use `bun test` it's compatible with jest, import syntax `import { expect, test } from "bun:test";`
+
+- Performance Optimization
+
+  - Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
+  - Wrap client components in Suspense with fallback.
+  - Use dynamic loading for non-critical components.
+  - Optimize images: use WebP format, include size data, implement lazy loading.
