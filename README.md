@@ -1,32 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lego Planner
+
+A modern weekly planning tool built with Next.js and Shadcn UI that displays calendar quarters in weekly blocks.
+
+## Overview
+
+Lego Planner is a visual project management tool designed to help teams plan their work across weeks and quarters. It displays projects as "lego blocks" on a calendar grid, with one project per week per assignee. The interface allows for easy navigation between different quarters and years.
+
+![Lego Planner Screenshot](public/lego-planner-preview.png)
+
+## Features
+
+- 📅 Weekly planning view with quarter-based navigation
+- 👥 Assignee management (team members, teams, dependencies, events)
+- 🧩 Project blocks with different visual styles based on project type
+- 🔍 Filtering by assignee
+- 🌓 Light and dark mode support
+- 📱 Responsive design with sticky headers and sidebars
+
+## Technologies
+
+- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Runtime**: [Bun](https://bun.sh/)
+
+## Project Structure
+
+```
+src/
+├── app/             # Next.js App Router files
+├── components/      # React components
+│   ├── ui/          # Shadcn UI components
+│   └── ...          # Custom components
+├── lib/             # Utilities and type definitions
+└── ...
+```
+
+### Key Components
+
+- **`LegoPlanner`**: Main component that integrates all parts
+- **`WeekBlock`**: Individual block representing a project assignment
+- **`CalendarNavigation`**: Controls for navigating between quarters/years
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ or Bun
+- npm, yarn, or bun
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/lego-planner.git
+cd lego-planner
+
+# Install dependencies
+bun install
+# or npm install
+
+# Start the development server
+bun dev
+# or npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
+
+## Development Workflow
+
+### Running the Development Server
 
 ```bash
 bun dev
-or
-bun --bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This starts the Next.js development server with Turbopack for fast refresh.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun build
+```
 
-## Learn More
+### Starting the Production Server
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+bun start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Components
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Data Structure
 
-## Deploy on Vercel
+Lego Planner uses the following data types:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Assignee**: Person, team, dependency, or event assigned to projects
+- **Project**: Work item with a name and type (regular, tech-debt, team-event, etc.)
+- **WeekData**: Information about a specific week (number, start/end dates)
+- **Assignment**: Links an assignee to a project for a specific week
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Customization
+
+The project uses Shadcn UI components which can be easily customized:
+
+- Modify the theme in `src/app/globals.css`
+- Update component variants in the respective component files under `src/components/ui`
+
+## Planned Features
+
+- Drag and drop support for assignments
+- Project creation and editing
+- CSV/Excel export functionality
+- Team workload views
+- Advanced filtering options
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
