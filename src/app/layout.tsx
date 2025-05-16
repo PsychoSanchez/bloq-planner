@@ -1,12 +1,16 @@
-import "@/app/globals.css";
-import { Inter } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import '@/app/globals.css';
+import { Inter } from 'next/font/google';
+import { ThemeProvider } from 'next-themes';
+import { AppSidebar } from '@/components/app-sidebar';
+import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: "Lego Planner - Weekly Planning Tool",
-  description: "A weekly planning tool where calendar and quarters are displayed in weekly blocks",
+  title: 'Lego Planner - Weekly Planning Tool',
+  description: 'A weekly planning tool where calendar and quarters are displayed in weekly blocks',
 };
 
 export default function RootLayout({
@@ -17,13 +21,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="flex sticky top-0 bg-background h-16 shrink-0 items-center gap-2 border-b px-4">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <DynamicBreadcrumb />
+              </header>
+              <main className="flex flex-1 flex-col gap-2 p-2 lg:gap-4 lg:p-4">{children}</main>
+            </SidebarInset>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
