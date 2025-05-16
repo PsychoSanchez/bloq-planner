@@ -55,11 +55,11 @@ export function WeekBlock({ week, project, isHeader = false }: WeekBlockProps) {
           <TooltipTrigger asChild>
             <Card 
               className={cn(
-                "flex items-center justify-center h-full w-full border-0 p-1 min-w-20 rounded-none",
+                "flex items-center justify-center h-full w-full border-0 p-1 min-w-20 rounded-sm",
                 getProjectClasses(project.type)
               )}
             >
-              <span className="text-sm font-medium truncate">{project.name}</span>
+              <span className="text-xs font-medium truncate">{project.name}</span>
             </Card>
           </TooltipTrigger>
           <TooltipContent>
@@ -74,7 +74,7 @@ export function WeekBlock({ week, project, isHeader = false }: WeekBlockProps) {
   // Empty block
   return (
     <Card 
-      className="flex items-center justify-center h-full w-full border-0 p-1 min-w-20 rounded-none bg-card"
+      className="flex items-center justify-center h-full w-full border-0 p-1 min-w-20 rounded-sm bg-card"
     >
       <span className="text-xs text-muted-foreground">--</span>
     </Card>
