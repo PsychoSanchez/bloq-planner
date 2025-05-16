@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Assignee, PlannerData } from '@/lib/types';
 import { CalendarNavigation } from './calendar-navigation';
 import { getSampleData } from '@/lib/sample-data';
@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { WeekBlock } from './week-block';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface LegoPlannerProps {
   initialData: PlannerData;
@@ -19,6 +21,9 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   const [currentYear, setCurrentYear] = useState<number>(2024);
   const [currentQuarter, setCurrentQuarter] = useState<number>(2);
   const [plannerData, setPlannerData] = useState<PlannerData>(initialData);
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
+  const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleYearChange = (year: number) => {
     setCurrentYear(year);
@@ -37,6 +42,34 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   const filteredAssignees = selectedAssigneeId
     ? plannerData.assignees.filter((a) => a.id === selectedAssigneeId)
     : plannerData.assignees;
+
+  const handleMouseEnterCell = (projectId?: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    if (projectId && isInspectModeEnabled) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredProjectId(projectId);
+      }, 500); // 0.5 second delay
+    }
+  };
+
+  const handleMouseLeaveCell = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setHoveredProjectId(undefined);
+  };
+
+  const handleInspectToggle = (checked: boolean) => {
+    setIsInspectModeEnabled(checked);
+    if (!checked) {
+      setHoveredProjectId(undefined); // Clear hover when disabling inspect mode
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    }
+  };
 
   const renderAssigneeName = (assignee: Assignee) => {
     return (
@@ -99,12 +132,20 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                 Weekly planning board - {plannerData.weeks.length} weeks, {plannerData.assignees.length} assignees
               </p>
             </div>
-            <CalendarNavigation
-              currentYear={currentYear}
-              currentQuarter={currentQuarter}
-              onYearChange={handleYearChange}
-              onQuarterChange={handleQuarterChange}
-            />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="inspect-mode" checked={isInspectModeEnabled} onCheckedChange={handleInspectToggle} />
+                <Label htmlFor="inspect-mode" className="text-xs text-muted-foreground">
+                  Inspect
+                </Label>
+              </div>
+              <CalendarNavigation
+                currentYear={currentYear}
+                currentQuarter={currentQuarter}
+                onYearChange={handleYearChange}
+                onQuarterChange={handleQuarterChange}
+              />
+            </div>
           </div>
         </CardHeader>
 
@@ -160,13 +201,17 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                                 {...providedDraggable.draggableProps}
                                 {...providedDraggable.dragHandleProps}
                                 className={cn(
-                                  "p-px h-8 bg-background dark:bg-zinc-800 border-r dark:border-zinc-700 last:border-r-0",
-                                  snapshot.isDragging && "ring-2 ring-blue-500 opacity-80 dark:ring-blue-400"
+                                  "p-px h-8 bg-background dark:bg-zinc-800 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300",
+                                  snapshot.isDragging && "ring-2 ring-blue-500 opacity-80 dark:ring-blue-400",
+                                  hoveredProjectId && project && project.id !== hoveredProjectId && "opacity-30",
+                                  hoveredProjectId && project && project.id === hoveredProjectId && "ring-2 ring-green-500 dark:ring-green-400"
                                 )}
                                 style={{
                                   ...providedDraggable.draggableProps.style,
                                   // minWidth: '100px', // Ensure cells have a minimum width
                                 }}
+                                onMouseEnter={() => handleMouseEnterCell(project?.id)}
+                                onMouseLeave={handleMouseLeaveCell}
                               >
                                 <WeekBlock week={week} project={project} />
                               </TableCell>
