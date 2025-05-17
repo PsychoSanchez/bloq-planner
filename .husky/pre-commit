@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run TypeScript check
+bun check-types || exit 1
+
+# Run lint-staged (handles ESLint and Prettier)
+bun lint-staged

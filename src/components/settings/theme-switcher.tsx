@@ -1,21 +1,17 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useTheme } from "next-themes";
+import * as React from 'react';
+import { useTheme } from 'next-themes';
 
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MoonIcon, SunIcon, LaptopIcon } from "lucide-react";
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { MoonIcon, SunIcon, LaptopIcon } from 'lucide-react';
 
 export function ThemeSwitcher() {
   const { setTheme, theme } = useTheme();
 
   return (
-    <RadioGroup
-      value={theme}
-      onValueChange={setTheme}
-      className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-3"
-    >
+    <RadioGroup value={theme} onValueChange={setTheme} className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-3">
       <div>
         <RadioGroupItem value="light" id="light" className="peer sr-only" />
         <Label
@@ -48,4 +44,4 @@ export function ThemeSwitcher() {
       </div>
     </RadioGroup>
   );
-} 
+}

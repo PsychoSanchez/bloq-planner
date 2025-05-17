@@ -13,7 +13,18 @@ export interface WeekData {
 export interface Project {
   id: string;
   name: string;
-  type: 'regular' | 'tech-debt' | 'team-event' | 'spillover' | 'blocked' | 'hack' | 'sick-leave' | 'vacation' | 'onboarding' | 'duty' | 'risky-week';
+  type:
+    | 'regular'
+    | 'tech-debt'
+    | 'team-event'
+    | 'spillover'
+    | 'blocked'
+    | 'hack'
+    | 'sick-leave'
+    | 'vacation'
+    | 'onboarding'
+    | 'duty'
+    | 'risky-week';
   color?: string;
 }
 
@@ -30,4 +41,4 @@ export interface PlannerData {
   assignees: Assignee[];
   projects: Project[];
   assignments: Assignment[];
-} 
+}

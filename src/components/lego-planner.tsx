@@ -123,9 +123,10 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   };
 
   // Filter assignees based on selection
-  const filteredAssignees = selectedAssigneeIds.length > 0
-    ? plannerData.assignees.filter(a => selectedAssigneeIds.includes(a.id))
-    : plannerData.assignees;
+  const filteredAssignees =
+    selectedAssigneeIds.length > 0
+      ? plannerData.assignees.filter((a) => selectedAssigneeIds.includes(a.id))
+      : plannerData.assignees;
 
   // Get current column width value
   const columnWidth = COLUMN_SIZES[selectedSize];
@@ -148,8 +149,8 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
               </Label>
             </div>
             <div className="flex items-center gap-1">
-              <ToggleGroup 
-                type="single" 
+              <ToggleGroup
+                type="single"
                 value={selectedSize}
                 onValueChange={(value) => {
                   if (value) {
@@ -168,12 +169,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                   Wide
                 </ToggleGroupItem>
               </ToggleGroup>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-xs h-7 px-2"
-                onClick={resetColumnSize}
-              >
+              <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={resetColumnSize}>
                 Reset
               </Button>
             </div>
@@ -192,7 +188,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
           <TableRow>
             <TableHead className="p-0 min-w-[200px] w-[200px] border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background dark:bg-zinc-900">
               <div className="h-7 flex items-center justify-center px-1 text-xs">
-                <AssigneeFilter 
+                <AssigneeFilter
                   assignees={plannerData.assignees}
                   selectedAssigneeIds={selectedAssigneeIds}
                   onAssigneesChange={handleAssigneesChange}
@@ -203,10 +199,10 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
               <TableHead
                 key={week.weekNumber}
                 className="p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative"
-                style={{ 
+                style={{
                   minWidth: `${columnWidth}px`,
                   width: `${columnWidth}px`,
-                  transition: 'width 0.2s ease-in-out'
+                  transition: 'width 0.2s ease-in-out',
                 }}
               >
                 <div className="flex flex-col items-center justify-center h-7 p-0.5 text-foreground dark:text-gray-300">
@@ -242,18 +238,15 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                         project.id === hoveredProjectId &&
                         'ring-2 ring-green-500 dark:ring-green-400',
                     )}
-                    style={{ 
+                    style={{
                       minWidth: `${columnWidth}px`,
                       width: `${columnWidth}px`,
-                      transition: 'width 0.2s ease-in-out'
+                      transition: 'width 0.2s ease-in-out',
                     }}
                     onMouseEnter={() => handleMouseEnterCell(project?.id)}
                     onMouseLeave={handleMouseLeaveCell}
                   >
-                    <WeekBlock 
-                      project={project} 
-                      isCompact={selectedSize === 'compact'} 
-                    />
+                    <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
                   </TableCell>
                 );
               })}

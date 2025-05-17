@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarNavigationProps {
   currentYear: number;
@@ -20,10 +20,10 @@ export function CalendarNavigation({
   // Generate years (current year - 1 to current year + 3)
   const currentSystemYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentSystemYear - 1 + i);
-  
+
   // Quarters
   const quarters = [1, 2, 3, 4];
-  
+
   // Helper for navigation
   const navigatePrevious = () => {
     if (currentQuarter === 1) {
@@ -33,7 +33,7 @@ export function CalendarNavigation({
       onQuarterChange(currentQuarter - 1);
     }
   };
-  
+
   const navigateNext = () => {
     if (currentQuarter === 4) {
       onYearChange(currentYear + 1);
@@ -45,19 +45,11 @@ export function CalendarNavigation({
 
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Button 
-        variant="outline" 
-        size="icon" 
-        onClick={navigatePrevious}
-        className="h-9 w-9"
-      >
+      <Button variant="outline" size="icon" onClick={navigatePrevious} className="h-9 w-9">
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      
-      <Select
-        value={currentYear.toString()}
-        onValueChange={(value) => onYearChange(parseInt(value))}
-      >
+
+      <Select value={currentYear.toString()} onValueChange={(value) => onYearChange(parseInt(value))}>
         <SelectTrigger className="w-[100px]">
           <SelectValue placeholder="Year" />
         </SelectTrigger>
@@ -69,11 +61,8 @@ export function CalendarNavigation({
           ))}
         </SelectContent>
       </Select>
-      
-      <Select
-        value={currentQuarter.toString()}
-        onValueChange={(value) => onQuarterChange(parseInt(value))}
-      >
+
+      <Select value={currentQuarter.toString()} onValueChange={(value) => onQuarterChange(parseInt(value))}>
         <SelectTrigger className="w-[120px]">
           <SelectValue placeholder="Quarter" />
         </SelectTrigger>
@@ -85,15 +74,10 @@ export function CalendarNavigation({
           ))}
         </SelectContent>
       </Select>
-      
-      <Button 
-        variant="outline" 
-        size="icon" 
-        onClick={navigateNext}
-        className="h-9 w-9"
-      >
+
+      <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
   );
-} 
+}
