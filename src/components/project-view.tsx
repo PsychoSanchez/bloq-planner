@@ -71,7 +71,7 @@ export function ProjectView({ project }: ProjectViewProps) {
               {project.dependencies && project.dependencies.length > 0 ? (
                 <ul className="list-disc pl-5 space-y-1">
                   {project.dependencies.map((dep) => (
-                    <li key={dep}>{dep}</li>
+                    <li key={dep.team}>{dep.team}</li>
                   ))}
                 </ul>
               ) : (

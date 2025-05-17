@@ -11,12 +11,26 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'upd
   teamId?: string;
   leadId?: string;
   area?: string;
-  dependencies?: string[];
+  dependencies?: Array<{
+    team: string;
+    status: 'pending' | 'submitted' | 'approved' | 'rejected';
+    description: string;
+  }>;
+  roi?: number;
+  impact?: number;
+  cost?: number;
+  estimates?: Array<{
+    department: string; // engineering, design, product, ds, analytics, etc.
+    value: number;
+  }>;
 }
 
 const projectSchema = new Schema<ProjectDocument>(
   {
     name: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    icon: { type: String },
+    color: { type: String },
     type: {
       type: String,
       required: true,
@@ -34,13 +48,16 @@ const projectSchema = new Schema<ProjectDocument>(
         'risky-week',
       ],
     },
-    color: { type: String },
     description: { type: String },
-    priority: { type: String, enum: ['low', 'medium', 'high'] },
+    priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'] },
     teamId: { type: String },
     leadId: { type: String },
     area: { type: String },
-    dependencies: [{ type: String }],
+    roi: { type: Number, default: 0 },
+    impact: { type: Number, default: 0 },
+    cost: { type: Number, default: 0 },
+    estimates: [{ type: { department: String, value: Number } }],
+    dependencies: [{ type: { team: String, status: String, description: String } }],
   },
   { timestamps: true },
 );

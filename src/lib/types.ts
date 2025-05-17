@@ -13,6 +13,8 @@ export interface WeekData {
 export interface Project {
   id: string;
   name: string;
+  slug: string;
+  icon?: string;
   type:
     | 'regular'
     | 'tech-debt'
@@ -31,9 +33,20 @@ export interface Project {
   teamId?: string;
   leadId?: string;
   area?: string;
-  dependencies?: string[];
   createdAt?: string;
   updatedAt?: string;
+  dependencies?: Array<{
+    team: string;
+    status: 'pending' | 'submitted' | 'approved' | 'rejected';
+    description: string;
+  }>;
+  roi?: number;
+  impact?: number;
+  cost?: number;
+  estimates?: Array<{
+    department: string; // engineering, design, product, ds, analytics, etc.
+    value: number;
+  }>;
 }
 
 export interface Assignment {

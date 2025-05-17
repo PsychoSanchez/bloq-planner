@@ -44,14 +44,6 @@ const data = {
           title: 'All Projects',
           url: '/projects',
         },
-        {
-          title: 'Create New',
-          url: '/projects/new',
-        },
-        {
-          title: 'Archive',
-          url: '/projects/archive',
-        },
       ],
     },
     {
@@ -59,52 +51,22 @@ const data = {
       url: '/planner',
       items: [
         {
-          title: 'Calendar View',
-          url: '/planner/calendar',
-        },
-        {
-          title: 'Kanban Board',
-          url: '/planner/kanban',
+          title: 'Lego Planner',
+          url: '/planner/lego',
         },
         {
           title: 'Timeline',
           url: '/planner/timeline',
         },
-        {
-          title: 'Task List',
-          url: '/planner/tasks',
-        },
       ],
     },
     {
-      title: 'Teams',
-      url: '/teams',
+      title: 'Team',
+      url: '/team',
       items: [
         {
           title: 'Team Members',
-          url: '/teams/members',
-        },
-        {
-          title: 'Roles & Permissions',
-          url: '/teams/roles',
-        },
-        {
-          title: 'Workload',
-          url: '/teams/workload',
-        },
-      ],
-    },
-    {
-      title: 'Resources',
-      url: '/resources',
-      items: [
-        {
-          title: 'Inventory',
-          url: '/resources/inventory',
-        },
-        {
-          title: 'Allocation',
-          url: '/resources/allocation',
+          url: '/team',
         },
       ],
     },
