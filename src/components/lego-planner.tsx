@@ -9,18 +9,19 @@ import { cn } from '@/lib/utils';
 import { WeekBlock } from './week-block';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { AssigneeFilter } from './assignee-filter';
 
 interface LegoPlannerProps {
   initialData: PlannerData;
 }
 
 export function LegoPlanner({ initialData }: LegoPlannerProps) {
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | undefined>(undefined);
   const [currentYear, setCurrentYear] = useState<number>(2024);
   const [currentQuarter, setCurrentQuarter] = useState<number>(2);
   const [plannerData, setPlannerData] = useState<PlannerData>(initialData);
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleYearChange = (year: number) => {
@@ -32,14 +33,6 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     setCurrentQuarter(quarter);
     setPlannerData(getSampleData(currentYear, quarter));
   };
-
-  const handleAssigneeSelect = (assigneeId: string) => {
-    setSelectedAssigneeId((prev) => (prev === assigneeId ? undefined : assigneeId));
-  };
-
-  const filteredAssignees = selectedAssigneeId
-    ? plannerData.assignees.filter((a) => a.id === selectedAssigneeId)
-    : plannerData.assignees;
 
   const handleMouseEnterCell = (projectId?: string) => {
     if (hoverTimeoutRef.current) {
@@ -69,18 +62,13 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     }
   };
 
+  const handleAssigneesChange = (assigneeIds: string[]) => {
+    setSelectedAssigneeIds(assigneeIds);
+  };
+
   const renderAssigneeName = (assignee: Assignee) => {
     return (
-      <div
-        className={cn(
-          'px-1 py-0.5 cursor-pointer transition-colors h-full flex items-center',
-          'hover:bg-muted/80 dark:hover:bg-zinc-700',
-          selectedAssigneeId === assignee.id
-            ? 'bg-accent dark:bg-blue-700 text-accent-foreground dark:text-white'
-            : 'bg-transparent text-foreground dark:text-gray-200',
-        )}
-        onClick={() => handleAssigneeSelect(assignee.id)}
-      >
+      <div className="px-1 py-0.5 h-full flex items-center text-foreground dark:text-gray-200">
         <span className="font-medium truncate text-xs">{assignee.name}</span>
       </div>
     );
@@ -89,6 +77,11 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   const getAssignmentForWeek = (assigneeId: string, weekId: number) => {
     return plannerData.assignments.find((a) => a.assigneeId === assigneeId && a.weekId === weekId);
   };
+
+  // Filter assignees based on selection
+  const filteredAssignees = selectedAssigneeIds.length > 0
+    ? plannerData.assignees.filter(a => selectedAssigneeIds.includes(a.id))
+    : plannerData.assignees;
 
   return (
     <>
@@ -121,8 +114,12 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="p-0 min-w-[200px] w-[200px] border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background dark:bg-zinc-900">
-              <div className="h-7 flex items-center justify-center font-semibold text-foreground dark:text-gray-300 px-1 text-xs">
-                Assignees
+              <div className="h-7 flex items-center justify-center px-1 text-xs">
+                <AssigneeFilter 
+                  assignees={plannerData.assignees}
+                  selectedAssigneeIds={selectedAssigneeIds}
+                  onAssigneesChange={handleAssigneesChange}
+                />
               </div>
             </TableHead>
             {plannerData.weeks.map((week) => (
