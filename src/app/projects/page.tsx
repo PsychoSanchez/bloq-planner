@@ -1,16 +1,9 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { getSampleData } from "@/lib/sample-data"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
+import { useState } from 'react';
+import { getSampleData } from '@/lib/sample-data';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -19,31 +12,31 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ProjectTypeBadge } from "@/components/project-type-badge"
-import { PriorityBadge } from "@/components/priority-badge"
-import { NewProjectDialog } from "@/components/new-project-dialog"
-import { SearchIcon, FilterIcon } from "lucide-react"
+} from '@/components/ui/select';
+import { ProjectTypeBadge } from '@/components/project-type-badge';
+import { PriorityBadge } from '@/components/priority-badge';
+import { NewProjectDialog } from '@/components/new-project-dialog';
+import { SearchIcon, FilterIcon } from 'lucide-react';
 
 export default function ProjectsPage() {
-  const { projects } = getSampleData()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState("all")
-  
+  const { projects } = getSampleData();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+
   // Filter projects based on search query and type filter
   const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesType = typeFilter === "all" || project.type === typeFilter
-    return matchesSearch && matchesType
-  })
-  
+    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === 'all' || project.type === typeFilter;
+    return matchesSearch && matchesType;
+  });
+
   return (
     <div className="flex flex-col gap-2 p-4">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold">Projects</h1>
         <NewProjectDialog />
       </div>
-      
+
       <div className="flex gap-2 mb-2">
         <div className="relative flex-1">
           <SearchIcon className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -55,10 +48,7 @@ export default function ProjectsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select 
-          defaultValue="all" 
-          onValueChange={(value) => setTypeFilter(value)}
-        >
+        <Select defaultValue="all" onValueChange={(value) => setTypeFilter(value)}>
           <SelectTrigger className="h-8 w-[130px] text-xs gap-1">
             <FilterIcon className="h-3.5 w-3.5" />
             <SelectValue placeholder="Type" />
@@ -66,23 +56,47 @@ export default function ProjectsPage() {
           <SelectContent>
             <SelectGroup>
               <SelectLabel className="text-xs">Project Types</SelectLabel>
-              <SelectItem value="all" className="text-xs py-1">All Types</SelectItem>
-              <SelectItem value="regular" className="text-xs py-1">Regular</SelectItem>
-              <SelectItem value="tech-debt" className="text-xs py-1">Tech Debt</SelectItem>
-              <SelectItem value="team-event" className="text-xs py-1">Team Event</SelectItem>
-              <SelectItem value="spillover" className="text-xs py-1">Spillover</SelectItem>
-              <SelectItem value="blocked" className="text-xs py-1">Blocked</SelectItem>
-              <SelectItem value="hack" className="text-xs py-1">Hack</SelectItem>
-              <SelectItem value="sick-leave" className="text-xs py-1">Sick Leave</SelectItem>
-              <SelectItem value="vacation" className="text-xs py-1">Vacation</SelectItem>
-              <SelectItem value="onboarding" className="text-xs py-1">Onboarding</SelectItem>
-              <SelectItem value="duty" className="text-xs py-1">Team Duty</SelectItem>
-              <SelectItem value="risky-week" className="text-xs py-1">Risk Alert</SelectItem>
+              <SelectItem value="all" className="text-xs py-1">
+                All Types
+              </SelectItem>
+              <SelectItem value="regular" className="text-xs py-1">
+                Regular
+              </SelectItem>
+              <SelectItem value="tech-debt" className="text-xs py-1">
+                Tech Debt
+              </SelectItem>
+              <SelectItem value="team-event" className="text-xs py-1">
+                Team Event
+              </SelectItem>
+              <SelectItem value="spillover" className="text-xs py-1">
+                Spillover
+              </SelectItem>
+              <SelectItem value="blocked" className="text-xs py-1">
+                Blocked
+              </SelectItem>
+              <SelectItem value="hack" className="text-xs py-1">
+                Hack
+              </SelectItem>
+              <SelectItem value="sick-leave" className="text-xs py-1">
+                Sick Leave
+              </SelectItem>
+              <SelectItem value="vacation" className="text-xs py-1">
+                Vacation
+              </SelectItem>
+              <SelectItem value="onboarding" className="text-xs py-1">
+                Onboarding
+              </SelectItem>
+              <SelectItem value="duty" className="text-xs py-1">
+                Team Duty
+              </SelectItem>
+              <SelectItem value="risky-week" className="text-xs py-1">
+                Risk Alert
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
       </div>
-      
+
       <div className="rounded-sm border">
         <Table className="text-xs">
           <TableHeader>
@@ -124,5 +138,5 @@ export default function ProjectsPage() {
         </Table>
       </div>
     </div>
-  )
-} 
+  );
+}
