@@ -13,7 +13,7 @@ export interface WeekData {
 export interface Project {
   id: string;
   name: string;
-  type: 'regular' | 'tech-debt' | 'team-event' | 'spillover' | 'blocked' | 'hack';
+  type: 'regular' | 'tech-debt' | 'team-event' | 'spillover' | 'blocked' | 'hack' | 'sick-leave' | 'vacation' | 'onboarding' | 'duty' | 'risky-week';
   color?: string;
 }
 

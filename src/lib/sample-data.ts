@@ -88,6 +88,11 @@ const projects: Project[] = [
   { id: "15", name: "TECH DEBT", type: "tech-debt" },
   { id: "16", name: "TEAM EVENT", type: "team-event" },
   { id: "17", name: "BLOCKED", type: "blocked" },
+  { id: "18", name: "OUT SICK", type: "sick-leave" },
+  { id: "19", name: "VACATION", type: "vacation" },
+  { id: "20", name: "ONBOARDING", type: "onboarding" },
+  { id: "21", name: "TEAM DUTY", type: "duty" },
+  { id: "22", name: "RISK ALERT", type: "risky-week" },
 ];
 
 // Generate sample assignments for a set of weeks
@@ -100,12 +105,34 @@ const generateAssignments = (weeks: WeekData[]): Assignment[] => {
     for (const week of weeks) {
       // Only generate assignments for some weeks (random)
       if (Math.random() > 0.4) {
-        const projectId = Math.floor(Math.random() * projects.length) + 1;
+        // Occasionally assign one of the new types (sick-leave, vacation, etc.)
+        let projectId: string;
+        const randomValue = Math.random();
+        
+        if (randomValue > 0.9) {
+          // Assign sick-leave (10% chance)
+          projectId = "18";
+        } else if (randomValue > 0.8) {
+          // Assign vacation (10% chance)
+          projectId = "19";
+        } else if (randomValue > 0.78 && assignee.type === "person") {
+          // Assign onboarding (2% chance, only for people)
+          projectId = "20";
+        } else if (randomValue > 0.75) {
+          // Assign duty (3% chance)
+          projectId = "21";
+        } else if (randomValue > 0.72) {
+          // Assign risky week (3% chance)
+          projectId = "22";
+        } else {
+          // Regular project assignment
+          projectId = (Math.floor(Math.random() * 17) + 1).toString();
+        }
         
         assignments.push({
           id: id.toString(),
           assigneeId: assignee.id,
-          projectId: projectId.toString(),
+          projectId,
           weekId: week.weekNumber,
         });
         
