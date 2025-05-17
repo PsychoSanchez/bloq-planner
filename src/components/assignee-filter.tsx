@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, KeyboardEvent } from 'react';
 import { Assignee } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,10 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { CheckIcon, FilterIcon, SearchIcon, XIcon } from 'lucide-react';
+import { CheckIcon, FilterIcon, SearchIcon, XIcon, UsersIcon } from 'lucide-react';
 
 interface AssigneeFilterProps {
   assignees: Assignee[];
@@ -27,11 +29,22 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>(selectedAssigneeIds);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalSelectedIds(selectedAssigneeIds);
+  }, [selectedAssigneeIds]);
+  
+  // Update local state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setLocalSelectedIds(selectedAssigneeIds);
+      setSearchQuery('');
+    }
+  }, [open, selectedAssigneeIds]);
 
   const filteredAssignees = searchQuery
-    ? assignees.filter((assignee) =>
-        assignee.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? assignees.filter((assignee) => assignee.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : assignees;
 
   const handleSelectAll = () => {
@@ -44,9 +57,7 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
 
   const handleToggleAssignee = (assigneeId: string) => {
     setLocalSelectedIds((prev) =>
-      prev.includes(assigneeId)
-        ? prev.filter((id) => id !== assigneeId)
-        : [...prev, assigneeId]
+      prev.includes(assigneeId) ? prev.filter((id) => id !== assigneeId) : [...prev, assigneeId],
     );
   };
 
@@ -64,23 +75,33 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
     setLocalSelectedIds([]);
     onAssigneesChange([]);
   };
-
+  
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>, assigneeId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleToggleAssignee(assigneeId);
+    }
+  };
+  
   const hasFilters = selectedAssigneeIds.length > 0;
+  const allSelected = localSelectedIds.length === assignees.length && assignees.length > 0;
+  const someSelected = localSelectedIds.length > 0 && localSelectedIds.length < assignees.length;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <div className="flex items-center">
         <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
+          <Button 
+            variant="ghost" 
+            size="sm" 
             className={cn(
-              'gap-1 text-xs h-7',
+              'gap-1 text-xs h-7 hover:bg-muted transition-colors', 
               hasFilters && 'text-primary font-medium'
             )}
+            aria-label={`Filter assignees. ${hasFilters ? `${selectedAssigneeIds.length} selected` : 'None selected'}`}
           >
-            <FilterIcon className="h-3.5 w-3.5" />
-            Assignees
+            {hasFilters ? <FilterIcon className="h-3.5 w-3.5" /> : <UsersIcon className="h-3.5 w-3.5" />}
+            <span>Assignees</span>
             {hasFilters && (
               <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
                 {selectedAssigneeIds.length}
@@ -90,11 +111,12 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
         </DialogTrigger>
         
         {hasFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 w-7 p-0 hover:bg-muted transition-colors ml-1" 
             onClick={clearFilters}
+            aria-label="Clear assignee filters"
           >
             <XIcon className="h-3.5 w-3.5" />
             <span className="sr-only">Clear filters</span>
@@ -102,86 +124,105 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
         )}
       </div>
       
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent 
+        className="sm:max-w-md max-h-[90vh] flex flex-col"
+        onEscapeKeyDown={handleCancel}
+      >
+        <DialogHeader className="pb-2">
           <DialogTitle>Filter Assignees</DialogTitle>
-          <DialogDescription>
-            Select assignees to filter the planning board
-          </DialogDescription>
+          <DialogDescription>Select assignees to filter the planning board</DialogDescription>
         </DialogHeader>
         
-        <div className="relative mt-2">
-          <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative mb-4">
+          <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search assignees..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search assignees"
           />
         </div>
         
-        <div className="mt-2 border-t py-2">
+        <div className="border-t flex-1 overflow-hidden flex flex-col">
           <div 
-            className="flex items-center space-x-2 mb-4 py-2 border-b cursor-pointer"
+            className="flex items-center space-x-2 py-3 px-2 border-b cursor-pointer rounded hover:bg-muted transition-colors"
             onClick={handleSelectAll}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelectAll();
+              }
+            }}
+            tabIndex={0}
+            role="checkbox"
+            aria-checked={allSelected}
+            aria-label={allSelected ? 'Deselect all assignees' : 'Select all assignees'}
           >
             <Checkbox
               id="select-all"
-              checked={localSelectedIds.length === assignees.length && assignees.length > 0}
-              className={cn(
-                localSelectedIds.length > 0 && localSelectedIds.length < assignees.length
-                  ? 'opacity-60'
-                  : ''
-              )}
+              checked={allSelected}
+              className={cn(someSelected ? 'opacity-60' : '')}
+              onCheckedChange={() => handleSelectAll()}
             />
-            <label
-              htmlFor="select-all"
-              className="text-sm font-medium leading-none cursor-pointer"
-            >
-              {localSelectedIds.length === assignees.length && assignees.length > 0
-                ? 'Deselect all'
-                : 'Select all'}
-            </label>
+            <Label htmlFor="select-all" className="text-sm font-medium leading-none cursor-pointer w-full">
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </Label>
           </div>
           
-          <div className="max-h-[220px] overflow-y-auto space-y-2 pr-2">
+          <div className="flex-1 overflow-y-auto space-y-0.5 py-2">
             {filteredAssignees.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No assignees found
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">No assignees found</p>
             ) : (
-              filteredAssignees.map((assignee) => (
-                <div 
-                  key={assignee.id} 
-                  className="flex items-center space-x-2 cursor-pointer py-2"
-                  onClick={() => handleToggleAssignee(assignee.id)}
-                >
-                  <Checkbox
-                    id={`assignee-${assignee.id}`}
-                    checked={localSelectedIds.includes(assignee.id)}
-                  />
-                  <label
-                    htmlFor={`assignee-${assignee.id}`}
-                    className="text-sm leading-none cursor-pointer flex items-center justify-between w-full"
+              filteredAssignees.map((assignee) => {
+                const isSelected = localSelectedIds.includes(assignee.id);
+                return (
+                  <div 
+                    key={assignee.id} 
+                    className="flex items-center space-x-2 py-2 px-2 rounded hover:bg-muted transition-colors"
+                    onClick={() => handleToggleAssignee(assignee.id)}
+                    onKeyDown={(e) => handleKeyDown(e, assignee.id)}
+                    tabIndex={0}
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    aria-label={`${assignee.name}, ${isSelected ? 'selected' : 'not selected'}`}
                   >
-                    <span className="truncate">{assignee.name}</span>
-                    {localSelectedIds.includes(assignee.id) && (
-                      <CheckIcon className="h-4 w-4 text-primary ml-2 flex-shrink-0" />
-                    )}
-                  </label>
-                </div>
-              ))
+                    <Checkbox
+                      id={`assignee-${assignee.id}`}
+                      checked={isSelected}
+                      onCheckedChange={() => handleToggleAssignee(assignee.id)}
+                      className="cursor-pointer"
+                    />
+                    <Label
+                      htmlFor={`assignee-${assignee.id}`}
+                      className="text-sm leading-none cursor-pointer flex items-center justify-between w-full"
+                    >
+                      <span className="truncate">{assignee.name}</span>
+                      {isSelected && (
+                        <CheckIcon className="h-4 w-4 text-primary ml-2 flex-shrink-0" />
+                      )}
+                    </Label>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
         
-        <DialogFooter className="mt-4 flex justify-between sm:justify-between">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleApply}>Apply Filters</Button>
-        </DialogFooter>
+        <div className="flex justify-between items-center pt-4 border-t mt-2">
+          <div className="text-xs text-muted-foreground">
+            {localSelectedIds.length} of {assignees.length} selected
+          </div>
+          <DialogFooter className="p-0 gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" onClick={handleCancel} size="sm">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={handleApply} size="sm">Apply Filters</Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
-} 
+}
