@@ -19,9 +19,10 @@ import {
 
 interface WeekBlockProps {
   project?: Project;
+  isCompact?: boolean;
 }
 
-export function WeekBlock({ project }: WeekBlockProps) {
+export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
   // Map project types to tailwind classes and icons
   const getProjectStyles = (type?: string) => {
     if (!type) return { 
@@ -103,7 +104,7 @@ export function WeekBlock({ project }: WeekBlockProps) {
               )}
               style={project.color ? { borderLeftColor: project.color } : undefined}
             >
-              {icon}
+              {!isCompact && icon}
               <span className="text-xs font-medium truncate">{project.name}</span>
             </div>
           </TooltipTrigger>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Assignee, PlannerData } from '@/lib/types';
 import { CalendarNavigation } from './calendar-navigation';
 import { getSampleData } from '@/lib/sample-data';
@@ -10,6 +10,17 @@ import { WeekBlock } from './week-block';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AssigneeFilter } from './assignee-filter';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+// Predefined column width sizes
+const COLUMN_SIZES = {
+  compact: 80,
+  normal: 100,
+  wide: 150,
+};
+
+type ColumnSizeType = keyof typeof COLUMN_SIZES;
 
 interface LegoPlannerProps {
   initialData: PlannerData;
@@ -22,7 +33,29 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+  const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  // Load selected size from localStorage on initial render
+  useEffect(() => {
+    const savedSize = localStorage.getItem('lego-planner-column-size');
+    if (savedSize) {
+      try {
+        const size = JSON.parse(savedSize) as ColumnSizeType;
+        if (size === 'compact' || size === 'normal' || size === 'wide') {
+          setSelectedSize(size);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved column size', e);
+      }
+    }
+  }, []);
+
+  // Save selected size to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('lego-planner-column-size', JSON.stringify(selectedSize));
+  }, [selectedSize]);
 
   const handleYearChange = (year: number) => {
     setCurrentYear(year);
@@ -78,10 +111,24 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     return plannerData.assignments.find((a) => a.assigneeId === assigneeId && a.weekId === weekId);
   };
 
+  // Set column size
+  const setColumnSize = (size: ColumnSizeType) => {
+    setSelectedSize(size);
+  };
+
+  // Reset column widths to default
+  const resetColumnSize = () => {
+    setSelectedSize('normal');
+    localStorage.removeItem('lego-planner-column-size');
+  };
+
   // Filter assignees based on selection
   const filteredAssignees = selectedAssigneeIds.length > 0
     ? plannerData.assignees.filter(a => selectedAssigneeIds.includes(a.id))
     : plannerData.assignees;
+
+  // Get current column width value
+  const columnWidth = COLUMN_SIZES[selectedSize];
 
   return (
     <>
@@ -100,6 +147,36 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                 Inspect
               </Label>
             </div>
+            <div className="flex items-center gap-1">
+              <ToggleGroup 
+                type="single" 
+                value={selectedSize}
+                onValueChange={(value) => {
+                  if (value) {
+                    setColumnSize(value as ColumnSizeType);
+                  }
+                }}
+                className="h-7"
+              >
+                <ToggleGroupItem value="compact" className="text-xs px-2">
+                  Compact
+                </ToggleGroupItem>
+                <ToggleGroupItem value="normal" className="text-xs px-2">
+                  Normal
+                </ToggleGroupItem>
+                <ToggleGroupItem value="wide" className="text-xs px-2">
+                  Wide
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-xs h-7 px-2"
+                onClick={resetColumnSize}
+              >
+                Reset
+              </Button>
+            </div>
             <CalendarNavigation
               currentYear={currentYear}
               currentQuarter={currentQuarter}
@@ -110,7 +187,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
         </div>
       </div>
 
-      <Table className="border-collapse overflow-scroll">
+      <Table className="border-collapse overflow-scroll" ref={tableRef}>
         <TableHeader>
           <TableRow>
             <TableHead className="p-0 min-w-[200px] w-[200px] border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background dark:bg-zinc-900">
@@ -125,7 +202,12 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
             {plannerData.weeks.map((week) => (
               <TableHead
                 key={week.weekNumber}
-                className="p-0 text-center min-w-[100px] w-[100px] border-r dark:border-zinc-700 last:border-r-0"
+                className="p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative"
+                style={{ 
+                  minWidth: `${columnWidth}px`,
+                  width: `${columnWidth}px`,
+                  transition: 'width 0.2s ease-in-out'
+                }}
               >
                 <div className="flex flex-col items-center justify-center h-7 p-0.5 text-foreground dark:text-gray-300">
                   <div className="text-xs font-medium">
@@ -160,10 +242,18 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                         project.id === hoveredProjectId &&
                         'ring-2 ring-green-500 dark:ring-green-400',
                     )}
+                    style={{ 
+                      minWidth: `${columnWidth}px`,
+                      width: `${columnWidth}px`,
+                      transition: 'width 0.2s ease-in-out'
+                    }}
                     onMouseEnter={() => handleMouseEnterCell(project?.id)}
                     onMouseLeave={handleMouseLeaveCell}
                   >
-                    <WeekBlock project={project} />
+                    <WeekBlock 
+                      project={project} 
+                      isCompact={selectedSize === 'compact'} 
+                    />
                   </TableCell>
                 );
               })}
