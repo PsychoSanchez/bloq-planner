@@ -1,35 +1,76 @@
-'use client';
-
-import { useState } from 'react';
-import { getSampleData } from '@/lib/sample-data';
+import { Suspense } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchProjects } from '@/components/search-projects';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { PriorityBadge } from '@/components/priority-badge';
 import { NewProjectDialog } from '@/components/new-project-dialog';
-import { SearchIcon, FilterIcon } from 'lucide-react';
+import { Project } from '@/lib/types';
+import { ProjectModel } from '@/lib/models/project';
+import { connectToDatabase } from '@/lib/mongodb';
 
-export default function ProjectsPage() {
-  const { projects } = getSampleData();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
+// Server component for fetching and displaying projects
+async function Projects({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+  // If the database is not ready, use sample data in development
+  let projects: Project[] = [];
 
-  // Filter projects based on search query and type filter
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || project.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  try {
+    await connectToDatabase();
+    const query: Record<string, unknown> = {};
 
+    if (searchParams.type && searchParams.type !== 'all') {
+      query.type = searchParams.type;
+    }
+
+    if (searchParams.search) {
+      query.name = { $regex: searchParams.search, $options: 'i' };
+    }
+
+    const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
+    projects = projectDocs.map((doc) => doc.toJSON()) as Project[];
+  } catch (error) {
+    console.error('Error fetching projects from database:', error);
+    // In development, we can fall back to sample data if needed
+    if (process.env.NODE_ENV === 'development') {
+      const { getSampleData } = await import('@/lib/sample-data');
+      projects = getSampleData().projects;
+    }
+  }
+
+  return (
+    <>
+      {projects.length === 0 ? (
+        <TableRow>
+          <TableCell colSpan={7} className="h-16 text-center text-xs">
+            No projects found.
+          </TableCell>
+        </TableRow>
+      ) : (
+        projects.map((project) => (
+          <TableRow key={project.id} className="h-8 cursor-pointer hover:bg-muted/50">
+            <TableCell className="py-1 px-2 font-medium">{project.name}</TableCell>
+            <TableCell className="py-1 px-2">
+              <ProjectTypeBadge type={project.type} />
+            </TableCell>
+            <TableCell className="py-1 px-2">PSY</TableCell>
+            <TableCell className="py-1 px-2">No lead</TableCell>
+            <TableCell className="py-1 px-2">
+              <PriorityBadge priority="medium" />
+            </TableCell>
+            <TableCell className="py-1 px-2">--</TableCell>
+            <TableCell className="py-1 px-2">Frontend</TableCell>
+          </TableRow>
+        ))
+      )}
+    </>
+  );
+}
+
+// Main page component
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   return (
     <div className="flex flex-col gap-2 p-4">
       <div className="flex items-center justify-between mb-2">
@@ -37,65 +78,7 @@ export default function ProjectsPage() {
         <NewProjectDialog />
       </div>
 
-      <div className="flex gap-2 mb-2">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search projects..."
-            className="h-8 w-full pl-7 text-xs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Select defaultValue="all" onValueChange={(value) => setTypeFilter(value)}>
-          <SelectTrigger className="h-8 w-[130px] text-xs gap-1">
-            <FilterIcon className="h-3.5 w-3.5" />
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel className="text-xs">Project Types</SelectLabel>
-              <SelectItem value="all" className="text-xs py-1">
-                All Types
-              </SelectItem>
-              <SelectItem value="regular" className="text-xs py-1">
-                Regular
-              </SelectItem>
-              <SelectItem value="tech-debt" className="text-xs py-1">
-                Tech Debt
-              </SelectItem>
-              <SelectItem value="team-event" className="text-xs py-1">
-                Team Event
-              </SelectItem>
-              <SelectItem value="spillover" className="text-xs py-1">
-                Spillover
-              </SelectItem>
-              <SelectItem value="blocked" className="text-xs py-1">
-                Blocked
-              </SelectItem>
-              <SelectItem value="hack" className="text-xs py-1">
-                Hack
-              </SelectItem>
-              <SelectItem value="sick-leave" className="text-xs py-1">
-                Sick Leave
-              </SelectItem>
-              <SelectItem value="vacation" className="text-xs py-1">
-                Vacation
-              </SelectItem>
-              <SelectItem value="onboarding" className="text-xs py-1">
-                Onboarding
-              </SelectItem>
-              <SelectItem value="duty" className="text-xs py-1">
-                Team Duty
-              </SelectItem>
-              <SelectItem value="risky-week" className="text-xs py-1">
-                Risk Alert
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      <SearchProjects />
 
       <div className="rounded-sm border">
         <Table className="text-xs">
@@ -111,29 +94,17 @@ export default function ProjectsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProjects.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-16 text-center text-xs">
-                  No projects found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredProjects.map((project) => (
-                <TableRow key={project.id} className="h-8 cursor-pointer hover:bg-muted/50">
-                  <TableCell className="py-1 px-2 font-medium">{project.name}</TableCell>
-                  <TableCell className="py-1 px-2">
-                    <ProjectTypeBadge type={project.type} />
+            <Suspense
+              fallback={
+                <TableRow>
+                  <TableCell colSpan={7} className="h-16 text-center">
+                    Loading projects...
                   </TableCell>
-                  <TableCell className="py-1 px-2">PSY</TableCell>
-                  <TableCell className="py-1 px-2">No lead</TableCell>
-                  <TableCell className="py-1 px-2">
-                    <PriorityBadge priority="medium" />
-                  </TableCell>
-                  <TableCell className="py-1 px-2">--</TableCell>
-                  <TableCell className="py-1 px-2">Frontend</TableCell>
                 </TableRow>
-              ))
-            )}
+              }
+            >
+              <Projects searchParams={await searchParams} />
+            </Suspense>
           </TableBody>
         </Table>
       </div>

@@ -25,16 +25,24 @@ Lego Planner is a visual project management tool designed to help teams plan the
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Runtime**: [Bun](https://bun.sh/)
+- **Database**: [MongoDB](https://www.mongodb.com/)
+- **ODM**: [Mongoose](https://mongoosejs.com/)
+- **Deployment**: Docker Compose
 
 ## Project Structure
 
 ```
 src/
 ├── app/             # Next.js App Router files
+│   ├── api/         # API routes for backend
+│   └── ...          # App routes and pages
 ├── components/      # React components
 │   ├── ui/          # Shadcn UI components
 │   └── ...          # Custom components
 ├── lib/             # Utilities and type definitions
+│   ├── models/      # Mongoose models
+│   └── ...          # Utility functions
+├── hooks/           # Custom React hooks
 └── ...
 ```
 
@@ -109,6 +117,67 @@ The project uses Shadcn UI components which can be easily customized:
 - Modify the theme in `src/app/globals.css`
 - Update component variants in the respective component files under `src/components/ui`
 
+## Backend API
+
+The project uses a MongoDB database for data persistence. API endpoints are implemented using Next.js App Router API routes.
+
+### API Routes
+
+- `GET /api/projects` - Get all projects with optional filtering
+- `POST /api/projects` - Create a new project
+- `GET /api/projects/:id` - Get a specific project by ID
+- `PUT /api/projects/:id` - Update a project
+- `DELETE /api/projects/:id` - Delete a project
+
+### Data Models
+
+The project uses Mongoose for MongoDB object modeling:
+
+- **Project**: Represents a work item with attributes like name, type, priority, etc.
+- **Assignment**: Links assignees to projects for specific weeks
+- **Assignee**: Represents a person, team, dependency, or event
+
+## Development with MongoDB
+
+### Running MongoDB with Docker Compose
+
+The project includes a Docker Compose setup for easy MongoDB deployment:
+
+```bash
+# Start MongoDB and Mongo Express
+docker-compose up -d
+
+# Stop the services
+docker-compose down
+```
+
+Mongo Express, a web-based MongoDB admin interface, is available at [http://localhost:8081](http://localhost:8081).
+
+### Environment Variables
+
+Copy the `.env.example` file to `.env` and update the values as needed:
+
+```bash
+cp .env.example .env
+```
+
+The following environment variables are used:
+
+- `MONGODB_URI`: MongoDB connection string
+
+## Deployment
+
+The application can be deployed using Docker and MongoDB:
+
+1. Configure your `.env` file with appropriate values
+2. Build and deploy the Docker containers:
+
+```bash
+docker-compose up -d
+```
+
+3. Access your application at the configured URL
+
 ## Planned Features
 
 - Drag and drop support for assignments
@@ -116,6 +185,8 @@ The project uses Shadcn UI components which can be easily customized:
 - CSV/Excel export functionality
 - Team workload views
 - Advanced filtering options
+- Authentication and authorization
+- Backup and restore functionality
 
 ## Contributing
 

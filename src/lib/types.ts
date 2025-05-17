@@ -26,6 +26,14 @@ export interface Project {
     | 'duty'
     | 'risky-week';
   color?: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high';
+  teamId?: string;
+  leadId?: string;
+  area?: string;
+  dependencies?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Assignment {
