@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SearchProjects } from '@/components/search-projects';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
@@ -46,8 +47,12 @@ async function Projects({ searchParams }: { searchParams: Record<string, string 
         </TableRow>
       ) : (
         projects.map((project) => (
-          <TableRow key={project.id} className="h-8 cursor-pointer hover:bg-muted/50">
-            <TableCell className="py-1 px-2 font-medium">{project.name}</TableCell>
+          <TableRow key={project.id}>
+            <TableCell className="py-1 px-2 font-medium">
+              <Link href={`/projects/${project.id}`} className="block cursor-pointer hover:underline">
+                {project.name}
+              </Link>
+            </TableCell>
             <TableCell className="py-1 px-2">
               <ProjectTypeBadge type={project.type} />
             </TableCell>
