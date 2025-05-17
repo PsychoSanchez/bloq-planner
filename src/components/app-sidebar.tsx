@@ -31,12 +31,8 @@ const data = {
           isActive: true,
         },
         {
-          title: 'Analytics',
-          url: '/dashboard/analytics',
-        },
-        {
-          title: 'Reports',
-          url: '/dashboard/reports',
+          title: 'Weekly Report',
+          url: '/dashboard/weekly-report',
         },
       ],
     },
@@ -51,10 +47,6 @@ const data = {
         {
           title: 'Create New',
           url: '/projects/new',
-        },
-        {
-          title: 'Templates',
-          url: '/projects/templates',
         },
         {
           title: 'Archive',
@@ -120,10 +112,6 @@ const data = {
       title: 'Settings',
       url: '/settings',
       items: [
-        {
-          title: 'Account',
-          url: '/settings/account',
-        },
         {
           title: 'Preferences',
           url: '/settings',
