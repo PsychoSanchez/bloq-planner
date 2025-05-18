@@ -97,7 +97,7 @@ const projects: Project[] = [
 ];
 
 // Generate sample assignments for a set of weeks
-const generateAssignments = (weeks: WeekData[]): Assignment[] => {
+const generateAssignments = (weeks: WeekData[], year: number, quarter: number): Assignment[] => {
   const assignments: Assignment[] = [];
   let id = 1;
 
@@ -134,7 +134,9 @@ const generateAssignments = (weeks: WeekData[]): Assignment[] => {
           id: id.toString(),
           assigneeId: assignee.id,
           projectId,
-          weekId: week.weekNumber,
+          week: week.weekNumber,
+          year,
+          quarter,
         });
 
         id++;
@@ -147,10 +149,9 @@ const generateAssignments = (weeks: WeekData[]): Assignment[] => {
 
 export const getSampleData = (year: number = 2024, quarter: number = 2): PlannerData => {
   const weeks = generateWeeks(year, quarter);
-  const assignments = generateAssignments(weeks);
+  const assignments = generateAssignments(weeks, year, quarter);
 
   return {
-    weeks,
     assignees,
     projects,
     assignments,

@@ -6,6 +6,7 @@ import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -35,6 +36,7 @@ export default function RootLayout({
                 <div className="flex-1 flex flex-col mx-auto p-6 w-full">{children}</div>
               </SidebarInset>
             </SidebarProvider>
+            <Toaster />
           </ThemeProvider>
         </NuqsAdapter>
       </body>

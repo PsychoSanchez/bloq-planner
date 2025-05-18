@@ -53,13 +53,29 @@ export interface Assignment {
   id: string;
   assigneeId: string;
   projectId: string;
-  weekId: number;
+  week: number;
+  year: number;
+  quarter: number;
   status?: string;
 }
 
 export interface PlannerData {
-  weeks: WeekData[];
   assignees: Assignee[];
   projects: Project[];
   assignments: Assignment[];
+}
+
+export interface Planner {
+  id: string;
+  name: string;
+  assignees: Assignee[];
+  projects: Project[];
+  assignments: Assignment[];
+}
+
+export interface PlannerCreateData {
+  name?: string;
+  assignees: string[];
+  projects: string[];
+  assignments: string[];
 }

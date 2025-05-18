@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Assignee, PlannerData } from '@/lib/types';
+import { Assignee, Planner, WeekData, Assignment } from '@/lib/types';
 import { CalendarNavigation } from './calendar-navigation';
-import { getSampleData } from '@/lib/sample-data';
+import { getSampleData, generateWeeks } from '@/lib/sample-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { WeekBlock } from './week-block';
@@ -23,13 +23,15 @@ const COLUMN_SIZES = {
 type ColumnSizeType = keyof typeof COLUMN_SIZES;
 
 interface LegoPlannerProps {
-  initialData: PlannerData;
+  initialData: Planner;
 }
 
 export function LegoPlanner({ initialData }: LegoPlannerProps) {
+  console.log(initialData);
   const [currentYear, setCurrentYear] = useState<number>(2024);
   const [currentQuarter, setCurrentQuarter] = useState<number>(2);
-  const [plannerData, setPlannerData] = useState<PlannerData>(initialData);
+  const [plannerData, setPlannerData] = useState<Planner>(initialData);
+  const [weeks, setWeeks] = useState<WeekData[]>(generateWeeks(currentYear, currentQuarter));
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
@@ -57,14 +59,31 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     localStorage.setItem('lego-planner-column-size', JSON.stringify(selectedSize));
   }, [selectedSize]);
 
+  // Update weeks when year or quarter changes
+  useEffect(() => {
+    setWeeks(generateWeeks(currentYear, currentQuarter));
+  }, [currentYear, currentQuarter]);
+
   const handleYearChange = (year: number) => {
     setCurrentYear(year);
-    setPlannerData(getSampleData(year, currentQuarter));
+    const data = getSampleData(year, currentQuarter);
+    setPlannerData({
+      ...plannerData,
+      assignees: data.assignees,
+      projects: data.projects,
+      assignments: data.assignments,
+    });
   };
 
   const handleQuarterChange = (quarter: number) => {
     setCurrentQuarter(quarter);
-    setPlannerData(getSampleData(currentYear, quarter));
+    const data = getSampleData(currentYear, quarter);
+    setPlannerData({
+      ...plannerData,
+      assignees: data.assignees,
+      projects: data.projects,
+      assignments: data.assignments,
+    });
   };
 
   const handleMouseEnterCell = (projectId?: string) => {
@@ -100,6 +119,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   };
 
   const renderAssigneeName = (assignee: Assignee) => {
+    console.log(assignee);
     return (
       <div className="px-1 py-0.5 h-full flex items-center text-foreground dark:text-gray-200">
         <span className="font-medium truncate text-xs">{assignee.name}</span>
@@ -107,8 +127,8 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     );
   };
 
-  const getAssignmentForWeek = (assigneeId: string, weekId: number) => {
-    return plannerData.assignments.find((a) => a.assigneeId === assigneeId && a.weekId === weekId);
+  const getAssignmentForWeek = (assigneeId: string, weekNumber: number): Assignment | undefined => {
+    return plannerData.assignments.find((a) => a.assigneeId === assigneeId && a.week === weekNumber);
   };
 
   // Set column size
@@ -137,7 +157,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
         <div>
           <h1 className="text-lg text-foreground">Lego Planner</h1>
           <p className="text-muted-foreground mt-1 text-xs">
-            Weekly planning board - {plannerData.weeks.length} weeks, {plannerData.assignees.length} assignees
+            Weekly planning board - {weeks.length} weeks, {plannerData.assignees.length} assignees
           </p>
         </div>
         <div>
@@ -195,7 +215,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                 />
               </div>
             </TableHead>
-            {plannerData.weeks.map((week) => (
+            {weeks.map((week) => (
               <TableHead
                 key={week.weekNumber}
                 className="p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative"
@@ -221,7 +241,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
               <TableCell className="p-0 font-medium border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background">
                 {renderAssigneeName(assignee)}
               </TableCell>
-              {plannerData.weeks.map((week, index) => {
+              {weeks.map((week, index) => {
                 const assignment = getAssignmentForWeek(assignee.id, week.weekNumber);
                 const project = assignment
                   ? plannerData.projects.find((p) => p.id === assignment.projectId)

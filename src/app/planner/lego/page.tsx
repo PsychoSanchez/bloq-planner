@@ -1,5 +1,5 @@
 import { PlannerSelection } from '@/components/planner-selection';
 
-export default function HomePage() {
+export default function LegoPlannerPage() {
   return <PlannerSelection />;
 }
