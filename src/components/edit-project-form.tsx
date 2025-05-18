@@ -13,6 +13,8 @@ import { Project } from '@/lib/types';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { ColorSelector } from './color-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
+import { ROLES_TO_DISPLAY } from '@/lib/constants';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface EditProjectFormProps {
   project: Project;
@@ -31,6 +33,14 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
     area: project.area || '',
     dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
     color: project.color || DEFAULT_PROJECT_COLOR_NAME,
+    estimates: ROLES_TO_DISPLAY.reduce(
+      (acc, role) => {
+        const existingEstimate = project.estimates?.find((est) => est.department === role);
+        acc[role] = existingEstimate ? existingEstimate.value : 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    ),
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +58,17 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
     setFormData((prev) => ({ ...prev, color: color }));
   };
 
+  const handleEstimateChange = (role: string, value: string) => {
+    const weeks = parseInt(value, 10);
+    setFormData((prev) => ({
+      ...prev,
+      estimates: {
+        ...prev.estimates,
+        [role]: isNaN(weeks) ? 0 : weeks,
+      },
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -63,6 +84,11 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
           dependencies: formData.dependencies
             ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
             : [],
+          // TODO: Breaks mongodb and causese maximum call stack size exceeded error
+          // estimates: ROLES_TO_DISPLAY.map((role) => ({
+          //   role,
+          //   value: formData.estimates[role] || 0,
+          // })),
         }),
       });
 
@@ -211,6 +237,37 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
             className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
             placeholder="e.g. Team A, Team B"
           />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground font-medium">ROLE ESTIMATES (WEEKS)</Label>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px] text-xs text-muted-foreground font-medium h-8 px-2">Role</TableHead>
+                  <TableHead className="text-xs text-muted-foreground font-medium h-8 px-2">Estimate (weeks)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ROLES_TO_DISPLAY.map((role) => (
+                  <TableRow key={role}>
+                    <TableCell className="font-medium py-1 px-2 text-sm capitalize">{role}</TableCell>
+                    <TableCell className="py-1 px-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.estimates[role]}
+                        onChange={(e) => handleEstimateChange(role, e.target.value)}
+                        className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+                        placeholder="0"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         <div className="pt-2">

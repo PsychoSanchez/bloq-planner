@@ -78,6 +78,7 @@ const PatchProjectRequestBody = type({
   'name?': 'string < 255',
   'slug?': 'string < 32',
   'type?': 'string < 32',
+  'color?': 'string < 32',
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
