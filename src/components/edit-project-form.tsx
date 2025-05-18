@@ -100,16 +100,20 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
           </Button>
         </div>
 
-        <div className="space-y-1">
+        <div className="flex items-baseline space-x-2">
           <Input
             id="name"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
+            className="md:text-xl text-xl font-bold flex-1 border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
             placeholder="Project Name"
             required
           />
+          <span className="text-xl font-bold text-muted-foreground">/</span>
+          <span className="md:text-xl text-xl font-bold w-auto border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-transparent text-muted-foreground">
+            {project.slug}
+          </span>
         </div>
 
         <div className="space-y-3">
