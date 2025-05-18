@@ -6,7 +6,7 @@ import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { PriorityBadge } from '@/components/priority-badge';
 import { NewProjectDialog } from '@/components/new-project-dialog';
 import { Project } from '@/lib/types';
-import { ProjectModel } from '@/lib/models/project';
+import { fromProjectDocument, ProjectModel } from '@/lib/models/project';
 import { connectToDatabase } from '@/lib/mongodb';
 
 // Server component for fetching and displaying projects
@@ -27,7 +27,7 @@ async function Projects({ searchParams }: { searchParams: Record<string, string 
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
-    projects = projectDocs.map((doc) => doc.toJSON()) as unknown as Project[];
+    projects = projectDocs.map(fromProjectDocument);
   } catch (error) {
     console.error('Error fetching projects from database:', error);
     // In development, we can fall back to sample data if needed

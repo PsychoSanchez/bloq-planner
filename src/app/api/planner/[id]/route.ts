@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { PlannerModel } from '@/lib/models/planner';
-import { AssignmentModel } from '@/lib/models/planner-assignment';
+import { AssignmentModel, fromAssignmentDocument } from '@/lib/models/planner-assignment';
 import { Planner } from '@/lib/types';
 import mongoose from 'mongoose';
 import { type } from 'arktype';
+import { fromProjectDocument } from '@/lib/models/project';
+import { fromTeamMemberDocument } from '@/lib/models/team-member';
 
 interface AssignmentQuery {
   year?: number;
@@ -13,8 +15,8 @@ interface AssignmentQuery {
 }
 
 const AssignmentsQuery = type({
-  'year?': 'number',
-  'quarter?': 'number',
+  'year?': 'number >= 1970',
+  'quarter?': '0 < number < 5',
 });
 
 // Get a specific planner by ID
@@ -61,17 +63,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       id: planner._id.toString(),
       name: planner.name,
-      assignees: planner.assignees || [],
-      projects: planner.projects || [],
-      assignments: (planner.assignments || []).filter((assignment) => {
-        if (year && assignment.year !== sanitizedAssignmentQuery.year) {
-          return false;
-        }
-        if (quarter && assignment.quarter !== sanitizedAssignmentQuery.quarter) {
-          return false;
-        }
-        return true;
-      }),
+      assignees: planner.assignees.map(fromTeamMemberDocument) || [],
+      projects: planner.projects.map(fromProjectDocument) || [],
+      assignments: (planner.assignments || [])
+        .filter((assignment) => {
+          if (year && assignment.year !== sanitizedAssignmentQuery.year) {
+            return false;
+          }
+          if (quarter && assignment.quarter !== sanitizedAssignmentQuery.quarter) {
+            return false;
+          }
+          return true;
+        })
+        .map(fromAssignmentDocument),
     });
   } catch (error) {
     console.error('Failed to fetch planner:', error);

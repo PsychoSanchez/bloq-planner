@@ -63,15 +63,27 @@ const projectSchema = new Schema<ProjectDocument>(
   { timestamps: true },
 );
 
-// Convert _id to id and remove __v when converting to JSON
-projectSchema.set('toJSON', {
-  virtuals: true,
-  versionKey: false,
-  transform: function (_, ret) {
-    ret.id = ret._id;
-    delete ret._id;
-    return ret;
-  },
-});
+export const fromProjectDocument = (doc: ProjectDocument): Project => {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    slug: doc.slug,
+    icon: doc.icon,
+    color: doc.color,
+    type: doc.type,
+    description: doc.description,
+    priority: doc.priority,
+    teamId: doc.teamId,
+    leadId: doc.leadId,
+    area: doc.area,
+    roi: doc.roi,
+    impact: doc.impact,
+    cost: doc.cost,
+    estimates: doc.estimates,
+    dependencies: doc.dependencies,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+  };
+};
 
 export const ProjectModel = getOrCreateModel<ProjectDocument>(ModelIds.Project, projectSchema);

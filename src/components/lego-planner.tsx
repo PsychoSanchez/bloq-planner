@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Assignee, Planner, WeekData, Assignment } from '@/lib/types';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Assignee, Planner, Assignment } from '@/lib/types';
 import { CalendarNavigation } from './calendar-navigation';
-import { getSampleData, generateWeeks } from '@/lib/sample-data';
+import { generateWeeks } from '@/lib/sample-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { WeekBlock } from './week-block';
@@ -12,6 +12,15 @@ import { Label } from '@/components/ui/label';
 import { AssigneeFilter } from './assignee-filter';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import { parseAsInteger, useQueryState } from 'nuqs';
+import { toast } from './ui/use-toast';
 
 // Predefined column width sizes
 const COLUMN_SIZES = {
@@ -26,19 +35,116 @@ interface LegoPlannerProps {
   initialData: Planner;
 }
 
-export function LegoPlanner({ initialData }: LegoPlannerProps) {
-  console.log(initialData);
-  const [currentYear, setCurrentYear] = useState<number>(2024);
-  const [currentQuarter, setCurrentQuarter] = useState<number>(2);
-  const [plannerData, setPlannerData] = useState<Planner>(initialData);
-  const [weeks, setWeeks] = useState<WeekData[]>(generateWeeks(currentYear, currentQuarter));
-  const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
-  const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
-  const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tableRef = useRef<HTMLTableElement>(null);
+const useAssignments = (plannerId: string) => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [_isLoading, setIsLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const response = await fetch(`/api/assignments?plannerId=${plannerId}`);
+        const data = await response.json();
+        setAssignments(data);
+        setIsLoading(false);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch assignments');
+        toast({
+          title: 'Failed to fetch assignments',
+          description: error instanceof Error ? error.message : 'Failed to fetch assignments',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAssignments();
+  }, [plannerId]);
+
+  const createAssignment = useCallback(async (assignment: Omit<Assignment, 'id'>) => {
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        body: JSON.stringify(assignment),
+      });
+      const data = await response.json();
+      setAssignments((prev) => [...prev, data]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create assignment');
+      toast({
+        title: 'Failed to create assignment',
+        description: error instanceof Error ? error.message : 'Failed to create assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const updateAssignment = useCallback(async (assignment: Partial<Assignment>) => {
+    try {
+      const response = await fetch(`/api/assignments/${assignment.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(assignment),
+      });
+      const data = await response.json();
+      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? data : a)));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update assignment');
+      toast({
+        title: 'Failed to update assignment',
+        description: error instanceof Error ? error.message : 'Failed to update assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const deleteAssignment = useCallback(async (assignmentId: string) => {
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete assignment');
+      }
+      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete assignment');
+      toast({
+        title: 'Failed to delete assignment',
+        description: error instanceof Error ? error.message : 'Failed to delete assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const assignmentsByWeekAndAssignee = useMemo(() => {
+    const result = new Map<number, Map<string, Assignment>>();
+    for (const assignment of assignments) {
+      if (!result.has(assignment.week)) {
+        result.set(assignment.week, new Map<string, Assignment>());
+      }
+      result.get(assignment.week)?.set(assignment.assigneeId, assignment);
+    }
+    return result;
+  }, [assignments]);
+
+  const getAssignmentsForWeekAndAssignee = useCallback(
+    (week: number, assigneeId: string) => {
+      return assignmentsByWeekAndAssignee.get(week)?.get(assigneeId);
+    },
+    [assignmentsByWeekAndAssignee],
+  );
+
+  return {
+    assignments,
+    getAssignmentsForWeekAndAssignee,
+    createAssignment,
+    updateAssignment,
+    deleteAssignment,
+  };
+};
+
+const useLegoPlannerViewSize = () => {
+  const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
   // Load selected size from localStorage on initial render
   useEffect(() => {
     const savedSize = localStorage.getItem('lego-planner-column-size');
@@ -59,31 +165,51 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
     localStorage.setItem('lego-planner-column-size', JSON.stringify(selectedSize));
   }, [selectedSize]);
 
-  // Update weeks when year or quarter changes
-  useEffect(() => {
-    setWeeks(generateWeeks(currentYear, currentQuarter));
-  }, [currentYear, currentQuarter]);
+  // Set column size
+  const setColumnSize = (size: ColumnSizeType) => {
+    setSelectedSize(size);
+  };
+
+  // Reset column widths to default
+  const resetColumnSize = () => {
+    setSelectedSize('normal');
+    localStorage.removeItem('lego-planner-column-size');
+  };
+  // Get current column width value
+  const columnWidth = COLUMN_SIZES[selectedSize];
+
+  return {selectedSize, setColumnSize, resetColumnSize, columnWidth};
+};
+
+export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
+  const [currentYear, setCurrentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
+  const [currentQuarter, setCurrentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
+  const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+
+  const { getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } = useAssignments(
+    plannerData.id,
+  );
+
+  const {
+    selectedSize,
+    setColumnSize,
+    columnWidth,
+    resetColumnSize
+  } = useLegoPlannerViewSize();
+
+  const weeks = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
+
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const handleYearChange = (year: number) => {
     setCurrentYear(year);
-    const data = getSampleData(year, currentQuarter);
-    setPlannerData({
-      ...plannerData,
-      assignees: data.assignees,
-      projects: data.projects,
-      assignments: data.assignments,
-    });
   };
 
   const handleQuarterChange = (quarter: number) => {
     setCurrentQuarter(quarter);
-    const data = getSampleData(currentYear, quarter);
-    setPlannerData({
-      ...plannerData,
-      assignees: data.assignees,
-      projects: data.projects,
-      assignments: data.assignments,
-    });
   };
 
   const handleMouseEnterCell = (projectId?: string) => {
@@ -119,27 +245,11 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
   };
 
   const renderAssigneeName = (assignee: Assignee) => {
-    console.log(assignee);
     return (
       <div className="px-1 py-0.5 h-full flex items-center text-foreground dark:text-gray-200">
         <span className="font-medium truncate text-xs">{assignee.name}</span>
       </div>
     );
-  };
-
-  const getAssignmentForWeek = (assigneeId: string, weekNumber: number): Assignment | undefined => {
-    return plannerData.assignments.find((a) => a.assigneeId === assigneeId && a.week === weekNumber);
-  };
-
-  // Set column size
-  const setColumnSize = (size: ColumnSizeType) => {
-    setSelectedSize(size);
-  };
-
-  // Reset column widths to default
-  const resetColumnSize = () => {
-    setSelectedSize('normal');
-    localStorage.removeItem('lego-planner-column-size');
   };
 
   // Filter assignees based on selection
@@ -148,8 +258,6 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
       ? plannerData.assignees.filter((a) => selectedAssigneeIds.includes(a.id))
       : plannerData.assignees;
 
-  // Get current column width value
-  const columnWidth = COLUMN_SIZES[selectedSize];
 
   return (
     <>
@@ -242,7 +350,7 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                 {renderAssigneeName(assignee)}
               </TableCell>
               {weeks.map((week, index) => {
-                const assignment = getAssignmentForWeek(assignee.id, week.weekNumber);
+                const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
                 const project = assignment
                   ? plannerData.projects.find((p) => p.id === assignment.projectId)
                   : undefined;
@@ -266,7 +374,57 @@ export function LegoPlanner({ initialData }: LegoPlannerProps) {
                     onMouseEnter={() => handleMouseEnterCell(project?.id)}
                     onMouseLeave={handleMouseLeaveCell}
                   >
-                    <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
+                    <ContextMenu>
+                      <ContextMenuTrigger>
+                        <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        {plannerData.projects.map((p, i) => (
+                          <>
+                            {i !== 0 ? <ContextMenuSeparator /> : null}
+                            <ContextMenuItem
+                              key={p.id}
+                              onClick={() => {
+                                if (assignment) {
+                                  updateAssignment({
+                                    id: assignment.id,
+                                    assigneeId: assignee.id,
+                                    plannerId: plannerData.id,
+                                    week: week.weekNumber,
+                                    year: currentYear,
+                                    quarter: currentQuarter,
+                                    projectId: p.id,
+                                  });
+                                } else {
+                                  createAssignment({
+                                    assigneeId: assignee.id,
+                                    projectId: p.id,
+                                    plannerId: plannerData.id,
+                                    week: week.weekNumber,
+                                    year: currentYear,
+                                    quarter: currentQuarter,
+                                  });
+                                }
+                              }}
+                            >
+                              {p.name}
+                            </ContextMenuItem>
+                          </>
+                        ))}
+                        {assignment && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem
+                              onClick={() => {
+                                deleteAssignment(assignment.id);
+                              }}
+                            >
+                              Remove Assignment
+                            </ContextMenuItem>
+                          </>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
                   </TableCell>
                 );
               })}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { AssignmentModel } from '@/lib/models/planner-assignment';
 import { type } from 'arktype';
+import mongoose from 'mongoose';
 
 interface AssignmentQuery {
   year?: number;
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
     const query: AssignmentQuery = {};
     if (year) query.year = parseInt(year);
     if (quarter) query.quarter = parseInt(quarter);
-    if (assigneeId) query.assigneeId = assigneeId;
-    if (projectId) query.projectId = projectId;
-    if (plannerId) query.plannerId = plannerId;
+    if (assigneeId && mongoose.Types.ObjectId.isValid(assigneeId)) query.assigneeId = assigneeId;
+    if (projectId && mongoose.Types.ObjectId.isValid(projectId)) query.projectId = projectId;
+    if (plannerId && mongoose.Types.ObjectId.isValid(plannerId)) query.plannerId = plannerId;
 
     const sanitizedAssignmentQuery = AssignmentQueryRequest(query);
 

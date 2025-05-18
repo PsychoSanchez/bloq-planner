@@ -20,6 +20,21 @@ const assignmentSchema = new Schema<AssignmentDocument>(
   { timestamps: true },
 );
 
+assignmentSchema.index({ plannerId: 1, assigneeId: 1, week: 1 }, { unique: true });
+
+export const fromAssignmentDocument = (doc: AssignmentDocument): Assignment => {
+  return {
+    id: doc._id.toString(),
+    plannerId: doc.plannerId,
+    assigneeId: doc.assigneeId,
+    projectId: doc.projectId,
+    week: doc.week,
+    year: doc.year,
+    quarter: doc.quarter,
+    status: doc.status,
+  };
+};
+
 export const AssignmentModel = getOrCreateModel<AssignmentDocument>(ModelIds.Assignment, assignmentSchema);
 
 export default AssignmentModel;

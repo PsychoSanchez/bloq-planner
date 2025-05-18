@@ -34,15 +34,12 @@ const teamMemberSchema = new Schema<TeamMemberDocument>(
   { timestamps: true },
 );
 
-// Convert _id to id and remove __v when converting to JSON
-teamMemberSchema.set('toJSON', {
-  virtuals: true,
-  versionKey: false,
-  transform: function (_, ret) {
-    ret.id = ret._id;
-    delete ret._id;
-    return ret;
-  },
-});
+export const fromTeamMemberDocument = (doc: TeamMemberDocument): Assignee => {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    type: doc.type,
+  };
+};
 
 export const TeamMemberModel = getOrCreateModel<TeamMemberDocument>(ModelIds.TeamMember, teamMemberSchema);

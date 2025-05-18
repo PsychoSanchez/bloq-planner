@@ -38,11 +38,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 const PatchAssignmentRequestBody = type({
-  'assigneeId?': 'string',
-  'projectId?': 'string',
-  'plannerId?': 'string',
-  'week?': '0 <= number.integer <= 52',
-  'year?': 'number.integer >= 1970',
+  assigneeId: 'string',
+  projectId: 'string',
+  plannerId: 'string',
+  week: '0 <= number.integer <= 52',
+  year: 'number.integer >= 1970',
   'quarter?': '0 < number <= 5',
   'status?': 'string < 50',
 });

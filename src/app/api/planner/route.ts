@@ -1,21 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { PlannerModel } from '@/lib/models/planner';
+import { fromPlannerDocument, PlannerModel } from '@/lib/models/planner';
 import { Planner } from '@/lib/types';
 import { type } from 'arktype';
+import { fromTeamMemberDocument } from '@/lib/models/team-member';
+import { fromProjectDocument } from '@/lib/models/project';
+import { fromAssignmentDocument } from '@/lib/models/planner-assignment';
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const planners = await PlannerModel.find().lean();
+    const planners = await PlannerModel.find()
+      .populate('assignees')
+      .populate('projects')
+      .populate('assignments')
+      .lean();
 
     // Transform MongoDB documents to match Planner interface
     const formattedPlanners: Planner[] = planners.map((planner) => ({
       id: planner._id.toString(),
       name: planner.name,
-      assignees: planner.assignees || [],
-      projects: planner.projects || [],
-      assignments: planner.assignments || [],
+      assignees: planner.assignees.map(fromTeamMemberDocument) || [],
+      projects: planner.projects.map(fromProjectDocument) || [],
+      assignments: planner.assignments.map(fromAssignmentDocument) || [],
     }));
 
     return NextResponse.json(formattedPlanners);
@@ -51,16 +58,17 @@ export async function POST(request: NextRequest) {
 
     await newPlanner.save();
 
-    return NextResponse.json(
-      {
-        id: newPlanner._id.toString(),
-        name: newPlanner.name,
-        assignees: newPlanner.assignees,
-        projects: newPlanner.projects,
-        assignments: newPlanner.assignments,
-      },
-      { status: 201 },
-    );
+    const savedPlanner = await PlannerModel.findById(newPlanner._id)
+      .populate('assignees')
+      .populate('projects')
+      .populate('assignments')
+      .lean();
+
+    if (!savedPlanner) {
+      return NextResponse.json({ error: 'Failed to create planner' }, { status: 500 });
+    }
+
+    return NextResponse.json(fromPlannerDocument(savedPlanner), { status: 201 });
   } catch (error) {
     console.error('Failed to create planner:', error);
     return NextResponse.json({ error: 'Failed to create planner' }, { status: 500 });

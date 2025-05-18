@@ -5,7 +5,7 @@ import { SearchTeamMembers } from '@/components/search-team-members';
 import { RoleBadge } from '@/components/role-badge';
 import { NewTeamMemberDialog } from '@/components/new-team-member-dialog';
 import { Assignee } from '@/lib/types';
-import { TeamMemberModel } from '@/lib/models/team-member';
+import { fromTeamMemberDocument, TeamMemberModel } from '@/lib/models/team-member';
 import { connectToDatabase } from '@/lib/mongodb';
 
 // Server component for fetching and displaying team members
@@ -26,8 +26,7 @@ async function TeamMembers({ searchParams }: { searchParams: Record<string, stri
     }
 
     const teamMemberDocs = await TeamMemberModel.find(query).sort({ name: 1 });
-    // @ts-expect-error - toJSON is not typed
-    teamMembers = teamMemberDocs.map((doc) => doc.toJSON());
+    teamMembers = teamMemberDocs.map(fromTeamMemberDocument);
   } catch (error) {
     console.error('Error fetching team members from database:', error);
     // In development, we can fall back to sample data if needed
