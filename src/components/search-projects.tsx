@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SearchIcon, FilterIcon } from 'lucide-react';
+import { FilterIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 
 export function SearchProjects() {
@@ -22,7 +22,6 @@ export function SearchProjects() {
   const debouncedUpdateParams = useDebounce(setSearch, 300);
 
   // Update search params and navigate
-
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       debouncedUpdateParams(e.target.value, undefined);
@@ -38,17 +37,14 @@ export function SearchProjects() {
   );
 
   return (
-    <div className="flex gap-2 mb-2">
-      <div className="relative flex-1">
-        <SearchIcon className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search projects..."
-          className="h-8 w-full pl-7 text-xs"
-          defaultValue={search}
-          onChange={handleSearchChange}
-        />
-      </div>
+    <div className="flex gap-2 items-center mb-2 justify-end">
+      <Input
+        type="search"
+        placeholder="Search projects..."
+        className="max-w-xs"
+        defaultValue={search}
+        onChange={handleSearchChange}
+      />
       <Select defaultValue={type} onValueChange={handleTypeChange}>
         <SelectTrigger className="h-8 w-[130px] text-xs gap-1">
           <FilterIcon className="h-3.5 w-3.5" />

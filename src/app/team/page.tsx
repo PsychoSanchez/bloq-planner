@@ -29,16 +29,6 @@ async function TeamMembers({ searchParams }: { searchParams: Record<string, stri
     teamMembers = teamMemberDocs.map(fromTeamMemberDocument);
   } catch (error) {
     console.error('Error fetching team members from database:', error);
-    // In development, we can fall back to sample data if needed
-    if (process.env.NODE_ENV === 'development') {
-      const { getSampleData } = await import('@/lib/sample-data');
-      teamMembers = getSampleData().assignees.filter((assignee) => assignee.type === 'person') as (Assignee & {
-        email?: string;
-        role?: string;
-        department?: string;
-        title?: string;
-      })[];
-    }
   }
 
   return (

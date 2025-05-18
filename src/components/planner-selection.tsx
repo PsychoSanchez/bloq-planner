@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyPlaceholder } from '@/components/ui/empty-placeholder';
 import { useToast } from '@/components/ui/use-toast';
 import { createPlanner, deletePlanner, getPlanners } from '@/lib/planner-api';
 import { PlusCircle, Trash, Check } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import { parseAsInteger, useQueryState } from 'nuqs';
 import { Planner, Project, Assignee } from '@/lib/types';
 import {
   Dialog,
@@ -23,6 +22,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import {
+  CompactCard,
+  CompactCardHeader,
+  CompactCardTitle,
+  CompactCardDescription,
+  CompactCardContent,
+  CompactCardFooter,
+} from '@/components/ui/compact-card';
 
 // Custom type for planner creation that accepts string IDs
 interface PlannerCreateData {
@@ -321,14 +328,14 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
 export function PlannerSelection() {
   const [planners, setPlanners] = useState<Planner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [year] = useQueryState('year', { defaultValue: '2024' });
-  const [quarter] = useQueryState('quarter', { defaultValue: '2' });
+
+  const defaultYear = new Date().getFullYear();
+  const defaultQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+  const [yearValue] = useQueryState('year', parseAsInteger.withDefault(defaultYear));
+  const [quarterValue] = useQueryState('quarter', parseAsInteger.withDefault(defaultQuarter));
 
   const { toast } = useToast();
   const router = useRouter();
-
-  const yearValue = parseInt(year || '2024');
-  const quarterValue = parseInt(quarter || '2');
 
   // Load planners for the selected quarter/year
   useEffect(() => {
@@ -414,10 +421,10 @@ export function PlannerSelection() {
   };
 
   return (
-    <div className="container max-w-6xl py-6">
+    <div className="flex flex-col gap-2 p-4">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Lego Planners</h1>
+        <div className="flex flex-row justify-center items-center gap-2">
+          <h1 className="text-xl font-bold">Lego Planners</h1>
           <p className="text-muted-foreground">
             Q{quarterValue} {yearValue} - {planners.length} planner{planners.length !== 1 ? 's' : ''}
           </p>
@@ -445,24 +452,24 @@ export function PlannerSelection() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {planners.map((planner) => (
-            <Card
+            <CompactCard
               key={planner.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleOpenPlanner(planner.id)}
             >
-              <CardHeader>
-                <CardTitle>{planner.name || `Lego Planner ${planner.id.substring(0, 8)}`}</CardTitle>
-                <CardDescription>
+              <CompactCardHeader>
+                <CompactCardTitle>{planner.name || `Lego Planner ${planner.id.substring(0, 8)}`}</CompactCardTitle>
+                <CompactCardDescription>
                   {planner.projects.length} projects, {planner.assignees.length} assignees
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </CompactCardDescription>
+              </CompactCardHeader>
+              <CompactCardContent>
                 <div className="text-sm text-muted-foreground">
                   <div>Projects: {planner.projects.length}</div>
                   <div>Assignees: {planner.assignees.length}</div>
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
+              </CompactCardContent>
+              <CompactCardFooter className="flex justify-between">
                 <div className="text-xs text-muted-foreground">
                   Q{quarterValue} {yearValue}
                 </div>
@@ -474,8 +481,8 @@ export function PlannerSelection() {
                 >
                   <Trash className="h-4 w-4" />
                 </Button>
-              </CardFooter>
-            </Card>
+              </CompactCardFooter>
+            </CompactCard>
           ))}
         </div>
       )}
