@@ -1,18 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { CheckIcon, XIcon, CalendarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/lib/types';
-import { Separator } from '@/components/ui/separator';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
-import { PriorityBadge } from '@/components/priority-badge';
+import { ColorSelector } from './color-selector';
+import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 
 interface EditProjectFormProps {
   project: Project;
@@ -28,13 +28,11 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
     teamId: project.teamId || '',
     leadId: project.leadId || '',
     area: project.area || '',
-    dependencies: project.dependencies?.join(', ') || '',
+    dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
+    color: project.color || DEFAULT_PROJECT_COLOR_NAME,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Track which field is currently being edited
-  const [activeField, setActiveField] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -43,6 +41,10 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleColorChange = (color: string) => {
+    setFormData((prev) => ({ ...prev, color: color }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +59,9 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
         },
         body: JSON.stringify({
           ...formData,
-          dependencies: formData.dependencies ? formData.dependencies.split(',').map((dep) => dep.trim()) : [],
+          dependencies: formData.dependencies
+            ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
+            : [],
         }),
       });
 
@@ -74,238 +78,136 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
     }
   };
 
-  // Function to conditionally render an editable field
-  const renderEditableField = (fieldName: string, displayValue: React.ReactNode, editComponent: React.ReactNode) => {
-    const isActive = activeField === fieldName;
-
-    if (isActive) {
-      return (
-        <div className="relative">
-          {editComponent}
-          <div className="absolute right-0 top-0 flex gap-1 mt-1">
-            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setActiveField(null)}>
-              <CheckIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0"
-              onClick={() => {
-                // Revert changes for this field
-                setFormData((prev) => ({
-                  ...prev,
-                  [fieldName]:
-                    fieldName === 'dependencies'
-                      ? project.dependencies?.join(', ') || ''
-                      : project[fieldName as keyof Project] || '',
-                }));
-                setActiveField(null);
-              }}
-            >
-              <XIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className="min-h-[24px] p-1 rounded hover:bg-muted/50 cursor-pointer"
-        onClick={() => setActiveField(fieldName)}
-      >
-        {displayValue}
-      </div>
-    );
-  };
-
   return (
     <>
-      <form onSubmit={handleSubmit}>
-        <div className="flex items-center justify-between mb-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 flex-1">
-            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-              <XIcon className="h-4 w-4 mr-1" />
+            <Button type="button" variant="outline" size="sm" onClick={onCancel} className="text-xs px-2 py-1 h-auto">
+              <XIcon className="h-3 w-3 mr-1" />
               Cancel
             </Button>
-
-            {renderEditableField(
-              'name',
-              <h1 className="text-2xl font-bold">{project.name}</h1>,
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="text-2xl font-bold border-dashed focus:border-solid"
-                onBlur={() => setActiveField(null)}
-                autoFocus
-                required
-              />,
-            )}
-
-            <ProjectTypeBadge type={project.type} />
           </div>
-          <Button type="submit" variant="default" size="sm" disabled={isSubmitting}>
-            <CheckIcon className="h-4 w-4 mr-1" />
-            Save All Changes
+          <Button
+            type="submit"
+            variant="default"
+            size="sm"
+            disabled={isSubmitting}
+            className="text-xs px-2 py-1 h-auto"
+          >
+            <CheckIcon className="h-3 w-3 mr-1" />
+            Save Changes
           </Button>
         </div>
 
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Description</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderEditableField(
-                  'description',
-                  formData.description ? (
-                    <p>{formData.description}</p>
-                  ) : (
-                    <p className="text-muted-foreground italic">No description provided</p>
-                  ),
-                  <Textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="min-h-[100px] border-dashed focus:border-solid"
-                    placeholder="Add a description..."
-                    onBlur={() => setActiveField(null)}
-                    autoFocus
-                  />,
-                )}
-              </CardContent>
-            </Card>
+        <div className="space-y-1">
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
+            placeholder="Project Name"
+            required
+          />
+        </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Dependencies</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderEditableField(
-                  'dependencies',
-                  formData.dependencies ? (
-                    <ul className="list-disc pl-5 space-y-1">
-                      {formData.dependencies.split(',').map((dep, index) => (
-                        <li key={index}>{dep.trim()}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground italic">No dependencies</p>
-                  ),
-                  <div className="space-y-2">
-                    <Label htmlFor="dependencies">Comma-separated list of dependencies</Label>
-                    <Textarea
-                      id="dependencies"
-                      name="dependencies"
-                      value={formData.dependencies}
-                      onChange={handleChange}
-                      className="border-dashed focus:border-solid"
-                      placeholder="e.g. Infrastructure setup, Authentication, API"
-                      onBlur={() => setActiveField(null)}
-                      autoFocus
-                    />
-                  </div>,
-                )}
-              </CardContent>
-            </Card>
+        <div className="space-y-3">
+          <h3 className="text-xs text-muted-foreground font-medium">PROPERTIES</h3>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Type:</span>
+              <ProjectTypeBadge type={project.type} />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Priority:</span>
+              <Select
+                name="priority"
+                value={formData.priority}
+                onValueChange={(value) => handleSelectChange('priority', value)}
+              >
+                <SelectTrigger className="border-none p-1 h-auto focus:outline-none focus:ring-0 hover:bg-muted/50 rounded-xs shadow-none text-sm bg-input/0 dark:bg-input/0">
+                  <SelectValue placeholder="Set priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Color:</span>
+              <ColorSelector selectedColorName={formData.color} onColorChange={handleColorChange} />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Lead:</span>
+              <Input
+                id="leadId"
+                name="leadId"
+                value={formData.leadId}
+                onChange={handleChange}
+                placeholder="Assign lead"
+                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Team:</span>
+              <Input
+                id="teamId"
+                name="teamId"
+                value={formData.teamId}
+                onChange={handleChange}
+                placeholder="Assign team"
+                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground text-xs">Area:</span>
+              <Input
+                id="area"
+                name="area"
+                value={formData.area}
+                onChange={handleChange}
+                placeholder="Specify area"
+                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
+              />
+            </div>
           </div>
+        </div>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Priority</p>
-                  {renderEditableField(
-                    'priority',
-                    <div>
-                      <PriorityBadge priority={formData.priority || 'medium'} />
-                    </div>,
-                    <Select
-                      value={formData.priority}
-                      onValueChange={(value) => {
-                        handleSelectChange('priority', value);
-                        setActiveField(null);
-                      }}
-                      open={true}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>,
-                  )}
-                </div>
+        <div className="space-y-1">
+          <Label htmlFor="description" className="text-xs text-muted-foreground font-medium">
+            DESCRIPTION
+          </Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[60px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+            placeholder="Add a more detailed description..."
+          />
+        </div>
 
-                <Separator />
+        <div className="space-y-1">
+          <Label htmlFor="dependencies" className="text-xs text-muted-foreground font-medium">
+            DEPENDENCIES
+          </Label>
+          <Textarea
+            id="dependencies"
+            name="dependencies"
+            value={formData.dependencies}
+            onChange={handleChange}
+            className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+            placeholder="e.g. Team A, Team B"
+          />
+        </div>
 
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Team</p>
-                  {renderEditableField(
-                    'teamId',
-                    <p>{formData.teamId || 'No team assigned'}</p>,
-                    <Input
-                      id="teamId"
-                      name="teamId"
-                      value={formData.teamId}
-                      onChange={handleChange}
-                      className="border-dashed focus:border-solid"
-                      placeholder="Team name"
-                      onBlur={() => setActiveField(null)}
-                      autoFocus
-                    />,
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Lead</p>
-                  {renderEditableField(
-                    'leadId',
-                    <p>{formData.leadId || 'No lead assigned'}</p>,
-                    <Input
-                      id="leadId"
-                      name="leadId"
-                      value={formData.leadId}
-                      onChange={handleChange}
-                      className="border-dashed focus:border-solid"
-                      placeholder="Project lead"
-                      onBlur={() => setActiveField(null)}
-                      autoFocus
-                    />,
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Area</p>
-                  {renderEditableField(
-                    'area',
-                    <p>{formData.area || 'Not specified'}</p>,
-                    <Input
-                      id="area"
-                      name="area"
-                      value={formData.area}
-                      onChange={handleChange}
-                      className="border-dashed focus:border-solid"
-                      placeholder="Project area"
-                      onBlur={() => setActiveField(null)}
-                      autoFocus
-                    />,
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+        <div className="pt-2">
+          <div className="flex items-center text-xs text-muted-foreground">
+            <CalendarIcon className="mr-1 h-3 w-3 opacity-70" />
+            <span>Created: {project.createdAt ? format(new Date(project.createdAt), 'PP') : 'Unknown'}</span>
           </div>
         </div>
       </form>

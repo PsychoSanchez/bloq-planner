@@ -37,7 +37,9 @@ interface LegoPlannerProps {
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -178,7 +180,7 @@ const useLegoPlannerViewSize = () => {
   // Get current column width value
   const columnWidth = COLUMN_SIZES[selectedSize];
 
-  return {selectedSize, setColumnSize, resetColumnSize, columnWidth};
+  return { selectedSize, setColumnSize, resetColumnSize, columnWidth };
 };
 
 export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
@@ -192,12 +194,7 @@ export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
     plannerData.id,
   );
 
-  const {
-    selectedSize,
-    setColumnSize,
-    columnWidth,
-    resetColumnSize
-  } = useLegoPlannerViewSize();
+  const { selectedSize, setColumnSize, columnWidth, resetColumnSize } = useLegoPlannerViewSize();
 
   const weeks = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
 
@@ -257,7 +254,6 @@ export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
     selectedAssigneeIds.length > 0
       ? plannerData.assignees.filter((a) => selectedAssigneeIds.includes(a.id))
       : plannerData.assignees;
-
 
   return (
     <>

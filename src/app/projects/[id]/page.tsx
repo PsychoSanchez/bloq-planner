@@ -14,7 +14,7 @@ async function getProjectData(id: string): Promise<Project | null> {
     return fromProjectDocument(project);
   } catch (error) {
     console.error('Error fetching project data:', error);
-    
+
     return null;
   }
 }
