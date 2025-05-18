@@ -29,7 +29,6 @@ interface PlannerCreateData {
   name: string;
   projects: string[];
   assignees: string[];
-  assignments: string[];
 }
 
 interface CreatePlannerDialogProps {
@@ -360,7 +359,6 @@ export function PlannerSelection() {
         name: data.name,
         projects: data.projects.map((project) => project.id),
         assignees: data.assignees.map((assignee) => assignee.id),
-        assignments: [] as string[],
       };
 
       // Create the planner with the IDs only
@@ -462,7 +460,6 @@ export function PlannerSelection() {
                 <div className="text-sm text-muted-foreground">
                   <div>Projects: {planner.projects.length}</div>
                   <div>Assignees: {planner.assignees.length}</div>
-                  <div>Assignments: {planner.assignments.length}</div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">

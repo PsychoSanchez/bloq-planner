@@ -1,7 +1,17 @@
+export type Role =
+  | 'engineering'
+  | 'design'
+  | 'qa'
+  | 'analytics'
+  | 'data_science'
+  | 'product_management' // Added based on common team structures
+  | 'other'; // For flexibility
+
 export interface Assignee {
   id: string;
   name: string;
   type: 'person' | 'team' | 'dependency' | 'event';
+  role?: Role; // Added role field
 }
 
 export interface WeekData {
@@ -71,7 +81,6 @@ export interface Planner {
   name: string;
   assignees: Assignee[];
   projects: Project[];
-  assignments: Assignment[];
 }
 
 export interface PlannerCreateData {

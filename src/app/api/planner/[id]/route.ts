@@ -1,31 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { PlannerModel } from '@/lib/models/planner';
-import { AssignmentModel, fromAssignmentDocument } from '@/lib/models/planner-assignment';
 import { Planner } from '@/lib/types';
 import mongoose from 'mongoose';
 import { type } from 'arktype';
 import { fromProjectDocument } from '@/lib/models/project';
 import { fromTeamMemberDocument } from '@/lib/models/team-member';
 
-interface AssignmentQuery {
-  year?: number;
-  quarter?: number;
-  plannerId?: string;
-}
-
-const AssignmentsQuery = type({
-  'year?': 'number >= 1970',
-  'quarter?': '0 < number < 5',
-});
-
 // Get a specific planner by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const year = searchParams.get('year');
-    const quarter = searchParams.get('quarter');
 
     await connectToDatabase();
 
@@ -33,31 +18,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid planner ID' }, { status: 400 });
     }
 
-    const planner = await PlannerModel.findById(id)
-      .populate('assignments')
-      .populate('projects')
-      .populate('assignees')
-      .lean();
+    const planner = await PlannerModel.findById(id).populate('projects').populate('assignees').lean();
 
     if (!planner) {
       return NextResponse.json({ error: 'Planner not found' }, { status: 404 });
-    }
-
-    // Get assignments with optional filtering
-    const assignmentQuery: AssignmentQuery = {};
-    if (year) {
-      assignmentQuery.year = parseInt(year);
-    }
-    if (quarter) {
-      assignmentQuery.quarter = parseInt(quarter);
-    }
-
-    const sanitizedAssignmentQuery = AssignmentsQuery(assignmentQuery);
-    if (sanitizedAssignmentQuery instanceof type.errors) {
-      return NextResponse.json(
-        { error: 'Invalid query parameters', details: sanitizedAssignmentQuery.toJSON() },
-        { status: 400 },
-      );
     }
 
     return NextResponse.json({
@@ -65,17 +29,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       name: planner.name,
       assignees: planner.assignees.map(fromTeamMemberDocument) || [],
       projects: planner.projects.map(fromProjectDocument) || [],
-      assignments: (planner.assignments || [])
-        .filter((assignment) => {
-          if (year && assignment.year !== sanitizedAssignmentQuery.year) {
-            return false;
-          }
-          if (quarter && assignment.quarter !== sanitizedAssignmentQuery.quarter) {
-            return false;
-          }
-          return true;
-        })
-        .map(fromAssignmentDocument),
     });
   } catch (error) {
     console.error('Failed to fetch planner:', error);
@@ -83,17 +36,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-interface UpdatePlannerRequest extends Omit<Planner, 'assignees' | 'projects' | 'assignments'> {
+interface UpdatePlannerRequest extends Omit<Planner, 'assignees' | 'projects'> {
   assignees: string[];
   projects: string[];
-  assignments: string[];
 }
 
 const UpdatePlannerRequest = type({
   name: 'string',
   assignees: 'string[]',
   projects: 'string[]',
-  assignments: 'string[]',
 });
 
 // Update a planner
@@ -128,7 +79,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       name: updatedPlanner.name,
       assignees: updatedPlanner.assignees || [],
       projects: updatedPlanner.projects || [],
-      assignments: updatedPlanner.assignments || [],
     });
   } catch (error) {
     console.error('Failed to update planner:', error);
@@ -152,9 +102,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!deletedPlanner) {
       return NextResponse.json({ error: 'Planner not found' }, { status: 404 });
     }
-
-    // Also delete related assignments
-    await AssignmentModel.deleteMany(deletedPlanner.assignments.map((assignment) => ({ _id: assignment })));
 
     return NextResponse.json({ success: true });
   } catch (error) {

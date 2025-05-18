@@ -1,12 +1,12 @@
 import mongoose, { Schema } from 'mongoose';
-import { Assignee } from '../types';
+import { Assignee, Role } from '../types';
 import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our TeamMember interface
 export interface TeamMemberDocument extends Omit<Assignee, 'id'> {
   _id: mongoose.Types.ObjectId;
   email: string;
-  role: string;
+  role: Role;
   department: string;
   title: string;
   avatarUrl?: string;
@@ -39,6 +39,7 @@ export const fromTeamMemberDocument = (doc: TeamMemberDocument): Assignee => {
     id: doc._id.toString(),
     name: doc.name,
     type: doc.type,
+    role: doc.role,
   };
 };
 

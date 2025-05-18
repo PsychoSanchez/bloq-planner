@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Assignee, Planner, Assignment } from '@/lib/types';
 import { CalendarNavigation } from './calendar-navigation';
 import { generateWeeks } from '@/lib/sample-data';
@@ -20,7 +20,6 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { parseAsInteger, useQueryState } from 'nuqs';
-import { toast } from './ui/use-toast';
 
 // Predefined column width sizes
 const COLUMN_SIZES = {
@@ -33,117 +32,11 @@ type ColumnSizeType = keyof typeof COLUMN_SIZES;
 
 interface LegoPlannerProps {
   initialData: Planner;
+  getAssignmentsForWeekAndAssignee: (weekNumber: number, assigneeId: string) => Assignment | undefined;
+  createAssignment: (assignment: Omit<Assignment, 'id'>) => void;
+  updateAssignment: (assignment: Assignment) => void;
+  deleteAssignment: (assignmentId: string) => void;
 }
-
-const useAssignments = (plannerId: string) => {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_isLoading, setIsLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const response = await fetch(`/api/assignments?plannerId=${plannerId}`);
-        const data = await response.json();
-        setAssignments(data);
-        setIsLoading(false);
-      } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to fetch assignments');
-        toast({
-          title: 'Failed to fetch assignments',
-          description: error instanceof Error ? error.message : 'Failed to fetch assignments',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAssignments();
-  }, [plannerId]);
-
-  const createAssignment = useCallback(async (assignment: Omit<Assignment, 'id'>) => {
-    try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
-        body: JSON.stringify(assignment),
-      });
-      const data = await response.json();
-      setAssignments((prev) => [...prev, data]);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to create assignment');
-      toast({
-        title: 'Failed to create assignment',
-        description: error instanceof Error ? error.message : 'Failed to create assignment',
-        variant: 'destructive',
-      });
-    }
-  }, []);
-
-  const updateAssignment = useCallback(async (assignment: Partial<Assignment>) => {
-    try {
-      const response = await fetch(`/api/assignments/${assignment.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(assignment),
-      });
-      const data = await response.json();
-      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? data : a)));
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update assignment');
-      toast({
-        title: 'Failed to update assignment',
-        description: error instanceof Error ? error.message : 'Failed to update assignment',
-        variant: 'destructive',
-      });
-    }
-  }, []);
-
-  const deleteAssignment = useCallback(async (assignmentId: string) => {
-    try {
-      const response = await fetch(`/api/assignments/${assignmentId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete assignment');
-      }
-      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to delete assignment');
-      toast({
-        title: 'Failed to delete assignment',
-        description: error instanceof Error ? error.message : 'Failed to delete assignment',
-        variant: 'destructive',
-      });
-    }
-  }, []);
-
-  const assignmentsByWeekAndAssignee = useMemo(() => {
-    const result = new Map<number, Map<string, Assignment>>();
-    for (const assignment of assignments) {
-      if (!result.has(assignment.week)) {
-        result.set(assignment.week, new Map<string, Assignment>());
-      }
-      result.get(assignment.week)?.set(assignment.assigneeId, assignment);
-    }
-    return result;
-  }, [assignments]);
-
-  const getAssignmentsForWeekAndAssignee = useCallback(
-    (week: number, assigneeId: string) => {
-      return assignmentsByWeekAndAssignee.get(week)?.get(assigneeId);
-    },
-    [assignmentsByWeekAndAssignee],
-  );
-
-  return {
-    assignments,
-    getAssignmentsForWeekAndAssignee,
-    createAssignment,
-    updateAssignment,
-    deleteAssignment,
-  };
-};
 
 const useLegoPlannerViewSize = () => {
   const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
@@ -183,16 +76,18 @@ const useLegoPlannerViewSize = () => {
   return { selectedSize, setColumnSize, resetColumnSize, columnWidth };
 };
 
-export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
+export function LegoPlanner({
+  initialData: plannerData,
+  getAssignmentsForWeekAndAssignee,
+  createAssignment,
+  updateAssignment,
+  deleteAssignment,
+}: LegoPlannerProps) {
   const [currentYear, setCurrentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
   const [currentQuarter, setCurrentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
-
-  const { getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } = useAssignments(
-    plannerData.id,
-  );
 
   const { selectedSize, setColumnSize, columnWidth, resetColumnSize } = useLegoPlannerViewSize();
 

@@ -1,13 +1,124 @@
 'use client';
 
 import { LegoPlanner } from '@/components/lego-planner';
+import { ProjectAllocationPanel } from '@/components/project-allocation-panel';
 import { getPlanner } from '@/lib/planner-api';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Planner } from '@/lib/types';
+import { toast, useToast } from '@/components/ui/use-toast';
+import { Assignment, Planner } from '@/lib/types';
+
+const useAssignments = (plannerId: string) => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const response = await fetch(`/api/assignments?plannerId=${plannerId}`);
+        const data = await response.json();
+        setAssignments(data);
+        setIsLoading(false);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch assignments');
+        toast({
+          title: 'Failed to fetch assignments',
+          description: error instanceof Error ? error.message : 'Failed to fetch assignments',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAssignments();
+  }, [plannerId]);
+
+  const createAssignment = useCallback(async (assignment: Omit<Assignment, 'id'>) => {
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        body: JSON.stringify(assignment),
+      });
+      const data = await response.json();
+      setAssignments((prev) => [...prev, data]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create assignment');
+      toast({
+        title: 'Failed to create assignment',
+        description: error instanceof Error ? error.message : 'Failed to create assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const updateAssignment = useCallback(async (assignment: Partial<Assignment>) => {
+    try {
+      const response = await fetch(`/api/assignments/${assignment.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(assignment),
+      });
+      const data = await response.json();
+      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? data : a)));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update assignment');
+      toast({
+        title: 'Failed to update assignment',
+        description: error instanceof Error ? error.message : 'Failed to update assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const deleteAssignment = useCallback(async (assignmentId: string) => {
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete assignment');
+      }
+      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete assignment');
+      toast({
+        title: 'Failed to delete assignment',
+        description: error instanceof Error ? error.message : 'Failed to delete assignment',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const assignmentsByWeekAndAssignee = useMemo(() => {
+    const result = new Map<number, Map<string, Assignment>>();
+    for (const assignment of assignments) {
+      if (!result.has(assignment.week)) {
+        result.set(assignment.week, new Map<string, Assignment>());
+      }
+      result.get(assignment.week)?.set(assignment.assigneeId, assignment);
+    }
+    return result;
+  }, [assignments]);
+
+  const getAssignmentsForWeekAndAssignee = useCallback(
+    (week: number, assigneeId: string) => {
+      return assignmentsByWeekAndAssignee.get(week)?.get(assigneeId);
+    },
+    [assignmentsByWeekAndAssignee],
+  );
+
+  return {
+    assignments,
+    getAssignmentsForWeekAndAssignee,
+    createAssignment,
+    updateAssignment,
+    deleteAssignment,
+  };
+};
 
 export default function LegoPlannerDetailsPage() {
   const params = useParams();
@@ -17,12 +128,13 @@ export default function LegoPlannerDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const plannerId = params.id as string;
 
+  const { assignments, getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } =
+    useAssignments(plannerId);
   useEffect(() => {
     const loadPlanner = async () => {
       try {
         setIsLoading(true);
         const data = await getPlanner(plannerId);
-        console.log(data);
         setPlannerData(data);
       } catch (error) {
         console.error('Failed to load planner:', error);
@@ -75,7 +187,18 @@ export default function LegoPlannerDetailsPage() {
         </Button>
         <h1 className="text-xl font-semibold">Lego Planner ({plannerId.substring(0, 8)})</h1>
       </div>
-      <LegoPlanner initialData={plannerData} />
+      <LegoPlanner
+        initialData={plannerData}
+        getAssignmentsForWeekAndAssignee={getAssignmentsForWeekAndAssignee}
+        createAssignment={createAssignment}
+        updateAssignment={updateAssignment}
+        deleteAssignment={deleteAssignment}
+      />
+      {plannerData && (
+        <div className="mt-8">
+          <ProjectAllocationPanel plannerData={plannerData} assignments={assignments} />
+        </div>
+      )}
     </div>
   );
 }

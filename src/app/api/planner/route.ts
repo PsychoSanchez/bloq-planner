@@ -5,16 +5,11 @@ import { Planner } from '@/lib/types';
 import { type } from 'arktype';
 import { fromTeamMemberDocument } from '@/lib/models/team-member';
 import { fromProjectDocument } from '@/lib/models/project';
-import { fromAssignmentDocument } from '@/lib/models/planner-assignment';
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const planners = await PlannerModel.find()
-      .populate('assignees')
-      .populate('projects')
-      .populate('assignments')
-      .lean();
+    const planners = await PlannerModel.find().populate('assignees').populate('projects').lean();
 
     // Transform MongoDB documents to match Planner interface
     const formattedPlanners: Planner[] = planners.map((planner) => ({
@@ -22,7 +17,6 @@ export async function GET() {
       name: planner.name,
       assignees: planner.assignees.map(fromTeamMemberDocument) || [],
       projects: planner.projects.map(fromProjectDocument) || [],
-      assignments: planner.assignments.map(fromAssignmentDocument) || [],
     }));
 
     return NextResponse.json(formattedPlanners);
@@ -36,7 +30,6 @@ const CreatePlannerRequest = type({
   name: 'string',
   assignees: 'string[]',
   projects: 'string[]',
-  assignments: 'string[]',
 });
 
 export async function POST(request: NextRequest) {
@@ -53,16 +46,11 @@ export async function POST(request: NextRequest) {
       name: sanitizedBody.name,
       assignees: sanitizedBody.assignees || [],
       projects: sanitizedBody.projects || [],
-      assignments: sanitizedBody.assignments || [],
     });
 
     await newPlanner.save();
 
-    const savedPlanner = await PlannerModel.findById(newPlanner._id)
-      .populate('assignees')
-      .populate('projects')
-      .populate('assignments')
-      .lean();
+    const savedPlanner = await PlannerModel.findById(newPlanner._id).populate('assignees').populate('projects').lean();
 
     if (!savedPlanner) {
       return NextResponse.json({ error: 'Failed to create planner' }, { status: 500 });
