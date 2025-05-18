@@ -23,6 +23,7 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: project.name,
+    slug: project.slug,
     description: project.description || '',
     priority: project.priority || 'medium',
     teamId: project.teamId || '',
@@ -100,20 +101,24 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
           </Button>
         </div>
 
-        <div className="flex items-baseline space-x-2">
+        <div className="space-y-1">
           <Input
             id="name"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="md:text-xl text-xl font-bold flex-1 border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
+            className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
             placeholder="Project Name"
             required
           />
-          <span className="text-xl font-bold text-muted-foreground">/</span>
-          <span className="md:text-xl text-xl font-bold w-auto border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-transparent text-muted-foreground">
-            {project.slug}
-          </span>
+          <Input
+            id="slug"
+            name="slug"
+            value={formData.slug}
+            onChange={handleChange}
+            className="text-sm w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0 text-muted-foreground"
+            placeholder="project-slug"
+          />
         </div>
 
         <div className="space-y-3">
