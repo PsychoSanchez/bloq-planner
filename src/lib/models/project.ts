@@ -26,27 +26,27 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'upd
   }>;
 }
 
-interface EstimatesDocument {
-  role: string;
-  value: number;
-}
+// interface EstimatesDocument {
+//   role: string;
+//   value: number;
+// }
 
-const estimatedSchema = new Schema<EstimatesDocument>({
-  role: { type: String, required: true },
-  value: { type: Number, required: true },
-});
+// const estimatedSchema = new Schema<EstimatesDocument>({
+//   role: { type: String, required: true },
+//   value: { type: Number, required: true },
+// });
 
-interface DependenciesDocument {
-  team: string;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected';
-  description: string;
-}
+// interface DependenciesDocument {
+//   team: string;
+//   status: 'pending' | 'submitted' | 'approved' | 'rejected';
+//   description: string;
+// }
 
-const dependenciesSchema = new Schema<DependenciesDocument>({
-  team: { type: String, required: true },
-  status: { type: String, required: true, enum: ['pending', 'submitted', 'approved', 'rejected'] },
-  description: { type: String, required: true },
-});
+// const dependenciesSchema = new Schema<DependenciesDocument>({
+//   team: { type: String, required: true },
+//   status: { type: String, required: true, enum: ['pending', 'submitted', 'approved', 'rejected'] },
+//   description: { type: String, required: true },
+// });
 
 const projectSchema = new Schema<ProjectDocument>(
   {
@@ -79,8 +79,8 @@ const projectSchema = new Schema<ProjectDocument>(
     roi: { type: Number, default: 0 },
     impact: { type: Number, default: 0 },
     cost: { type: Number, default: 0 },
-    estimates: [{ type: [estimatedSchema], default: [] }],
-    dependencies: [{ type: [dependenciesSchema], default: [] }],
+    // estimates: [{ type: [estimatedSchema], default: [] }],
+    // dependencies: [{ type: [dependenciesSchema], default: [] }],
   },
   { timestamps: true },
 );
