@@ -23,14 +23,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlusIcon } from 'lucide-react';
+import {
+  CpuIcon,
+  JapaneseYenIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+  SignalHighIcon,
+  SignalLowIcon,
+  SignalMediumIcon,
+  TelescopeIcon,
+  TriangleAlert,
+} from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 export function NewProjectDialog() {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
     type: 'regular',
     area: '',
     priority: 'medium',
@@ -58,6 +71,7 @@ export function NewProjectDialog() {
         setOpen(false);
         // Reset form
         setFormData({
+          slug: '',
           name: '',
           type: 'regular',
           area: '',
@@ -67,9 +81,19 @@ export function NewProjectDialog() {
         router.refresh();
       } else {
         console.error('Failed to create project:', await response.text());
+        toast({
+          title: 'Error',
+          description: 'Failed to create project. Please try again.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Error creating project:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while creating the project. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -90,6 +114,16 @@ export function NewProjectDialog() {
             <DialogDescription>Add a new project to your planner.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                autoFocus
+                required
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -121,12 +155,32 @@ export function NewProjectDialog() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="area">Area</Label>
-              <Input
-                id="area"
-                value={formData.area}
-                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                placeholder="e.g., Frontend, Backend, UI"
-              />
+              <Select value={formData.area} onValueChange={(value) => setFormData({ ...formData, area: value })}>
+                <SelectTrigger id="area">
+                  <SelectValue placeholder="Select area" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Project Area</SelectLabel>
+                    <SelectItem value="discoverability">
+                      <TelescopeIcon />
+                      <span>Discoverability</span>
+                    </SelectItem>
+                    <SelectItem value="monetization">
+                      <JapaneseYenIcon />
+                      <span>Monetization</span>
+                    </SelectItem>
+                    <SelectItem value="quality">
+                      <ShieldCheckIcon />
+                      <span>Quality</span>
+                    </SelectItem>
+                    <SelectItem value="tech">
+                      <CpuIcon />
+                      <span>Tech</span>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="priority">Priority</Label>
@@ -138,9 +192,22 @@ export function NewProjectDialog() {
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="low">
+                    <SignalLowIcon className="mr-2 h-4 w-4 text-gray-500" />
+                    <span className="text-gray-500">Low</span>
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    <SignalMediumIcon className="mr-2 h-4 w-4 text-green-500" />
+                    <span className="text-green-500">Medium</span>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <SignalHighIcon className="mr-2 h-4 w-4 text-yellow-500" />
+                    <span className="text-yellow-500">High</span>
+                  </SelectItem>
+                  <SelectItem value="urgent">
+                    <TriangleAlert className="mr-2 h-4 w-4 text-red-500" />
+                    <span className="text-red-500">Urgent</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
