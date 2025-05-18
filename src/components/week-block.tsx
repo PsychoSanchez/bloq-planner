@@ -125,7 +125,7 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
               className={cn('flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm', classes)}
             >
               {!isCompact && icon}
-              <span className="text-xs font-medium truncate">{project.name}</span>
+              <span className="text-xs font-medium truncate">{project.slug}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent className="p-3">

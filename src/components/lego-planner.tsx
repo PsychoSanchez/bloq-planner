@@ -357,10 +357,6 @@ export function LegoPlanner({ initialData: plannerData }: LegoPlannerProps) {
                     className={cn(
                       'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300',
                       hoveredProjectId && project && project.id !== hoveredProjectId && 'opacity-30',
-                      hoveredProjectId &&
-                        project &&
-                        project.id === hoveredProjectId &&
-                        'ring-2 ring-green-500 dark:ring-green-400',
                     )}
                     style={{
                       minWidth: `${columnWidth}px`,
