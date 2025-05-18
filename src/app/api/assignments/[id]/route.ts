@@ -9,9 +9,9 @@ interface AssignmentDocument extends Assignment {
 }
 
 // Get a specific assignment by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await connectToDatabase();
 
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // Update an assignment
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     await connectToDatabase();
@@ -78,9 +78,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // Delete an assignment
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await connectToDatabase();
 

@@ -20,9 +20,9 @@ interface AssignmentQuery {
 }
 
 // Get a specific planner by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const year = searchParams.get('year');
     const quarter = searchParams.get('quarter');
@@ -60,9 +60,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // Update a planner
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     await connectToDatabase();
@@ -95,9 +95,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // Delete a planner
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await connectToDatabase();
 

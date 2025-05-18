@@ -3,11 +3,11 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ProjectModel } from '@/lib/models/project';
 
 // GET a single project by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
-    const project = await ProjectModel.findById(params.id);
+    const project = await ProjectModel.findById((await params).id);
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // UPDATE a project by ID
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const updatedProject = await ProjectModel.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       { $set: body },
       { new: true, runValidators: true },
     );
@@ -50,11 +50,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE a project by ID
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
-    const deletedProject = await ProjectModel.findByIdAndDelete(params.id);
+    const deletedProject = await ProjectModel.findByIdAndDelete((await params).id);
 
     if (!deletedProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -67,9 +67,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     await connectToDatabase();

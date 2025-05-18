@@ -23,8 +23,8 @@ async function getProjectData(id: string): Promise<Project | null> {
   }
 }
 
-export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
-  const project = await getProjectData(params.id);
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const project = await getProjectData((await params).id);
 
   if (!project) {
     notFound();
