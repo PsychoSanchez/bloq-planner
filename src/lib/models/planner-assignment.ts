@@ -1,5 +1,6 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { Assignment } from '../types';
+import { getOrCreateModel, ModelIds } from './model-ids';
 
 // MongoDB-specific fields for Assignment
 export interface AssignmentDocument extends Omit<Assignment, 'id'> {
@@ -8,6 +9,7 @@ export interface AssignmentDocument extends Omit<Assignment, 'id'> {
 
 const assignmentSchema = new Schema<AssignmentDocument>(
   {
+    plannerId: { type: String, required: true },
     assigneeId: { type: String, required: true },
     projectId: { type: String, required: true },
     week: { type: Number, required: true },
@@ -18,6 +20,6 @@ const assignmentSchema = new Schema<AssignmentDocument>(
   { timestamps: true },
 );
 
-export const AssignmentModel = models.Assignment || model<AssignmentDocument>('Assignment', assignmentSchema);
+export const AssignmentModel = getOrCreateModel<AssignmentDocument>(ModelIds.Assignment, assignmentSchema);
 
 export default AssignmentModel;

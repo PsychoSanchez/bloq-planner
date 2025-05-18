@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { Project } from '../types';
+import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our Project interface
 export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'updatedAt'> {
@@ -73,5 +74,4 @@ projectSchema.set('toJSON', {
   },
 });
 
-// Check if models are already defined to prevent errors during hot reload
-export const ProjectModel = mongoose.models.Project || mongoose.model<ProjectDocument>('Project', projectSchema);
+export const ProjectModel = getOrCreateModel<ProjectDocument>(ModelIds.Project, projectSchema);

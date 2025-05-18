@@ -51,6 +51,7 @@ export interface Project {
 
 export interface Assignment {
   id: string;
+  plannerId: string;
   assigneeId: string;
   projectId: string;
   week: number;

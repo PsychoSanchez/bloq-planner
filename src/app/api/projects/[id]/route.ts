@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ProjectModel } from '@/lib/models/project';
+import { type } from 'arktype';
 
 // GET a single project by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -20,21 +21,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+const UpdateProjectRequestBody = type({
+  name: 'string < 255',
+  slug: 'string < 32',
+  type: 'string < 32',
+});
+
 // UPDATE a project by ID
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
     const body = await request.json();
+    const sanitizedBody = UpdateProjectRequestBody(body);
 
-    // Basic validation
-    if (!body.name || !body.type) {
-      return NextResponse.json({ error: 'Name and type are required fields' }, { status: 400 });
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation error', details: sanitizedBody.toJSON() }, { status: 400 });
     }
 
     const updatedProject = await ProjectModel.findByIdAndUpdate(
       (await params).id,
-      { $set: body },
+      { $set: sanitizedBody },
       { new: true, runValidators: true },
     );
 
@@ -67,14 +74,29 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 }
 
+const PatchProjectRequestBody = type({
+  'name?': 'string < 255',
+  'slug?': 'string < 32',
+  'type?': 'string < 32',
+});
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
+    const sanitizedBody = PatchProjectRequestBody(body);
+
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation error', details: sanitizedBody.toJSON() }, { status: 400 });
+    }
 
     await connectToDatabase();
 
-    const updatedProject = await ProjectModel.findByIdAndUpdate(id, { $set: body }, { new: true, runValidators: true });
+    const updatedProject = await ProjectModel.findByIdAndUpdate(
+      id,
+      { $set: sanitizedBody },
+      { new: true, runValidators: true },
+    );
 
     if (!updatedProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });

@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { AssignmentModel } from '@/lib/models/planner-assignment';
-import { Assignment } from '@/lib/types';
-import mongoose from 'mongoose';
-
-interface AssignmentDocument extends Assignment {
-  _id: mongoose.Types.ObjectId;
-}
+import { type } from 'arktype';
 
 interface AssignmentQuery {
   year?: number;
   quarter?: number;
   assigneeId?: string;
   projectId?: string;
+  plannerId?: string;
 }
+
+const AssignmentQueryRequest = type({
+  'year?': 'number.integer >= 1970',
+  'quarter?': '0 < number <= 5',
+  'assigneeId?': 'string',
+  'projectId?': 'string',
+  'plannerId?': 'string',
+});
 
 // Get all assignments with optional filtering
 export async function GET(request: NextRequest) {
@@ -23,6 +27,7 @@ export async function GET(request: NextRequest) {
     const quarter = searchParams.get('quarter');
     const assigneeId = searchParams.get('assigneeId');
     const projectId = searchParams.get('projectId');
+    const plannerId = searchParams.get('plannerId');
 
     await connectToDatabase();
 
@@ -32,8 +37,18 @@ export async function GET(request: NextRequest) {
     if (quarter) query.quarter = parseInt(quarter);
     if (assigneeId) query.assigneeId = assigneeId;
     if (projectId) query.projectId = projectId;
+    if (plannerId) query.plannerId = plannerId;
 
-    const assignments = (await AssignmentModel.find(query).lean()) as unknown as AssignmentDocument[];
+    const sanitizedAssignmentQuery = AssignmentQueryRequest(query);
+
+    if (sanitizedAssignmentQuery instanceof type.errors) {
+      return NextResponse.json(
+        { error: 'Validation Error', details: sanitizedAssignmentQuery.toJSON() },
+        { status: 400 },
+      );
+    }
+
+    const assignments = await AssignmentModel.find(sanitizedAssignmentQuery).lean();
 
     // Transform MongoDB documents to match Assignment interface
     const formattedAssignments = assignments.map((assignment) => ({
@@ -53,28 +68,36 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const CreateAssignmentRequestBody = type({
+  assigneeId: 'string',
+  projectId: 'string',
+  plannerId: 'string',
+  week: '0 <= number.integer <= 52',
+  year: 'number.integer >= 1970',
+  quarter: '0 < number <= 5',
+  'status?': 'string | undefined',
+});
+
 // Create a new assignment
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
-    if (!body.assigneeId || !body.projectId || !body.week || !body.year || !body.quarter) {
-      return NextResponse.json(
-        { error: 'Missing required fields: assigneeId, projectId, week, year, and quarter are required' },
-        { status: 400 },
-      );
+    const sanitizedBody = CreateAssignmentRequestBody(body);
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation Error', details: sanitizedBody.toJSON() }, { status: 400 });
     }
 
     await connectToDatabase();
 
     const newAssignment = new AssignmentModel({
-      assigneeId: body.assigneeId,
-      projectId: body.projectId,
-      week: body.week,
-      year: body.year,
-      quarter: body.quarter,
-      status: body.status || 'planned',
+      assigneeId: sanitizedBody.assigneeId,
+      projectId: sanitizedBody.projectId,
+      plannerId: sanitizedBody.plannerId,
+      week: sanitizedBody.week,
+      year: sanitizedBody.year,
+      quarter: sanitizedBody.quarter,
+      status: sanitizedBody.status || 'planned',
     });
 
     await newAssignment.save();
@@ -84,6 +107,7 @@ export async function POST(request: NextRequest) {
         id: newAssignment._id.toString(),
         assigneeId: newAssignment.assigneeId,
         projectId: newAssignment.projectId,
+        plannerId: newAssignment.plannerId,
         week: newAssignment.week,
         year: newAssignment.year,
         quarter: newAssignment.quarter,

@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { AssignmentModel } from '@/lib/models/planner-assignment';
 import mongoose from 'mongoose';
-import { Assignment } from '@/lib/types';
-
-interface AssignmentDocument extends Assignment {
-  _id: mongoose.Types.ObjectId;
-}
+import { type } from 'arktype';
 
 // Get a specific assignment by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid assignment ID' }, { status: 400 });
     }
 
-    const assignment = (await AssignmentModel.findById(id).lean()) as unknown as AssignmentDocument;
+    const assignment = await AssignmentModel.findById(id).lean();
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
@@ -29,6 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       id: assignment._id.toString(),
       assigneeId: assignment.assigneeId,
       projectId: assignment.projectId,
+      plannerId: assignment.plannerId,
       week: assignment.week,
       year: assignment.year,
       quarter: assignment.quarter,
@@ -40,11 +37,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+const PatchAssignmentRequestBody = type({
+  'assigneeId?': 'string',
+  'projectId?': 'string',
+  'plannerId?': 'string',
+  'week?': '0 <= number.integer <= 52',
+  'year?': 'number.integer >= 1970',
+  'quarter?': '0 < number <= 5',
+  'status?': 'string < 50',
+});
+
 // Update an assignment
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
+    const sanitizedBody = PatchAssignmentRequestBody(body);
+
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation error', details: sanitizedBody.toJSON() }, { status: 400 });
+    }
 
     await connectToDatabase();
 
@@ -52,11 +64,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Invalid assignment ID' }, { status: 400 });
     }
 
-    const updatedAssignment = (await AssignmentModel.findByIdAndUpdate(
+    const updatedAssignment = await AssignmentModel.findByIdAndUpdate(
       id,
-      { $set: body },
+      { $set: sanitizedBody },
       { new: true, runValidators: true },
-    ).lean()) as unknown as AssignmentDocument;
+    ).lean();
 
     if (!updatedAssignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
@@ -66,6 +78,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       id: updatedAssignment._id.toString(),
       assigneeId: updatedAssignment.assigneeId,
       projectId: updatedAssignment.projectId,
+      plannerId: updatedAssignment.plannerId,
       week: updatedAssignment.week,
       year: updatedAssignment.year,
       quarter: updatedAssignment.quarter,

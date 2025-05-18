@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ProjectModel } from '@/lib/models/project';
+import { type } from 'arktype';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,18 +32,24 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const CreateProjectRequestBody = type({
+  name: 'string < 255',
+  slug: 'string < 32',
+  type: 'string < 32',
+});
+
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
     const body = await request.json();
+    const sanitizedBody = CreateProjectRequestBody(body);
 
-    // Basic validation
-    if (!body.name || !body.type) {
-      return NextResponse.json({ error: 'Name and type are required fields' }, { status: 400 });
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation error', details: sanitizedBody.toJSON() }, { status: 400 });
     }
 
-    const newProject = await ProjectModel.create(body);
+    const newProject = await ProjectModel.create(sanitizedBody);
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {

@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { PlannerModel } from '@/lib/models/planner';
-import { Planner, Assignee, Project, Assignment } from '@/lib/types';
-import mongoose from 'mongoose';
-
-interface PlannerLean {
-  _id: mongoose.Types.ObjectId;
-  name: string;
-  assignees: Assignee[];
-  projects: Project[];
-  assignments: Assignment[];
-}
+import { Planner } from '@/lib/types';
+import { type } from 'arktype';
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const planners = (await PlannerModel.find().lean()) as unknown as PlannerLean[];
+    const planners = await PlannerModel.find().lean();
 
     // Transform MongoDB documents to match Planner interface
     const formattedPlanners: Planner[] = planners.map((planner) => ({
@@ -33,20 +25,28 @@ export async function GET() {
   }
 }
 
+const CreatePlannerRequest = type({
+  name: 'string',
+  assignees: 'string[]',
+  projects: 'string[]',
+  assignments: 'string[]',
+});
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const sanitizedBody = CreatePlannerRequest(body);
 
-    if (!body.name) {
-      return NextResponse.json({ error: 'Planner name is required' }, { status: 400 });
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Invalid request data', details: sanitizedBody.toJSON() }, { status: 400 });
     }
 
     await connectToDatabase();
     const newPlanner = new PlannerModel({
-      name: body.name,
-      assignees: body.assignees || [],
-      projects: body.projects || [],
-      assignments: body.assignments || [],
+      name: sanitizedBody.name,
+      assignees: sanitizedBody.assignees || [],
+      projects: sanitizedBody.projects || [],
+      assignments: sanitizedBody.assignments || [],
     });
 
     await newPlanner.save();

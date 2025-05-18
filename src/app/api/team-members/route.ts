@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TeamMemberModel } from '@/lib/models/team-member';
 import { connectToDatabase } from '@/lib/mongodb';
+import { type } from 'arktype';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,24 +33,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const CreateTeamMemberRequestBody = type({
+  name: 'string < 255',
+  email: 'string < 255',
+  role: 'string < 100',
+  department: 'string < 100',
+  title: 'string < 255',
+  type: 'string < 32',
+});
+
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
     // Get team member data from request body
     const body = await request.json();
+    const sanitizedBody = CreateTeamMemberRequestBody(body);
 
-    // Validate required fields
-    const requiredFields = ['name', 'email', 'role', 'department', 'title', 'type'];
-
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
-      }
+    if (sanitizedBody instanceof type.errors) {
+      return NextResponse.json({ error: 'Validation error', details: sanitizedBody.toJSON() }, { status: 400 });
     }
 
     // Create new team member
-    const teamMember = new TeamMemberModel(body);
+    const teamMember = new TeamMemberModel(sanitizedBody);
     await teamMember.save();
 
     return NextResponse.json(teamMember, { status: 201 });

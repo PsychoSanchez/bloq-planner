@@ -10,7 +10,8 @@ async function getProjectData(id: string): Promise<Project | null> {
     await connectToDatabase();
     const project = await ProjectModel.findById(id);
     if (!project) return null;
-    return project.toJSON() as Project;
+    // @ts-expect-error - toJSON is not typed
+    return project.toJSON();
   } catch (error) {
     console.error('Error fetching project data:', error);
     // In development, we can use sample data if needed

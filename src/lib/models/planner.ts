@@ -1,12 +1,10 @@
 import mongoose, { Schema } from 'mongoose';
-import { Assignment, Planner, Project, Assignee } from '../types';
+import { Planner } from '../types';
+import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our TeamMember interface
 export interface PlannerDocument extends Omit<Planner, 'id'> {
   _id: mongoose.Types.ObjectId;
-  assignees: Assignee[];
-  projects: Project[];
-  assignments: Assignment[];
 }
 
 const plannerSchema = new Schema<PlannerDocument>(
@@ -31,4 +29,4 @@ plannerSchema.set('toJSON', {
 });
 
 // Check if models are already defined to prevent errors during hot reload
-export const PlannerModel = mongoose.models.Planner || mongoose.model<PlannerDocument>('Planner', plannerSchema);
+export const PlannerModel = getOrCreateModel<PlannerDocument>(ModelIds.Planner, plannerSchema);

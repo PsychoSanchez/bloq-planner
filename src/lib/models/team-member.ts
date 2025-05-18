@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { Assignee } from '../types';
+import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our TeamMember interface
 export interface TeamMemberDocument extends Omit<Assignee, 'id'> {
@@ -44,6 +45,4 @@ teamMemberSchema.set('toJSON', {
   },
 });
 
-// Check if models are already defined to prevent errors during hot reload
-export const TeamMemberModel =
-  mongoose.models.TeamMember || mongoose.model<TeamMemberDocument>('TeamMember', teamMemberSchema);
+export const TeamMemberModel = getOrCreateModel<TeamMemberDocument>(ModelIds.TeamMember, teamMemberSchema);

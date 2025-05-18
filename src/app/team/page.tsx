@@ -26,6 +26,7 @@ async function TeamMembers({ searchParams }: { searchParams: Record<string, stri
     }
 
     const teamMemberDocs = await TeamMemberModel.find(query).sort({ name: 1 });
+    // @ts-expect-error - toJSON is not typed
     teamMembers = teamMemberDocs.map((doc) => doc.toJSON());
   } catch (error) {
     console.error('Error fetching team members from database:', error);

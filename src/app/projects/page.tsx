@@ -27,7 +27,7 @@ async function Projects({ searchParams }: { searchParams: Record<string, string 
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
-    projects = projectDocs.map((doc) => doc.toJSON()) as Project[];
+    projects = projectDocs.map((doc) => doc.toJSON()) as unknown as Project[];
   } catch (error) {
     console.error('Error fetching projects from database:', error);
     // In development, we can fall back to sample data if needed

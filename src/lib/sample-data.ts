@@ -137,6 +137,7 @@ const generateAssignments = (weeks: WeekData[], year: number, quarter: number): 
           week: week.weekNumber,
           year,
           quarter,
+          plannerId: '1',
         });
 
         id++;

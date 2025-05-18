@@ -22,6 +22,7 @@ export default function LegoPlannerDetailsPage() {
       try {
         setIsLoading(true);
         const data = await getPlanner(plannerId);
+        console.log(data);
         setPlannerData(data);
       } catch (error) {
         console.error('Failed to load planner:', error);
