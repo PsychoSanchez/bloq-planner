@@ -1,13 +1,10 @@
 import * as React from 'react';
 
-import { SearchForm } from '@/components/search-form';
-import { VersionSwitcher } from '@/components/version-switcher';
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -44,10 +41,6 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
-      <SidebarHeader>
-        <VersionSwitcher versions={data.versions} defaultVersion={data.versions[0]} />
-        <SearchForm />
-      </SidebarHeader>
       <SidebarGroup>
         <SidebarGroupContent className="flex flex-col gap-2">
           <SidebarContent className="gap-0">

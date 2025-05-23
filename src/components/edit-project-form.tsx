@@ -161,8 +161,11 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
                 value={formData.priority}
                 onValueChange={(value) => handleSelectChange('priority', value)}
               >
-                <SelectTrigger className="border-none p-1 h-auto focus:outline-none focus:ring-0 hover:bg-muted/50 rounded-xs shadow-none text-sm bg-input/0 dark:bg-input/0">
-                  <SelectValue placeholder="Set priority" />
+                <SelectTrigger
+                  className="border-none p-0 focus:outline-none focus:ring-0 hover:bg-muted/50 rounded-xs shadow-none text-sm bg-input/0 dark:bg-input/0"
+                  size="sm"
+                >
+                  <SelectValue className="text-xs" placeholder="Set priority" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
@@ -220,7 +223,7 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[60px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+            className="w-full p-0 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[60px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
             placeholder="Add a more detailed description..."
           />
         </div>
@@ -234,7 +237,7 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
             name="dependencies"
             value={formData.dependencies}
             onChange={handleChange}
-            className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+            className="w-full p-0 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
             placeholder="e.g. Team A, Team B"
           />
         </div>
