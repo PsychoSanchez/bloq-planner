@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { FilterIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { ProjectGroupSelector } from './project-group-selector';
 
 export function SearchProjects() {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
@@ -92,6 +93,7 @@ export function SearchProjects() {
           </SelectGroup>
         </SelectContent>
       </Select>
+      <ProjectGroupSelector />
     </div>
   );
 }

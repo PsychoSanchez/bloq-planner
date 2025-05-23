@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ProjectModel } from '@/lib/models/project';
+import { ProjectModel, fromProjectDocument } from '@/lib/models/project';
 import { type } from 'arktype';
 
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Extract query parameters for filtering
-    const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type');
+    const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
+    const type = searchParams.get('type');
 
-    // Build query object
     const query: Record<string, unknown> = {};
 
     if (type && type !== 'all') {
@@ -23,12 +21,13 @@ export async function GET(request: NextRequest) {
       query.name = { $regex: search, $options: 'i' };
     }
 
-    const projects = await ProjectModel.find(query).sort({ createdAt: -1 });
+    const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
+    const projects = projectDocs.map(fromProjectDocument);
 
-    return NextResponse.json(projects);
+    return NextResponse.json({ projects });
   } catch (error) {
     console.error('Error fetching projects:', error);
-    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch projects', projects: [] }, { status: 500 });
   }
 }
 

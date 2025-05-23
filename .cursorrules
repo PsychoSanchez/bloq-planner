@@ -17,6 +17,6 @@
 - Modular Approach: As your project grows, consider adopting a more modular structure, where each feature or domain has its own folder containing components, hooks, and utilities specific to that feature.
 - Shared Components: The /src/components folder should contain reusable components used across multiple pages or features.
 - Write tests for pure functions, utilities and helpers. Always run tests before completing request. Use `bun test` it's compatible with jest, import syntax `import { expect, test } from "bun:test";`
-- Use `bun` for everything. `bun dev` command for running the app, `bun i` for adding dependencies
+- Use `bun` for everything. Don't run `bun dev`!!!
 - Never use as any or as unknown for type conversion. Always write a proper validator and type guard
 - Never install packages without asking.
