@@ -7,7 +7,7 @@ import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamSelector, TeamOption } from '@/components/team-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
 
@@ -27,6 +27,19 @@ export function GroupedProjectsTable({
   teamsLoading,
 }: GroupedProjectsTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(groups.map((g) => g.label)));
+
+  // Ensure new groups are automatically expanded
+  useEffect(() => {
+    setExpandedGroups((prev) => {
+      const newExpanded = new Set(prev);
+      groups.forEach((group) => {
+        if (!newExpanded.has(group.label)) {
+          newExpanded.add(group.label);
+        }
+      });
+      return newExpanded;
+    });
+  }, [groups]);
 
   const toggleGroup = (groupLabel: string) => {
     const newExpanded = new Set(expandedGroups);
