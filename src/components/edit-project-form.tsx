@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckIcon, XIcon, CalendarIcon } from 'lucide-react';
+import { CheckIcon, XIcon, CalendarIcon, ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     quarter: project.quarter || '',
     dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
     color: project.color || DEFAULT_PROJECT_COLOR_NAME,
+    archived: project.archived || false,
     estimates: ROLES_TO_DISPLAY.reduce(
       (acc, role) => {
         const existingEstimate = project.estimates?.find((est) => est.department === role);
@@ -73,6 +74,10 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
         [role]: isNaN(weeks) ? 0 : weeks,
       },
     }));
+  };
+
+  const handleToggleArchive = () => {
+    setFormData((prev) => ({ ...prev, archived: !prev.archived }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,6 +124,25 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
             <Button type="button" variant="outline" size="sm" onClick={onCancel} className="text-xs px-2 py-1 h-auto">
               <XIcon className="h-3 w-3 mr-1" />
               Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleToggleArchive}
+              className="text-xs px-2 py-1 h-auto"
+            >
+              {formData.archived ? (
+                <>
+                  <ArchiveRestoreIcon className="h-3 w-3 mr-1" />
+                  Unarchive
+                </>
+              ) : (
+                <>
+                  <ArchiveIcon className="h-3 w-3 mr-1" />
+                  Archive
+                </>
+              )}
             </Button>
           </div>
           <Button

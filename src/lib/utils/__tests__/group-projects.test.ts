@@ -43,6 +43,17 @@ const mockProjects: Project[] = [
     area: 'monetization',
     // No quarter specified
   },
+  {
+    id: '5',
+    name: 'Archived Project',
+    slug: 'archived-project',
+    type: 'regular',
+    priority: 'high',
+    teamId: 'team-1',
+    area: 'tech',
+    quarter: '2025Q1',
+    archived: true,
+  },
 ];
 
 test('groupProjects - no grouping returns all projects in one group', () => {
@@ -50,8 +61,8 @@ test('groupProjects - no grouping returns all projects in one group', () => {
 
   expect(result).toHaveLength(1);
   expect(result[0].label).toBe('All Projects');
-  expect(result[0].projects).toHaveLength(4);
-  expect(result[0].count).toBe(4);
+  expect(result[0].projects).toHaveLength(5);
+  expect(result[0].count).toBe(5);
 });
 
 test('groupProjects - group by type', () => {
@@ -64,7 +75,7 @@ test('groupProjects - group by type', () => {
   const techDebtGroup = result.find((g) => g.label === 'Tech Debt');
 
   expect(regularGroup).toBeDefined();
-  expect(regularGroup?.count).toBe(3);
+  expect(regularGroup?.count).toBe(4);
   expect(techDebtGroup).toBeDefined();
   expect(techDebtGroup?.count).toBe(1);
 });
@@ -84,7 +95,7 @@ test('groupProjects - group by team', () => {
   expect(result).toHaveLength(3);
 
   const team1Group = result.find((g) => g.label === 'team-1');
-  expect(team1Group?.count).toBe(2);
+  expect(team1Group?.count).toBe(3);
 });
 
 test('groupProjects - group by area', () => {
@@ -106,7 +117,7 @@ test('groupProjects - group by quarter', () => {
   const noQuarterGroup = result.find((g) => g.label === 'No Quarter');
 
   expect(q1Group).toBeDefined();
-  expect(q1Group?.count).toBe(2);
+  expect(q1Group?.count).toBe(3);
   expect(q2Group).toBeDefined();
   expect(q2Group?.count).toBe(1);
   expect(noQuarterGroup).toBeDefined();
@@ -162,4 +173,33 @@ test('groupProjects - quarters are sorted chronologically', () => {
 
   // Should be sorted chronologically with "No Quarter" at the end
   expect(result.map((g) => g.label)).toEqual(['Q3 2024', 'Q4 2024', 'Q1 2025', 'No Quarter']);
+});
+
+test('groupProjects - archived projects are included in groups', () => {
+  const result = groupProjects(mockProjects, 'type');
+
+  // Find the regular group which should contain both active and archived projects
+  const regularGroup = result.find((group) => group.label === 'Regular');
+  expect(regularGroup).toBeDefined();
+  expect(regularGroup!.projects).toHaveLength(4); // Project A, C, D, and Archived Project
+  expect(regularGroup!.count).toBe(4);
+
+  // Check that archived project is included
+  const archivedProject = regularGroup!.projects.find((p) => p.archived);
+  expect(archivedProject).toBeDefined();
+  expect(archivedProject!.name).toBe('Archived Project');
+});
+
+test('groupProjects - archived projects work with all grouping options', () => {
+  const archivedProject: Project = mockProjects[4]; // Archived Project
+
+  // Test grouping by priority with archived project
+  const byPriority = groupProjects(mockProjects, 'priority');
+  const highPriorityGroup = byPriority.find((group) => group.label === 'High Priority');
+  expect(highPriorityGroup!.projects.some((p) => p.id === archivedProject.id)).toBe(true);
+
+  // Test grouping by team with archived project
+  const byTeam = groupProjects(mockProjects, 'team');
+  const team1Group = byTeam.find((group) => group.label === 'team-1');
+  expect(team1Group!.projects.some((p) => p.id === archivedProject.id)).toBe(true);
 });

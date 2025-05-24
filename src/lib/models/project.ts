@@ -13,6 +13,7 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'upd
   leadId?: string;
   area?: string;
   quarter?: string;
+  archived?: boolean;
   dependencies?: Array<{
     team: string;
     status: 'pending' | 'submitted' | 'approved' | 'rejected';
@@ -78,6 +79,7 @@ const projectSchema = new Schema<ProjectDocument>(
     leadId: { type: String },
     area: { type: String },
     quarter: { type: String },
+    archived: { type: Boolean, default: false },
     roi: { type: Number, default: 0 },
     impact: { type: Number, default: 0 },
     cost: { type: Number, default: 0 },
@@ -101,6 +103,7 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
     leadId: doc.leadId,
     area: doc.area,
     quarter: doc.quarter,
+    archived: doc.archived,
     roi: doc.roi,
     impact: doc.impact,
     cost: doc.cost,

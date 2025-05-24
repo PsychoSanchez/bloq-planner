@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, parseAsBoolean, useQueryState } from 'nuqs';
 import { GroupedProjectsTable } from '@/components/grouped-projects-table';
 import { Project } from '@/lib/types';
 import { groupProjects } from '@/lib/utils/group-projects';
@@ -12,6 +12,7 @@ export function ProjectsList() {
   const [search] = useQueryState('search', parseAsString.withDefault(''));
   const [type] = useQueryState('type', parseAsString.withDefault('all'));
   const [groupBy] = useQueryState('groupBy', parseAsString.withDefault('none'));
+  const [includeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<TeamOption[]>([]);
@@ -25,6 +26,7 @@ export function ProjectsList() {
         const params = new URLSearchParams();
         if (search) params.set('search', search);
         if (type && type !== 'all') params.set('type', type);
+        if (includeArchived) params.set('includeArchived', 'true');
 
         const response = await fetch(`/api/projects?${params.toString()}`);
         if (response.ok) {
@@ -43,7 +45,7 @@ export function ProjectsList() {
     };
 
     fetchProjects();
-  }, [search, type]);
+  }, [search, type, includeArchived]);
 
   useEffect(() => {
     const fetchTeams = async () => {

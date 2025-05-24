@@ -1,6 +1,6 @@
 'use client';
 
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, parseAsBoolean, useQueryState } from 'nuqs';
 import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,13 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FilterIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { FilterIcon, ArchiveIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ProjectGroupSelector } from './project-group-selector';
 
 export function SearchProjects() {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
   const [type, setType] = useQueryState('type', parseAsString.withDefault('all'));
+  const [includeArchived, setIncludeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
 
   const debouncedUpdateParams = useDebounce(setSearch, 300);
 
@@ -35,6 +38,13 @@ export function SearchProjects() {
       setType(value);
     },
     [setType],
+  );
+
+  const handleArchivedToggle = useCallback(
+    (checked: boolean) => {
+      setIncludeArchived(checked);
+    },
+    [setIncludeArchived],
   );
 
   return (
@@ -93,6 +103,13 @@ export function SearchProjects() {
           </SelectGroup>
         </SelectContent>
       </Select>
+      <div className="flex items-center space-x-2">
+        <Switch id="include-archived" checked={includeArchived} onCheckedChange={handleArchivedToggle} />
+        <Label htmlFor="include-archived" className="text-xs text-muted-foreground flex items-center gap-1">
+          <ArchiveIcon className="h-3.5 w-3.5" />
+          Show archived
+        </Label>
+      </div>
       <ProjectGroupSelector />
     </div>
   );

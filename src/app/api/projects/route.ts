@@ -11,8 +11,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const type = searchParams.get('type');
     const quarter = searchParams.get('quarter');
+    const includeArchived = searchParams.get('includeArchived') === 'true';
 
     const query: Record<string, unknown> = {};
+
+    // By default, only show non-archived projects unless specifically requested
+    if (!includeArchived) {
+      query.archived = { $ne: true };
+    }
 
     if (type && type !== 'all') {
       query.type = type;

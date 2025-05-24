@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamSelector, TeamOption } from '@/components/team-selector';
@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
 import { QuarterSelector } from './quarter-selector';
+import { cn } from '@/lib/utils';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
@@ -176,10 +177,13 @@ function ProjectRow({
   };
 
   return (
-    <TableRow>
+    <TableRow className={cn(project.archived && 'opacity-60')}>
       <TableCell className="py-1 px-2 font-medium">
         <Link href={`/projects/${project.id}`} className="block cursor-pointer hover:underline">
-          {project.name}
+          <div className="flex items-center gap-2">
+            {project.archived && <ArchiveIcon className="h-3 w-3 text-muted-foreground" />}
+            {project.name}
+          </div>
         </Link>
       </TableCell>
       <TableCell className="py-1 px-2">
@@ -199,7 +203,6 @@ function ProjectRow({
           type="inline"
           value={project.quarter || ''}
           onSelect={(value) => onUpdateProject?.(project.id, { quarter: value })}
-          isIconEnabled={false}
         />
       </TableCell>
       <TableCell className="py-1 px-2">

@@ -45,6 +45,7 @@ export interface Project {
   leadId?: string;
   area?: string;
   quarter?: string;
+  archived?: boolean;
   createdAt?: string;
   updatedAt?: string;
   dependencies?: Array<{

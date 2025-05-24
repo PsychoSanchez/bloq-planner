@@ -32,6 +32,7 @@ const UpdateProjectRequestBody = type({
   'teamId?': 'string < 100',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
+  'archived?': 'boolean',
 });
 
 // UPDATE a project by ID
@@ -92,6 +93,7 @@ const PatchProjectRequestBody = type({
   'teamId?': 'string < 100',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
+  'archived?': 'boolean',
   'dependencies?': 'unknown', // This is transformed in the code
   'estimates?': 'unknown', // This is complex and handled separately
 });
