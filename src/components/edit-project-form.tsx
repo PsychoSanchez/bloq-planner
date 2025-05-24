@@ -48,6 +48,9 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       },
       {} as Record<string, number>,
     ),
+    roi: project.roi || '',
+    cost: project.cost || '',
+    impact: project.impact || '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +77,31 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
         [role]: isNaN(weeks) ? 0 : weeks,
       },
     }));
+  };
+
+  const handleBusinessImpactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numValue = parseFloat(value) || 0;
+
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+
+      // Calculate ROI when cost or impact changes
+      if (name === 'cost' || name === 'impact') {
+        const cost = name === 'cost' ? numValue : parseFloat(prev.cost as string) || 0;
+        const impact = name === 'impact' ? numValue : parseFloat(prev.impact as string) || 0;
+
+        // ROI = ((Impact - Cost) / Cost) * 100, but only if cost > 0
+        if (cost > 0) {
+          const roi = ((impact - cost) / cost) * 100;
+          newData.roi = roi.toFixed(2);
+        } else {
+          newData.roi = '';
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleToggleArchive = () => {
@@ -247,6 +275,75 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
             className="w-full p-0 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
             placeholder="e.g. Team A, Team B"
           />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground font-medium">BUSINESS IMPACT ESTIMATES</Label>
+          <div className="grid grid-cols-3 gap-4 rounded-md border p-4">
+            <div className="space-y-1">
+              <Label htmlFor="cost" className="text-xs text-muted-foreground font-medium">
+                Cost (€)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground text-xs">
+                  €
+                </span>
+                <Input
+                  type="number"
+                  id="cost"
+                  name="cost"
+                  value={formData.cost}
+                  onChange={handleBusinessImpactChange}
+                  className="w-full pl-5 pr-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="impact" className="text-xs text-muted-foreground font-medium">
+                Impact (€)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground text-xs">
+                  €
+                </span>
+                <Input
+                  type="number"
+                  id="impact"
+                  name="impact"
+                  value={formData.impact}
+                  onChange={handleBusinessImpactChange}
+                  className="w-full pl-5 pr-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="roi" className="text-xs text-muted-foreground font-medium">
+                ROI (%)
+              </Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  id="roi"
+                  name="roi"
+                  value={formData.roi}
+                  readOnly
+                  className="w-full pr-5 border border-transparent bg-muted/30 text-sm focus:outline-none h-auto shadow-none rounded-sm cursor-default opacity-70"
+                  placeholder="Auto-calculated"
+                />
+                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground text-xs">
+                  %
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1">
