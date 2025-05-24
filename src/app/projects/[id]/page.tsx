@@ -3,6 +3,8 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { fromProjectDocument, ProjectModel } from '@/lib/models/project';
 import { Project } from '@/lib/types';
 import { ProjectView } from '@/components/project-view';
+import { TeamOption } from '@/components/team-selector';
+import { fromTeamMemberDocument, TeamMemberModel } from '@/lib/models/team-member';
 
 // Get project data
 async function getProjectData(id: string): Promise<Project | null> {
@@ -19,6 +21,18 @@ async function getProjectData(id: string): Promise<Project | null> {
   }
 }
 
+async function getTeams(): Promise<TeamOption[]> {
+  await connectToDatabase();
+  const teams = await TeamMemberModel.find();
+
+  return teams.map(fromTeamMemberDocument).map((team) => ({
+    id: team.id,
+    name: team.name,
+    department: team.role || '',
+    type: 'team',
+  }));
+}
+
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const project = await getProjectData((await params).id);
 
@@ -26,9 +40,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  const teams = await getTeams();
+
   return (
     <div className="max-w-5xl mx-auto w-full">
-      <ProjectView project={project} />
+      <ProjectView project={project} teams={teams} teamsLoading={false} />
     </div>
   );
 }

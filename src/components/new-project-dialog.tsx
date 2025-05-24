@@ -23,18 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  CpuIcon,
-  JapaneseYenIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-  SignalHighIcon,
-  SignalLowIcon,
-  SignalMediumIcon,
-  TelescopeIcon,
-  TriangleAlert,
-} from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { ProjectAreaSelector } from './project-area-selector';
+import { PrioritySelector } from './priroty-selector';
 
 export function NewProjectDialog() {
   const router = useRouter();
@@ -155,61 +147,17 @@ export function NewProjectDialog() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="area">Area</Label>
-              <Select value={formData.area} onValueChange={(value) => setFormData({ ...formData, area: value })}>
-                <SelectTrigger id="area">
-                  <SelectValue placeholder="Select area" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Project Area</SelectLabel>
-                    <SelectItem value="discoverability">
-                      <TelescopeIcon />
-                      <span>Discoverability</span>
-                    </SelectItem>
-                    <SelectItem value="monetization">
-                      <JapaneseYenIcon />
-                      <span>Monetization</span>
-                    </SelectItem>
-                    <SelectItem value="quality">
-                      <ShieldCheckIcon />
-                      <span>Quality</span>
-                    </SelectItem>
-                    <SelectItem value="tech">
-                      <CpuIcon />
-                      <span>Tech</span>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <ProjectAreaSelector
+                value={formData.area}
+                onSelect={(value) => setFormData({ ...formData, area: value })}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="priority">Priority</Label>
-              <Select
+              <PrioritySelector
                 value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              >
-                <SelectTrigger id="priority">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">
-                    <SignalLowIcon className="mr-2 h-4 w-4 text-gray-500" />
-                    <span className="text-gray-500">Low</span>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <SignalMediumIcon className="mr-2 h-4 w-4 text-green-500" />
-                    <span className="text-green-500">Medium</span>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <SignalHighIcon className="mr-2 h-4 w-4 text-yellow-500" />
-                    <span className="text-yellow-500">High</span>
-                  </SelectItem>
-                  <SelectItem value="urgent">
-                    <TriangleAlert className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-red-500">Urgent</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onSelect={(value) => setFormData({ ...formData, priority: value })}
+              />
             </div>
           </div>
           <DialogFooter>

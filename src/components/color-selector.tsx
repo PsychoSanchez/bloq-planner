@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -34,14 +34,13 @@ export function ColorSelector({ selectedColorName, onColorChange }: ColorSelecto
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="w-auto h-auto p-1 border-none hover:bg-muted/50 rounded-xs shadow-none text-xs"
+          className="w-auto h-auto p-1 border-none hover:bg-muted/50 rounded-sm shadow-none text-xs bg-primary"
           title="Select project color"
         >
           <div
-            className="w-4 h-4 rounded-sm border border-muted-foreground/50 mr-1"
+            className="w-4 h-4 rounded-sm border border-muted-foreground/50"
             style={{ backgroundColor: displayHexValue }}
           />
-          <ChevronDown className="h-3 w-3 text-muted-foreground opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-2">

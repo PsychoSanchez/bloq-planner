@@ -39,7 +39,7 @@ export interface Project {
     | 'risky-week';
   color?: string;
   description?: string;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   teamId?: string;
   leadId?: string;
   area?: string;

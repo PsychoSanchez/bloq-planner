@@ -4,17 +4,28 @@ import Link from 'next/link';
 import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
-import { PriorityBadge } from '@/components/priority-badge';
+import { TeamSelector, TeamOption } from '@/components/team-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState } from 'react';
+import { ProjectAreaSelector } from './project-area-selector';
+import { PrioritySelector } from './priroty-selector';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
   isGrouped: boolean;
+  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  teams: TeamOption[];
+  teamsLoading: boolean;
 }
 
-export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTableProps) {
+export function GroupedProjectsTable({
+  groups,
+  isGrouped,
+  onUpdateProject,
+  teams,
+  teamsLoading,
+}: GroupedProjectsTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(groups.map((g) => g.label)));
 
   const toggleGroup = (groupLabel: string) => {
@@ -38,10 +49,10 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
               <TableHead className="min-w-[200px]">Name</TableHead>
               <TableHead className="w-[100px]">Type</TableHead>
               <TableHead className="w-[100px]">Priority</TableHead>
-              <TableHead className="w-[100px]">Team</TableHead>
+              <TableHead className="w-[150px]">Team</TableHead>
               <TableHead className="w-[100px]">Lead</TableHead>
               <TableHead className="w-[100px]">Dependencies</TableHead>
-              <TableHead className="w-[100px]">Area</TableHead>
+              <TableHead className="w-[200px]">Area</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,7 +63,15 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
                 </TableCell>
               </TableRow>
             ) : (
-              allProjects.map((project) => <ProjectRow key={project.id} project={project} />)
+              allProjects.map((project) => (
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  onUpdateProject={onUpdateProject}
+                  teams={teams}
+                  teamsLoading={teamsLoading}
+                />
+              ))
             )}
           </TableBody>
         </Table>
@@ -68,7 +87,7 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
         return (
           <div key={group.label} className="rounded-sm border">
             <div
-              className="flex items-center justify-between p-3 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+              className="flex items-center justify-between p-1 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
               onClick={() => toggleGroup(group.label)}
             >
               <div className="flex items-center gap-2">
@@ -89,10 +108,10 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
                     <TableHead className="min-w-[200px]">Name</TableHead>
                     <TableHead className="w-[100px]">Type</TableHead>
                     <TableHead className="w-[100px]">Priority</TableHead>
-                    <TableHead className="w-[100px]">Team</TableHead>
+                    <TableHead className="w-[200px]">Team</TableHead>
                     <TableHead className="w-[100px]">Lead</TableHead>
                     <TableHead className="w-[100px]">Dependencies</TableHead>
-                    <TableHead className="w-[100px]">Area</TableHead>
+                    <TableHead className="w-[200px]">Area</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -103,7 +122,15 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
                       </TableCell>
                     </TableRow>
                   ) : (
-                    group.projects.map((project) => <ProjectRow key={project.id} project={project} />)
+                    group.projects.map((project) => (
+                      <ProjectRow
+                        key={project.id}
+                        project={project}
+                        onUpdateProject={onUpdateProject}
+                        teams={teams}
+                        teamsLoading={teamsLoading}
+                      />
+                    ))
                   )}
                 </TableBody>
               </Table>
@@ -115,7 +142,23 @@ export function GroupedProjectsTable({ groups, isGrouped }: GroupedProjectsTable
   );
 }
 
-function ProjectRow({ project }: { project: Project }) {
+function ProjectRow({
+  project,
+  onUpdateProject,
+  teams,
+  teamsLoading,
+}: {
+  project: Project;
+  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  teams: TeamOption[];
+  teamsLoading: boolean;
+}) {
+  const handleTeamChange = (teamId: string) => {
+    if (onUpdateProject) {
+      onUpdateProject(project.id, { teamId });
+    }
+  };
+
   return (
     <TableRow>
       <TableCell className="py-1 px-2 font-medium">
@@ -127,12 +170,38 @@ function ProjectRow({ project }: { project: Project }) {
         <ProjectTypeBadge type={project.type} />
       </TableCell>
       <TableCell className="py-1 px-2">
-        <PriorityBadge priority={project.priority || 'medium'} />
+        <PrioritySelector
+          type="inline"
+          value={project.priority || 'medium'}
+          onSelect={(value) =>
+            onUpdateProject?.(project.id, { priority: value as 'low' | 'medium' | 'high' | 'urgent' })
+          }
+        />
       </TableCell>
-      <TableCell className="py-1 px-2">{project.teamId || '--'}</TableCell>
+      <TableCell className="py-1 px-2">
+        {onUpdateProject ? (
+          <TeamSelector
+            type="inline"
+            value={project.teamId}
+            onSelect={handleTeamChange}
+            placeholder="Select team"
+            // className="text-xs"
+            teams={teams}
+            loading={teamsLoading}
+          />
+        ) : (
+          project.teamId || '--'
+        )}
+      </TableCell>
       <TableCell className="py-1 px-2">{project.leadId || '--'}</TableCell>
       <TableCell className="py-1 px-2">{project.dependencies?.length || '--'}</TableCell>
-      <TableCell className="py-1 px-2">{project.area || '--'}</TableCell>
+      <TableCell className="py-1 px-2">
+        <ProjectAreaSelector
+          type="inline"
+          value={project.area || ''}
+          onSelect={(value) => onUpdateProject?.(project.id, { area: value })}
+        />
+      </TableCell>
     </TableRow>
   );
 }

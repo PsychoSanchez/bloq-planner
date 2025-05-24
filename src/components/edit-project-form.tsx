@@ -8,20 +8,24 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project } from '@/lib/types';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { ColorSelector } from './color-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 import { ROLES_TO_DISPLAY } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PrioritySelector } from './priroty-selector';
+import { ProjectAreaSelector } from './project-area-selector';
+import { TeamOption, TeamSelector } from './team-selector';
 
 interface EditProjectFormProps {
   project: Project;
   onCancel: () => void;
+  teams: TeamOption[];
+  teamsLoading: boolean;
 }
 
-export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
+export function EditProjectForm({ project, onCancel, teams, teamsLoading }: EditProjectFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: project.name,
@@ -149,34 +153,28 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
 
         <div className="space-y-3">
           <h3 className="text-xs text-muted-foreground font-medium">PROPERTIES</h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
+            <ColorSelector selectedColorName={formData.color} onColorChange={handleColorChange} />
+            <PrioritySelector
+              type="inline"
+              value={formData.priority}
+              onSelect={(value) => handleSelectChange('priority', value as 'low' | 'medium' | 'high' | 'urgent')}
+            />
+            <ProjectAreaSelector
+              type="inline"
+              value={formData.area}
+              onSelect={(value) => handleSelectChange('area', value)}
+            />
+            <TeamSelector
+              type="inline"
+              value={formData.teamId}
+              onSelect={(value) => handleSelectChange('teamId', value)}
+              teams={teams}
+              loading={teamsLoading}
+            />
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground text-xs">Type:</span>
               <ProjectTypeBadge type={project.type} />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Priority:</span>
-              <Select
-                name="priority"
-                value={formData.priority}
-                onValueChange={(value) => handleSelectChange('priority', value)}
-              >
-                <SelectTrigger
-                  className="border-none p-0 focus:outline-none focus:ring-0 hover:bg-muted/50 rounded-xs shadow-none text-sm bg-input/0 dark:bg-input/0"
-                  size="sm"
-                >
-                  <SelectValue className="text-xs" placeholder="Set priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Color:</span>
-              <ColorSelector selectedColorName={formData.color} onColorChange={handleColorChange} />
             </div>
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground text-xs">Lead:</span>
@@ -186,28 +184,6 @@ export function EditProjectForm({ project, onCancel }: EditProjectFormProps) {
                 value={formData.leadId}
                 onChange={handleChange}
                 placeholder="Assign lead"
-                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Team:</span>
-              <Input
-                id="teamId"
-                name="teamId"
-                value={formData.teamId}
-                onChange={handleChange}
-                placeholder="Assign team"
-                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
-              />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Area:</span>
-              <Input
-                id="area"
-                name="area"
-                value={formData.area}
-                onChange={handleChange}
-                placeholder="Specify area"
                 className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
               />
             </div>

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { SearchProjects } from '@/components/search-projects';
 import { NewProjectDialog } from '@/components/new-project-dialog';
 import { ProjectsList } from '@/components/projects-list';
@@ -11,9 +12,15 @@ export default function ProjectsPage() {
         <NewProjectDialog />
       </div>
 
-      <SearchProjects />
+      <Suspense
+        fallback={<div className="text-center py-4 text-sm text-muted-foreground">Loading search and filters...</div>}
+      >
+        <SearchProjects />
+      </Suspense>
 
-      <ProjectsList />
+      <Suspense fallback={<div className="text-center py-16 text-sm text-muted-foreground">Loading projects...</div>}>
+        <ProjectsList />
+      </Suspense>
     </div>
   );
 }

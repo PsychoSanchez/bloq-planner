@@ -3,6 +3,7 @@
 import { parseAsString, useQueryState } from 'nuqs';
 import { useCallback } from 'react';
 import {
+  InlineSelectTrigger,
   Select,
   SelectContent,
   SelectGroup,
@@ -15,7 +16,11 @@ import { GroupIcon } from 'lucide-react';
 
 export type GroupByOption = 'none' | 'type' | 'priority' | 'team' | 'lead' | 'area';
 
-export function ProjectGroupSelector() {
+interface ProjectGroupSelectorProps {
+  type?: 'inline' | 'dropdown';
+}
+
+export function ProjectGroupSelector({ type = 'dropdown' }: ProjectGroupSelectorProps) {
   const [groupBy, setGroupBy] = useQueryState('groupBy', parseAsString.withDefault('none'));
 
   const handleGroupByChange = useCallback(
@@ -25,12 +30,14 @@ export function ProjectGroupSelector() {
     [setGroupBy],
   );
 
+  const SelectComponent = type === 'inline' ? InlineSelectTrigger : SelectTrigger;
+
   return (
     <Select defaultValue={groupBy} onValueChange={handleGroupByChange}>
-      <SelectTrigger className="h-8 w-[130px] text-xs gap-1">
+      <SelectComponent className="w-[130px] text-xs gap-1">
         <GroupIcon className="h-3.5 w-3.5" />
         <SelectValue placeholder="Group by" />
-      </SelectTrigger>
+      </SelectComponent>
       <SelectContent>
         <SelectGroup>
           <SelectLabel className="text-xs">Group By</SelectLabel>
