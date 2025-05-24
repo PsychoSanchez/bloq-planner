@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamOption, TeamSelector } from './team-selector';
+import { QuarterSelector } from './quarter-selector';
 
 interface EditProjectFormProps {
   project: Project;
@@ -35,6 +36,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     teamId: project.teamId || '',
     leadId: project.leadId || '',
     area: project.area || '',
+    quarter: project.quarter || '',
     dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
     color: project.color || DEFAULT_PROJECT_COLOR_NAME,
     estimates: ROLES_TO_DISPLAY.reduce(
@@ -164,6 +166,11 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
               type="inline"
               value={formData.area}
               onSelect={(value) => handleSelectChange('area', value)}
+            />
+            <QuarterSelector
+              type="inline"
+              value={formData.quarter}
+              onSelect={(value) => handleSelectChange('quarter', value)}
             />
             <TeamSelector
               type="inline"

@@ -25,6 +25,13 @@ const UpdateProjectRequestBody = type({
   name: 'string < 255',
   slug: 'string < 32',
   type: 'string < 32',
+  'quarter?': 'string < 32',
+  'color?': 'string < 32',
+  'description?': 'string < 2000',
+  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
+  'teamId?': 'string < 100',
+  'leadId?': 'string < 100',
+  'area?': 'string < 100',
 });
 
 // UPDATE a project by ID
@@ -79,6 +86,14 @@ const PatchProjectRequestBody = type({
   'slug?': 'string < 32',
   'type?': 'string < 32',
   'color?': 'string < 32',
+  'quarter?': 'string < 32',
+  'description?': 'string < 2000',
+  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
+  'teamId?': 'string < 100',
+  'leadId?': 'string < 100',
+  'area?': 'string < 100',
+  'dependencies?': 'unknown', // This is transformed in the code
+  'estimates?': 'unknown', // This is complex and handled separately
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -113,3 +113,62 @@ export const ROLE_OPTIONS = [
     icon: DatabaseIcon,
   },
 ];
+
+// Quarter utility functions
+export const generateQuarterOptions = () => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
+
+  const options = [];
+
+  // 1 year back: previous 4 quarters
+  let year = currentYear - 1;
+  let quarter = currentQuarter;
+  for (let i = 0; i < 4; i++) {
+    if (quarter > 4) {
+      quarter = 1;
+      year++;
+    }
+    if (quarter < 1) {
+      quarter = 4;
+      year--;
+    }
+    options.push({
+      id: `${year.toString().slice(-2)}Q${quarter}`,
+      name: `${year.toString().slice(-2)}Q${quarter}`,
+      value: `${year}Q${quarter}`,
+      year,
+      quarter,
+    });
+    quarter++;
+  }
+
+  // Current and next 2 years: 8 more quarters
+  year = currentYear;
+  quarter = currentQuarter;
+  for (let i = 0; i < 8; i++) {
+    if (quarter > 4) {
+      quarter = 1;
+      year++;
+    }
+    options.push({
+      id: `${year.toString().slice(-2)}Q${quarter}`,
+      name: `${year.toString().slice(-2)}Q${quarter}`,
+      value: `${year}Q${quarter}`,
+      year,
+      quarter,
+    });
+    quarter++;
+  }
+
+  // Sort by year and quarter
+  return options.sort((a, b) => {
+    if (a.year !== b.year) {
+      return a.year - b.year;
+    }
+    return a.quarter - b.quarter;
+  });
+};
+
+export const QUARTER_OPTIONS = generateQuarterOptions();

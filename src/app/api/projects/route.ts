@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     const type = searchParams.get('type');
+    const quarter = searchParams.get('quarter');
 
     const query: Record<string, unknown> = {};
 
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       query.name = { $regex: search, $options: 'i' };
+    }
+
+    if (quarter) {
+      query.quarter = quarter;
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
@@ -35,6 +40,13 @@ const CreateProjectRequestBody = type({
   name: 'string < 255',
   slug: 'string < 32',
   type: 'string < 32',
+  'quarter?': 'string < 32',
+  'color?': 'string < 32',
+  'description?': 'string < 2000',
+  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
+  'teamId?': 'string < 100',
+  'leadId?': 'string < 100',
+  'area?': 'string < 100',
 });
 
 export async function POST(request: NextRequest) {

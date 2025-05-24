@@ -10,6 +10,7 @@ import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
 import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
+import { QuarterSelector } from './quarter-selector';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
@@ -62,6 +63,7 @@ export function GroupedProjectsTable({
               <TableHead className="min-w-[200px]">Name</TableHead>
               <TableHead className="w-[100px]">Type</TableHead>
               <TableHead className="w-[100px]">Priority</TableHead>
+              <TableHead className="w-[150px]">Quarter</TableHead>
               <TableHead className="w-[150px]">Team</TableHead>
               <TableHead className="w-[100px]">Lead</TableHead>
               <TableHead className="w-[100px]">Dependencies</TableHead>
@@ -71,7 +73,7 @@ export function GroupedProjectsTable({
           <TableBody>
             {allProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-16 text-center text-xs">
+                <TableCell colSpan={8} className="h-16 text-center text-xs">
                   No projects found.
                 </TableCell>
               </TableRow>
@@ -121,6 +123,7 @@ export function GroupedProjectsTable({
                     <TableHead className="min-w-[200px]">Name</TableHead>
                     <TableHead className="w-[100px]">Type</TableHead>
                     <TableHead className="w-[100px]">Priority</TableHead>
+                    <TableHead className="w-[150px]">Quarter</TableHead>
                     <TableHead className="w-[200px]">Team</TableHead>
                     <TableHead className="w-[100px]">Lead</TableHead>
                     <TableHead className="w-[100px]">Dependencies</TableHead>
@@ -130,7 +133,7 @@ export function GroupedProjectsTable({
                 <TableBody>
                   {group.projects.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-16 text-center text-xs">
+                      <TableCell colSpan={8} className="h-16 text-center text-xs">
                         No projects in this group.
                       </TableCell>
                     </TableRow>
@@ -189,6 +192,14 @@ function ProjectRow({
           onSelect={(value) =>
             onUpdateProject?.(project.id, { priority: value as 'low' | 'medium' | 'high' | 'urgent' })
           }
+        />
+      </TableCell>
+      <TableCell className="py-1 px-2">
+        <QuarterSelector
+          type="inline"
+          value={project.quarter || ''}
+          onSelect={(value) => onUpdateProject?.(project.id, { quarter: value })}
+          isIconEnabled={false}
         />
       </TableCell>
       <TableCell className="py-1 px-2">
