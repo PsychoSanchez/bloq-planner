@@ -21,6 +21,33 @@ interface GroupedProjectsTableProps {
   teamsLoading: boolean;
 }
 
+function GroupedProjectsTableHeader() {
+  return (
+    <TableHeader>
+      <TableRow>
+        <TableHead className="min-w-[200px]">Name</TableHead>
+        <TableHead className="w-[100px]">Type</TableHead>
+        <TableHead className="w-[100px]">Priority</TableHead>
+        <TableHead className="w-[150px]">Quarter</TableHead>
+        <TableHead className="w-[150px]">Team</TableHead>
+        <TableHead className="w-[100px]">Lead</TableHead>
+        <TableHead className="w-[100px]">Dependencies</TableHead>
+        <TableHead className="w-[200px]">Area</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+}
+
+function EmptyProjectRow() {
+  return (
+    <TableRow>
+      <TableCell colSpan={8} className="h-16 text-center text-xs">
+        No projects found.
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function GroupedProjectsTable({
   groups,
   isGrouped,
@@ -59,25 +86,10 @@ export function GroupedProjectsTable({
     return (
       <div className="rounded-sm border">
         <Table className="text-xs">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[200px]">Name</TableHead>
-              <TableHead className="w-[100px]">Type</TableHead>
-              <TableHead className="w-[100px]">Priority</TableHead>
-              <TableHead className="w-[150px]">Quarter</TableHead>
-              <TableHead className="w-[150px]">Team</TableHead>
-              <TableHead className="w-[100px]">Lead</TableHead>
-              <TableHead className="w-[100px]">Dependencies</TableHead>
-              <TableHead className="w-[200px]">Area</TableHead>
-            </TableRow>
-          </TableHeader>
+          <GroupedProjectsTableHeader />
           <TableBody>
             {allProjects.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-16 text-center text-xs">
-                  No projects found.
-                </TableCell>
-              </TableRow>
+              <EmptyProjectRow />
             ) : (
               allProjects.map((project) => (
                 <ProjectRow
@@ -119,25 +131,10 @@ export function GroupedProjectsTable({
 
             {isExpanded && (
               <Table className="text-xs">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Name</TableHead>
-                    <TableHead className="w-[100px]">Type</TableHead>
-                    <TableHead className="w-[100px]">Priority</TableHead>
-                    <TableHead className="w-[150px]">Quarter</TableHead>
-                    <TableHead className="w-[200px]">Team</TableHead>
-                    <TableHead className="w-[100px]">Lead</TableHead>
-                    <TableHead className="w-[100px]">Dependencies</TableHead>
-                    <TableHead className="w-[200px]">Area</TableHead>
-                  </TableRow>
-                </TableHeader>
+                <GroupedProjectsTableHeader />
                 <TableBody>
                   {group.projects.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="h-16 text-center text-xs">
-                        No projects in this group.
-                      </TableCell>
-                    </TableRow>
+                    <EmptyProjectRow />
                   ) : (
                     group.projects.map((project) => (
                       <ProjectRow
