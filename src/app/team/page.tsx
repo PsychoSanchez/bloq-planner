@@ -2,11 +2,11 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SearchTeamMembers } from '@/components/search-team-members';
-import { RoleBadge } from '@/components/role-badge';
 import { NewTeamMemberDialog } from '@/components/new-team-member-dialog';
 import { Assignee } from '@/lib/types';
 import { fromTeamMemberDocument, TeamMemberModel } from '@/lib/models/team-member';
 import { connectToDatabase } from '@/lib/mongodb';
+import { EditableRoleCell } from '@/components/editable-role-cell';
 
 // Server component for fetching and displaying team members
 async function TeamMembers({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
@@ -42,17 +42,17 @@ async function TeamMembers({ searchParams }: { searchParams: Record<string, stri
       ) : (
         teamMembers.map((member) => (
           <TableRow key={member.id}>
-            <TableCell className="py-1 px-2 font-medium">
+            <TableCell className="py-1 font-medium">
               <Link href={`/team/${member.id}`} className="block cursor-pointer hover:underline">
                 {member.name}
               </Link>
             </TableCell>
-            <TableCell className="py-1 px-2">{member.email || 'N/A'}</TableCell>
-            <TableCell className="py-1 px-2">
+            <TableCell className="py-1">
+              <EditableRoleCell memberId={member.id} initialRole={member.role} isEditable />
+            </TableCell>
+            <TableCell className="py-1">
               {member.department ? <span className="capitalize">{member.department}</span> : 'N/A'}
             </TableCell>
-            <TableCell className="py-1 px-2">{member.role ? <RoleBadge role={member.role} /> : 'N/A'}</TableCell>
-            <TableCell className="py-1 px-2">{member.title || 'N/A'}</TableCell>
           </TableRow>
         ))
       )}
@@ -79,11 +79,9 @@ export default async function TeamPage({
         <Table className="text-xs">
           <TableHeader>
             <TableRow className="h-8">
-              <TableHead className="py-1 px-2 w-[200px]">Name</TableHead>
-              <TableHead className="py-1 px-2">Email</TableHead>
-              <TableHead className="py-1 px-2">Department</TableHead>
-              <TableHead className="py-1 px-2">Role</TableHead>
-              <TableHead className="py-1 px-2">Title</TableHead>
+              <TableHead className="py-1">Name</TableHead>
+              <TableHead className="py-1 w-[200px]">Role</TableHead>
+              <TableHead className="py-1 w-[200px]">Team</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

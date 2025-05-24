@@ -7,6 +7,13 @@ import {
   TelescopeIcon,
   SignalHighIcon,
   TriangleAlert,
+  CodeIcon,
+  PaletteIcon,
+  BugIcon,
+  UserIcon,
+  SettingsIcon,
+  BarChartIcon,
+  DatabaseIcon,
 } from 'lucide-react';
 import { Role } from './types';
 
@@ -66,5 +73,43 @@ export const PRIORITY_OPTIONS = [
     name: 'Urgent',
     cn: 'text-red-500',
     icon: TriangleAlert,
+  },
+];
+
+export const ROLE_OPTIONS = [
+  {
+    id: 'design' as const,
+    name: 'Design',
+    icon: PaletteIcon,
+  },
+  {
+    id: 'engineering' as const,
+    name: 'Engineering',
+    icon: CodeIcon,
+  },
+  {
+    id: 'qa' as const,
+    name: 'QA',
+    icon: BugIcon,
+  },
+  {
+    id: 'product_management' as const,
+    name: 'Product',
+    icon: UserIcon,
+  },
+  {
+    id: 'operations' as const,
+    name: 'Operations',
+    icon: SettingsIcon,
+  },
+  {
+    id: 'analytics' as const,
+    name: 'Analytics',
+    icon: BarChartIcon,
+  },
+  {
+    id: 'data_science' as const,
+    name: 'Data Science',
+    icon: DatabaseIcon,
   },
 ];

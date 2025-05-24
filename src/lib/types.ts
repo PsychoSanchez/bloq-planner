@@ -5,6 +5,7 @@ export type Role =
   | 'analytics'
   | 'data_science'
   | 'product_management' // Added based on common team structures
+  | 'operations' // Added based on user requirements
   | 'other'; // For flexibility
 
 export interface Assignee {
