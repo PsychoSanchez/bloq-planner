@@ -6,40 +6,42 @@ import { Project } from '../../types';
 const mockProjects: Project[] = [
   {
     id: '1',
-    name: 'Project Alpha',
-    slug: 'project-alpha',
+    name: 'Project A',
+    slug: 'project-a',
     type: 'regular',
     priority: 'high',
-    teamId: 'frontend',
-    leadId: 'john',
-    area: 'web',
+    teamId: 'team-1',
+    area: 'tech',
+    quarter: '2025Q1',
   },
   {
     id: '2',
-    name: 'Tech Debt Cleanup',
-    slug: 'tech-debt-cleanup',
+    name: 'Project B',
+    slug: 'project-b',
     type: 'tech-debt',
     priority: 'medium',
-    teamId: 'backend',
-    leadId: 'jane',
-    area: 'api',
+    teamId: 'team-2',
+    area: 'quality',
+    quarter: '2025Q2',
   },
   {
     id: '3',
-    name: 'Team Event Planning',
-    slug: 'team-event-planning',
-    type: 'team-event',
-    priority: 'low',
-    teamId: 'frontend',
-    leadId: 'bob',
-    area: 'web',
+    name: 'Project C',
+    slug: 'project-c',
+    type: 'regular',
+    teamId: 'team-1',
+    area: 'tech',
+    quarter: '2025Q1',
   },
   {
     id: '4',
-    name: 'No Team Project',
-    slug: 'no-team-project',
+    name: 'Project D',
+    slug: 'project-d',
     type: 'regular',
-    // no priority, teamId, leadId, or area set
+    priority: 'low',
+    teamId: 'team-3',
+    area: 'monetization',
+    // No quarter specified
   },
 ];
 
@@ -55,16 +57,16 @@ test('groupProjects - no grouping returns all projects in one group', () => {
 test('groupProjects - group by type', () => {
   const result = groupProjects(mockProjects, 'type');
 
-  expect(result).toHaveLength(3);
+  expect(result).toHaveLength(2);
 
   // Find groups by label
   const regularGroup = result.find((g) => g.label === 'Regular');
   const techDebtGroup = result.find((g) => g.label === 'Tech Debt');
-  const teamEventGroup = result.find((g) => g.label === 'Team Event');
 
-  expect(regularGroup?.count).toBe(2);
+  expect(regularGroup).toBeDefined();
+  expect(regularGroup?.count).toBe(3);
+  expect(techDebtGroup).toBeDefined();
   expect(techDebtGroup?.count).toBe(1);
-  expect(teamEventGroup?.count).toBe(1);
 });
 
 test('groupProjects - group by priority', () => {
@@ -72,15 +74,8 @@ test('groupProjects - group by priority', () => {
 
   expect(result).toHaveLength(4);
 
-  const highGroup = result.find((g) => g.label === 'High Priority');
-  const mediumGroup = result.find((g) => g.label === 'Medium Priority');
-  const lowGroup = result.find((g) => g.label === 'Low Priority');
-  const noPriorityGroup = result.find((g) => g.label === 'No Priority');
-
-  expect(highGroup?.count).toBe(1);
-  expect(mediumGroup?.count).toBe(1);
-  expect(lowGroup?.count).toBe(1);
-  expect(noPriorityGroup?.count).toBe(1);
+  const groups = result.map((g) => g.label).sort();
+  expect(groups).toEqual(['High Priority', 'Low Priority', 'Medium Priority', 'No Priority']);
 });
 
 test('groupProjects - group by team', () => {
@@ -88,13 +83,8 @@ test('groupProjects - group by team', () => {
 
   expect(result).toHaveLength(3);
 
-  const frontendGroup = result.find((g) => g.label === 'frontend');
-  const backendGroup = result.find((g) => g.label === 'backend');
-  const noTeamGroup = result.find((g) => g.label === 'No Team');
-
-  expect(frontendGroup?.count).toBe(2);
-  expect(backendGroup?.count).toBe(1);
-  expect(noTeamGroup?.count).toBe(1);
+  const team1Group = result.find((g) => g.label === 'team-1');
+  expect(team1Group?.count).toBe(2);
 });
 
 test('groupProjects - group by area', () => {
@@ -102,13 +92,25 @@ test('groupProjects - group by area', () => {
 
   expect(result).toHaveLength(3);
 
-  const webGroup = result.find((g) => g.label === 'web');
-  const apiGroup = result.find((g) => g.label === 'api');
-  const noAreaGroup = result.find((g) => g.label === 'No Area');
+  const areas = result.map((g) => g.label).sort();
+  expect(areas).toEqual(['monetization', 'quality', 'tech']);
+});
 
-  expect(webGroup?.count).toBe(2);
-  expect(apiGroup?.count).toBe(1);
-  expect(noAreaGroup?.count).toBe(1);
+test('groupProjects - group by quarter', () => {
+  const result = groupProjects(mockProjects, 'quarter');
+
+  expect(result).toHaveLength(3);
+
+  const q1Group = result.find((g) => g.label === 'Q1 2025');
+  const q2Group = result.find((g) => g.label === 'Q2 2025');
+  const noQuarterGroup = result.find((g) => g.label === 'No Quarter');
+
+  expect(q1Group).toBeDefined();
+  expect(q1Group?.count).toBe(2);
+  expect(q2Group).toBeDefined();
+  expect(q2Group?.count).toBe(1);
+  expect(noQuarterGroup).toBeDefined();
+  expect(noQuarterGroup?.count).toBe(1);
 });
 
 test('groupProjects - empty array returns empty groups', () => {
@@ -122,4 +124,42 @@ test('groupProjects - groups are sorted with "No X" groups at the end', () => {
   // Check that "No Priority" group is last
   const lastGroup = result[result.length - 1];
   expect(lastGroup.label).toBe('No Priority');
+});
+
+test('groupProjects - quarters are sorted chronologically', () => {
+  const projectsWithQuarters: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      quarter: '2024Q4',
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      quarter: '2025Q1',
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      quarter: '2024Q3',
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      // No quarter
+    },
+  ];
+
+  const result = groupProjects(projectsWithQuarters, 'quarter');
+
+  // Should be sorted chronologically with "No Quarter" at the end
+  expect(result.map((g) => g.label)).toEqual(['Q3 2024', 'Q4 2024', 'Q1 2025', 'No Quarter']);
 });

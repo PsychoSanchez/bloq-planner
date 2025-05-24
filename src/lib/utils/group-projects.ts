@@ -39,6 +39,9 @@ export function groupProjects(projects: Project[], groupBy: GroupByOption): Proj
       case 'area':
         groupKey = project.area || 'No Area';
         break;
+      case 'quarter':
+        groupKey = project.quarter || 'No Quarter';
+        break;
       default:
         groupKey = 'Other';
     }
@@ -55,11 +58,18 @@ export function groupProjects(projects: Project[], groupBy: GroupByOption): Proj
       label: formatGroupLabel(label, groupBy),
       projects,
       count: projects.length,
+      originalKey: label, // Keep original key for sorting
     }))
     .sort((a, b) => {
       // Sort "No X" groups to the end
       if (a.label.startsWith('No ') && !b.label.startsWith('No ')) return 1;
       if (!a.label.startsWith('No ') && b.label.startsWith('No ')) return -1;
+
+      // Special sorting for quarters (chronological)
+      if (groupBy === 'quarter') {
+        return sortQuarters(a.originalKey, b.originalKey);
+      }
+
       return a.label.localeCompare(b.label);
     });
 
@@ -72,6 +82,8 @@ function formatGroupLabel(label: string, groupBy: GroupByOption): string {
       return formatProjectType(label);
     case 'priority':
       return formatPriority(label);
+    case 'quarter':
+      return formatQuarter(label);
     default:
       return label;
   }
@@ -102,4 +114,41 @@ function formatPriority(priority: string): string {
     urgent: 'Urgent Priority',
   };
   return priorityMap[priority] || priority;
+}
+
+function formatQuarter(quarter: string): string {
+  if (quarter === 'No Quarter') return quarter;
+
+  // Parse quarter format like "2025Q1" to "Q1 2025"
+  const match = quarter.match(/^(\d{4})Q([1-4])$/);
+  if (match) {
+    const [, year, q] = match;
+    return `Q${q} ${year}`;
+  }
+
+  return quarter;
+}
+
+function sortQuarters(quarterA: string, quarterB: string): number {
+  // Handle "No Quarter" case
+  if (quarterA === 'No Quarter') return 1;
+  if (quarterB === 'No Quarter') return -1;
+
+  // Parse quarter format like "2025Q1"
+  const parseQuarter = (quarter: string) => {
+    const match = quarter.match(/^(\d{4})Q([1-4])$/);
+    if (match) {
+      return { year: parseInt(match[1]), quarter: parseInt(match[2]) };
+    }
+    return { year: 0, quarter: 0 };
+  };
+
+  const a = parseQuarter(quarterA);
+  const b = parseQuarter(quarterB);
+
+  // Sort by year first, then by quarter
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  return a.quarter - b.quarter;
 }

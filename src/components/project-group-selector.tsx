@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { GroupIcon } from 'lucide-react';
 
-export type GroupByOption = 'none' | 'type' | 'priority' | 'team' | 'lead' | 'area';
+export type GroupByOption = 'none' | 'type' | 'priority' | 'team' | 'lead' | 'area' | 'quarter';
 
 interface ProjectGroupSelectorProps {
   type?: 'inline' | 'dropdown';
@@ -58,6 +58,9 @@ export function ProjectGroupSelector({ type = 'dropdown' }: ProjectGroupSelector
           </SelectItem>
           <SelectItem value="area" className="text-xs py-1">
             Area
+          </SelectItem>
+          <SelectItem value="quarter" className="text-xs py-1">
+            Quarter
           </SelectItem>
         </SelectGroup>
       </SelectContent>

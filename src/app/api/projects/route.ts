@@ -40,7 +40,7 @@ const CreateProjectRequestBody = type({
   name: 'string < 255',
   slug: 'string < 32',
   type: 'string < 32',
-  'quarter?': 'string < 32',
+  'quarter?': 'string < 7',
   'color?': 'string < 32',
   'description?': 'string < 2000',
   'priority?': "'low' | 'medium' | 'high' | 'urgent'",

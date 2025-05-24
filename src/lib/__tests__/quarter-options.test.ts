@@ -66,9 +66,10 @@ describe('generateQuarterOptions', () => {
 
     // Test that the generated values would pass our API validation
     options.forEach((option) => {
-      // Value should be a string less than 32 characters (our API validation rule)
+      // Value should be a string less than 7 characters (our API validation rule for 6 chars)
       expect(typeof option.value).toBe('string');
-      expect(option.value.length).toBeLessThan(32);
+      expect(option.value.length).toBeLessThan(7);
+      expect(option.value.length).toBe(6); // Should be exactly 6 characters
 
       // Value should match the expected format for database storage
       expect(option.value).toMatch(/^\d{4}Q[1-4]$/);
