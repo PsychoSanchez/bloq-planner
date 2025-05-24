@@ -40,10 +40,10 @@ export function ProjectGroupSelector({ type = 'dropdown' }: ProjectGroupSelector
       </SelectComponent>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel className="text-xs">Group By</SelectLabel>
           <SelectItem value="none" className="text-xs py-1">
             No Grouping
           </SelectItem>
+          <SelectLabel className="text-xs">Group By</SelectLabel>
           <SelectItem value="type" className="text-xs py-1">
             Type
           </SelectItem>

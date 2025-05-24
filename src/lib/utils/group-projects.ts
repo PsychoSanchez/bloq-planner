@@ -1,5 +1,7 @@
 import { Project } from '../types';
 import { GroupByOption } from '@/components/project-group-selector';
+import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
+import { sortProjects } from './sort-projects';
 
 export interface ProjectGroup {
   label: string;
@@ -7,20 +9,28 @@ export interface ProjectGroup {
   count: number;
 }
 
-export function groupProjects(projects: Project[], groupBy: GroupByOption): ProjectGroup[] {
+export function groupProjects(
+  projects: Project[],
+  groupBy: GroupByOption,
+  sortBy?: SortByOption,
+  sortDirection?: SortDirectionOption,
+): ProjectGroup[] {
+  // Sort projects first if sorting is specified
+  const sortedProjects = sortBy && sortDirection ? sortProjects(projects, sortBy, sortDirection) : projects;
+
   if (groupBy === 'none') {
     return [
       {
         label: 'All Projects',
-        projects,
-        count: projects.length,
+        projects: sortedProjects,
+        count: sortedProjects.length,
       },
     ];
   }
 
   const groups = new Map<string, Project[]>();
 
-  projects.forEach((project) => {
+  sortedProjects.forEach((project) => {
     let groupKey: string;
 
     switch (groupBy) {
@@ -56,7 +66,7 @@ export function groupProjects(projects: Project[], groupBy: GroupByOption): Proj
   const result = Array.from(groups.entries())
     .map(([label, projects]) => ({
       label: formatGroupLabel(label, groupBy),
-      projects,
+      projects: sortBy && sortDirection ? sortProjects(projects, sortBy, sortDirection) : projects,
       count: projects.length,
       originalKey: label, // Keep original key for sorting
     }))

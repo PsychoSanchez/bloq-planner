@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { FilterIcon, ArchiveIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ProjectGroupSelector } from './project-group-selector';
+import { ProjectSortSelector } from './project-sort-selector';
 
 export function SearchProjects() {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
@@ -111,6 +112,7 @@ export function SearchProjects() {
         </Label>
       </div>
       <ProjectGroupSelector />
+      <ProjectSortSelector />
     </div>
   );
 }

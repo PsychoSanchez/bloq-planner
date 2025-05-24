@@ -6,12 +6,15 @@ import { GroupedProjectsTable } from '@/components/grouped-projects-table';
 import { Project } from '@/lib/types';
 import { groupProjects } from '@/lib/utils/group-projects';
 import { GroupByOption } from '@/components/project-group-selector';
+import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
 import { TeamOption } from '@/components/team-selector';
 
 export function ProjectsList() {
   const [search] = useQueryState('search', parseAsString.withDefault(''));
   const [type] = useQueryState('type', parseAsString.withDefault('all'));
   const [groupBy] = useQueryState('groupBy', parseAsString.withDefault('none'));
+  const [sortBy] = useQueryState('sortBy', parseAsString.withDefault('name'));
+  const [sortDirection] = useQueryState('sortDirection', parseAsString.withDefault('asc'));
   const [includeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -103,7 +106,12 @@ export function ProjectsList() {
   }
 
   // Group projects based on the selected groupBy option
-  const groups = groupProjects(projects, groupBy as GroupByOption);
+  const groups = groupProjects(
+    projects,
+    groupBy as GroupByOption,
+    sortBy as SortByOption,
+    sortDirection as SortDirectionOption,
+  );
   const isGrouped = groupBy !== 'none';
 
   return (
