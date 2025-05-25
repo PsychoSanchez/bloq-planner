@@ -271,7 +271,7 @@ function ProjectRow({
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <span className="flex items-center gap-2">
-                Set Priority
+                Priority
                 <span className="ml-auto text-xs text-muted-foreground">
                   {PRIORITY_OPTIONS.find((p) => p.id === (project.priority || 'medium'))?.name}
                 </span>
@@ -295,7 +295,7 @@ function ProjectRow({
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <span className="flex items-center gap-2">
-                Set Quarter
+                Quarter
                 <span className="ml-auto text-xs text-muted-foreground">
                   {QUARTER_OPTIONS.find((q) => q.value === project.quarter)?.name || 'None'}
                 </span>
@@ -318,7 +318,7 @@ function ProjectRow({
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <span className="flex items-center gap-2">
-                Assign Team
+                Team
                 <span className="ml-auto text-xs text-muted-foreground">
                   {teams.find((t) => t.id === project.teamId)?.name || 'None'}
                 </span>
@@ -341,7 +341,7 @@ function ProjectRow({
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <span className="flex items-center gap-2">
-                Set Area
+                Area
                 <span className="ml-auto text-xs text-muted-foreground">
                   {PROJECT_AREAS.find((a) => a.id === project.area)?.name || 'None'}
                 </span>

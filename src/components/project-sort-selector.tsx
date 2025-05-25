@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUpDownIcon, ArrowDownAZIcon, ArrowUpAZIcon } from 'lucide-react';
+import { ArrowUpDownIcon, ArrowDownAZIcon, ArrowDownZAIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type SortByOption = 'name' | 'type' | 'priority' | 'createdAt' | 'updatedAt' | 'quarter' | 'area';
@@ -82,9 +82,9 @@ export function ProjectSortSelector({ type = 'dropdown' }: ProjectSortSelectorPr
         title={`Sort ${sortDirection === 'asc' ? 'Ascending' : 'Descending'} - Click to toggle`}
       >
         {sortDirection === 'asc' ? (
-          <ArrowUpAZIcon className="h-3.5 w-3.5" />
-        ) : (
           <ArrowDownAZIcon className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowDownZAIcon className="h-3.5 w-3.5" />
         )}
       </Button>
     </div>
