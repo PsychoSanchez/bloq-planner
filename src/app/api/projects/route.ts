@@ -80,6 +80,11 @@ const CreateProjectRequestBody = type({
   'teamId?': 'string < 100',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
+  'dependencies?': 'unknown[]',
+  'cost?': 'number | string',
+  'impact?': 'number | string',
+  'roi?': 'number | string',
+  'estimates?': 'unknown',
 });
 
 export async function POST(request: NextRequest) {

@@ -3,23 +3,13 @@
 import { parseAsString, parseAsBoolean, useQueryState } from 'nuqs';
 import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { FilterIcon, ArchiveIcon, SearchIcon } from 'lucide-react';
+import { ArchiveIcon, SearchIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ProjectGroupSelector } from './project-group-selector';
 import { ProjectSortSelector } from './project-sort-selector';
 import { AdvancedProjectFilters } from './advanced-project-filters';
 import { Button } from './ui/button';
 import { TeamOption } from './team-selector';
-import { PROJECT_TYPE_OPTIONS } from '@/lib/constants';
 
 interface SearchProjectsProps {
   teams: TeamOption[];
@@ -28,7 +18,7 @@ interface SearchProjectsProps {
 
 export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
-  const [type, setType] = useQueryState('type', parseAsString.withDefault('all'));
+
   const [includeArchived, setIncludeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
 
   const debouncedUpdateParams = useDebounce(setSearch, 300);
@@ -39,13 +29,6 @@ export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
       debouncedUpdateParams(e.target.value, undefined);
     },
     [debouncedUpdateParams],
-  );
-
-  const handleTypeChange = useCallback(
-    (value: string) => {
-      setType(value);
-    },
-    [setType],
   );
 
   const handleArchivedToggle = useCallback(() => {
@@ -68,27 +51,6 @@ export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
               onChange={handleSearchChange}
             />
           </div>
-
-          {/* Type Filter */}
-          <Select defaultValue={type} onValueChange={handleTypeChange}>
-            <SelectTrigger className="h-10 w-[140px] text-sm gap-2">
-              <FilterIcon className="h-4 w-4" />
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel className="text-xs">Project Types</SelectLabel>
-                <SelectItem value="all" className="text-sm py-2">
-                  All Types
-                </SelectItem>
-                {PROJECT_TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option.id} value={option.id} className="text-sm py-2">
-                    {option.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
 
           {/* Archive Toggle */}
           <Button variant="outline" size="default" className="h-9 px-3 gap-2" onClick={handleArchivedToggle}>
