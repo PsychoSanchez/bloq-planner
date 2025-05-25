@@ -13,6 +13,12 @@ export async function GET(request: NextRequest) {
     const quarter = searchParams.get('quarter');
     const includeArchived = searchParams.get('includeArchived') === 'true';
 
+    // New multidimensional filters
+    const priorities = searchParams.get('priorities')?.split(',').filter(Boolean) || [];
+    const quarters = searchParams.get('quarters')?.split(',').filter(Boolean) || [];
+    const areas = searchParams.get('areas')?.split(',').filter(Boolean) || [];
+    const leads = searchParams.get('leads')?.split(',').filter(Boolean) || [];
+
     const query: Record<string, unknown> = {};
 
     // By default, only show non-archived projects unless specifically requested
@@ -28,8 +34,29 @@ export async function GET(request: NextRequest) {
       query.name = { $regex: search, $options: 'i' };
     }
 
+    // Legacy single quarter filter (for backward compatibility)
     if (quarter) {
       query.quarter = quarter;
+    }
+
+    // New multidimensional filters using $in operator for OR logic within each dimension
+    if (priorities.length > 0) {
+      query.priority = { $in: priorities };
+    }
+
+    if (quarters.length > 0) {
+      // If both legacy quarter and new quarters are provided, use the new one
+      if (!quarter) {
+        query.quarter = { $in: quarters };
+      }
+    }
+
+    if (areas.length > 0) {
+      query.area = { $in: areas };
+    }
+
+    if (leads.length > 0) {
+      query.leadId = { $in: leads };
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });

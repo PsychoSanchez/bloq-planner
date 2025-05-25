@@ -12,13 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FilterIcon, ArchiveIcon } from 'lucide-react';
+import { FilterIcon, ArchiveIcon, SearchIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ProjectGroupSelector } from './project-group-selector';
 import { ProjectSortSelector } from './project-sort-selector';
+import { AdvancedProjectFilters } from './advanced-project-filters';
 import { Button } from './ui/button';
+import { TeamOption } from './team-selector';
 
-export function SearchProjects() {
+interface SearchProjectsProps {
+  teams: TeamOption[];
+  teamsLoading: boolean;
+}
+
+export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
   const [type, setType] = useQueryState('type', parseAsString.withDefault('all'));
   const [includeArchived, setIncludeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
@@ -45,77 +52,90 @@ export function SearchProjects() {
   }, [setIncludeArchived]);
 
   return (
-    <div className="flex gap-2 items-center mb-2 justify-end">
-      <Input
-        type="search"
-        placeholder="Search projects..."
-        className="max-w-xs"
-        defaultValue={search}
-        onChange={handleSearchChange}
-      />
-      <Select defaultValue={type} onValueChange={handleTypeChange}>
-        <SelectTrigger className="h-8 w-[130px] text-xs gap-1">
-          <FilterIcon className="h-3.5 w-3.5" />
-          <SelectValue placeholder="Type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectLabel className="text-xs">Project Types</SelectLabel>
-            <SelectItem value="all" className="text-xs py-1">
-              All Types
-            </SelectItem>
-            <SelectItem value="regular" className="text-xs py-1">
-              Regular
-            </SelectItem>
-            <SelectItem value="tech-debt" className="text-xs py-1">
-              Tech Debt
-            </SelectItem>
-            <SelectItem value="team-event" className="text-xs py-1">
-              Team Event
-            </SelectItem>
-            <SelectItem value="spillover" className="text-xs py-1">
-              Spillover
-            </SelectItem>
-            <SelectItem value="blocked" className="text-xs py-1">
-              Blocked
-            </SelectItem>
-            <SelectItem value="hack" className="text-xs py-1">
-              Hack
-            </SelectItem>
-            <SelectItem value="sick-leave" className="text-xs py-1">
-              Sick Leave
-            </SelectItem>
-            <SelectItem value="vacation" className="text-xs py-1">
-              Vacation
-            </SelectItem>
-            <SelectItem value="onboarding" className="text-xs py-1">
-              Onboarding
-            </SelectItem>
-            <SelectItem value="duty" className="text-xs py-1">
-              Team Duty
-            </SelectItem>
-            <SelectItem value="risky-week" className="text-xs py-1">
-              Risk Alert
-            </SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-2 text-xs text-muted-foreground"
-          onClick={handleArchivedToggle}
-        >
-          {includeArchived ? (
-            <ArchiveIcon strokeWidth={3} className="h-3.5 w-3.5 text-white" />
-          ) : (
-            <ArchiveIcon className="h-3.5 w-3.5" />
-          )}
-        </Button>
+    <div className="space-y-4 mb-6">
+      {/* Top row: Search and basic controls */}
+      <div className="flex gap-2 items-center justify-between">
+        <div className="flex gap-2 items-center flex-1">
+          {/* Search Input */}
+          <div className="relative flex-1 max-w-md">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search projects..."
+              className="pl-9"
+              defaultValue={search}
+              onChange={handleSearchChange}
+            />
+          </div>
+
+          {/* Type Filter */}
+          <Select defaultValue={type} onValueChange={handleTypeChange}>
+            <SelectTrigger className="h-10 w-[140px] text-sm gap-2">
+              <FilterIcon className="h-4 w-4" />
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel className="text-xs">Project Types</SelectLabel>
+                <SelectItem value="all" className="text-sm py-2">
+                  All Types
+                </SelectItem>
+                <SelectItem value="regular" className="text-sm py-2">
+                  Regular
+                </SelectItem>
+                <SelectItem value="tech-debt" className="text-sm py-2">
+                  Tech Debt
+                </SelectItem>
+                <SelectItem value="team-event" className="text-sm py-2">
+                  Team Event
+                </SelectItem>
+                <SelectItem value="spillover" className="text-sm py-2">
+                  Spillover
+                </SelectItem>
+                <SelectItem value="blocked" className="text-sm py-2">
+                  Blocked
+                </SelectItem>
+                <SelectItem value="hack" className="text-sm py-2">
+                  Hack
+                </SelectItem>
+                <SelectItem value="sick-leave" className="text-sm py-2">
+                  Sick Leave
+                </SelectItem>
+                <SelectItem value="vacation" className="text-sm py-2">
+                  Vacation
+                </SelectItem>
+                <SelectItem value="onboarding" className="text-sm py-2">
+                  Onboarding
+                </SelectItem>
+                <SelectItem value="duty" className="text-sm py-2">
+                  Team Duty
+                </SelectItem>
+                <SelectItem value="risky-week" className="text-sm py-2">
+                  Risk Alert
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          {/* Archive Toggle */}
+          <Button variant="outline" size="default" className="h-9 px-3 gap-2" onClick={handleArchivedToggle}>
+            <ArchiveIcon
+              className={`h-4 w-4 ${includeArchived ? 'text-foreground' : 'text-muted-foreground'}`}
+              strokeWidth={includeArchived ? 2 : 1}
+            />
+            <span className="text-sm">{includeArchived ? 'Hide Archived' : 'Show Archived'}</span>
+          </Button>
+        </div>
+
+        {/* View Controls */}
+        <div className="flex gap-2 items-center">
+          <ProjectGroupSelector />
+          <ProjectSortSelector />
+        </div>
       </div>
-      <ProjectGroupSelector />
-      <ProjectSortSelector />
+
+      {/* Advanced Filters */}
+      <AdvancedProjectFilters teams={teams} teamsLoading={teamsLoading} />
     </div>
   );
 }

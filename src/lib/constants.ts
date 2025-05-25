@@ -17,6 +17,7 @@ import {
   ChartLineIcon,
   ShoppingCartIcon,
   DollarSignIcon,
+  WrenchIcon,
 } from 'lucide-react';
 import { Role } from './types';
 
@@ -195,3 +196,31 @@ export const generateQuarterOptions = () => {
 };
 
 export const QUARTER_OPTIONS = generateQuarterOptions();
+
+export const PROJECT_TYPES = [
+  {
+    id: 'product_discovery',
+    name: 'Product Discovery',
+    icon: TelescopeIcon,
+  },
+  {
+    id: 'design',
+    name: 'Design',
+    icon: PaletteIcon,
+  },
+  {
+    id: 'feature',
+    name: 'Feature',
+    icon: CodeIcon,
+  },
+  {
+    id: 'bug',
+    name: 'Bug',
+    icon: BugIcon,
+  },
+  {
+    id: 'technical_debt',
+    name: 'Technical Debt',
+    icon: WrenchIcon,
+  },
+];
