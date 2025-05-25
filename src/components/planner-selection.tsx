@@ -151,7 +151,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
       setSelectedProjects(planner.projects);
       setSelectedAssignees(planner.assignees);
     }
-  }, [mode, open]);
+  }, [mode, open, planner]);
 
   const toggleProject = (project: Project) => {
     setSelectedProjects((prev) => {

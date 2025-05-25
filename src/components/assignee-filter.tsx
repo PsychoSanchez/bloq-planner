@@ -2,6 +2,7 @@
 
 import { useState, useEffect, KeyboardEvent } from 'react';
 import { Assignee } from '@/lib/types';
+import { ROLE_OPTIONS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -24,6 +25,17 @@ interface AssigneeFilterProps {
   selectedAssigneeIds: string[];
   onAssigneesChange: (assigneeIds: string[]) => void;
 }
+
+// Helper function to get role icon
+const getRoleIcon = (role?: string) => {
+  if (!role) return null;
+
+  const roleOption = ROLE_OPTIONS.find((r) => r.id === role);
+  if (!roleOption) return null;
+
+  const IconComponent = roleOption.icon;
+  return <IconComponent className="h-3.5 w-3.5 text-muted-foreground mr-2" />;
+};
 
 export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChange }: AssigneeFilterProps) {
   const [open, setOpen] = useState(false);
@@ -194,7 +206,10 @@ export function AssigneeFilter({ assignees, selectedAssigneeIds, onAssigneesChan
                       htmlFor={`assignee-${assignee.id}`}
                       className="text-sm leading-none cursor-pointer flex items-center justify-between w-full"
                     >
-                      <span className="truncate">{assignee.name}</span>
+                      <div className="flex items-center min-w-0">
+                        {getRoleIcon(assignee.role)}
+                        <span className="truncate">{assignee.name}</span>
+                      </div>
                       {isSelected && <CheckIcon className="h-4 w-4 text-primary ml-2 flex-shrink-0" />}
                     </Label>
                   </div>

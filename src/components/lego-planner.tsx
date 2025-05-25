@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/context-menu';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { getAllAvailableProjects, isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
+import { ROLE_OPTIONS } from '@/lib/constants';
 import {
   Wrench,
   Calendar,
@@ -169,6 +170,17 @@ const getProjectIcon = (projectType: string) => {
   }
 };
 
+// Helper function to get role icon
+const getRoleIcon = (role?: string) => {
+  if (!role) return null;
+
+  const roleOption = ROLE_OPTIONS.find((r) => r.id === role);
+  if (!roleOption) return null;
+
+  const IconComponent = roleOption.icon;
+  return <IconComponent className="h-3.5 w-3.5 text-muted-foreground" />;
+};
+
 export function LegoPlanner({
   initialData: plannerData,
   getAssignmentsForWeekAndAssignee,
@@ -264,8 +276,11 @@ export function LegoPlanner({
   };
 
   const renderAssigneeName = (assignee: Assignee) => {
+    const roleIcon = getRoleIcon(assignee.role);
+
     return (
       <div className="px-1 py-0.5 h-full flex items-center text-foreground dark:text-gray-200">
+        {roleIcon && <div className="mr-2 flex-shrink-0">{roleIcon}</div>}
         <span className="font-medium truncate text-xs">{assignee.name}</span>
       </div>
     );
