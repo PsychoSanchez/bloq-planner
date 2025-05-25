@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ArchiveRestoreIcon, ExternalLinkIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamSelector, TeamOption } from '@/components/team-selector';
@@ -23,6 +23,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
+import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
@@ -67,6 +68,13 @@ export function GroupedProjectsTable({
   teamsLoading,
 }: GroupedProjectsTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(groups.map((g) => g.label)));
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // Derive the current project from the projects array to ensure we always have fresh data
+  const selectedProject = selectedProjectId
+    ? groups.flatMap((g) => g.projects).find((p) => p.id === selectedProjectId) || null
+    : null;
 
   // Ensure new groups are automatically expanded
   useEffect(() => {
@@ -91,79 +99,111 @@ export function GroupedProjectsTable({
     setExpandedGroups(newExpanded);
   };
 
+  const handleOpenSheet = (project: Project) => {
+    setSelectedProjectId(project.id);
+    setIsSheetOpen(true);
+  };
+
+  const handleCloseSheet = () => {
+    setIsSheetOpen(false);
+    setSelectedProjectId(null);
+  };
+
   if (!isGrouped) {
     // Render normal table without grouping
     const allProjects = groups[0]?.projects || [];
     return (
-      <div className="rounded-sm border">
-        <Table className="text-xs">
-          <GroupedProjectsTableHeader />
-          <TableBody>
-            {allProjects.length === 0 ? (
-              <EmptyProjectRow />
-            ) : (
-              allProjects.map((project) => (
-                <ProjectRow
-                  key={project.id}
-                  project={project}
-                  onUpdateProject={onUpdateProject}
-                  teams={teams}
-                  teamsLoading={teamsLoading}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <>
+        <div className="rounded-sm border">
+          <Table className="text-xs">
+            <GroupedProjectsTableHeader />
+            <TableBody>
+              {allProjects.length === 0 ? (
+                <EmptyProjectRow />
+              ) : (
+                allProjects.map((project) => (
+                  <ProjectRow
+                    key={project.id}
+                    project={project}
+                    onUpdateProject={onUpdateProject}
+                    teams={teams}
+                    teamsLoading={teamsLoading}
+                    onOpenSheet={handleOpenSheet}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <ProjectDetailsSheet
+          project={selectedProject}
+          isOpen={isSheetOpen}
+          onClose={handleCloseSheet}
+          onUpdateProject={onUpdateProject}
+          teams={teams}
+          teamsLoading={teamsLoading}
+        />
+      </>
     );
   }
 
   // Render grouped table
   return (
-    <div className="space-y-4">
-      {groups.map((group) => {
-        const isExpanded = expandedGroups.has(group.label);
-        return (
-          <div key={group.label} className="rounded-sm border">
-            <div
-              className="flex items-center justify-between p-1 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
-              onClick={() => toggleGroup(group.label)}
-            >
-              <div className="flex items-center gap-2">
-                {isExpanded ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
-                <h3 className="font-medium text-sm">
-                  {group.label}
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({group.count} project{group.count !== 1 ? 's' : ''})
-                  </span>
-                </h3>
+    <>
+      <div className="space-y-4">
+        {groups.map((group) => {
+          const isExpanded = expandedGroups.has(group.label);
+          return (
+            <div key={group.label} className="rounded-sm border">
+              <div
+                className="flex items-center justify-between p-1 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                onClick={() => toggleGroup(group.label)}
+              >
+                <div className="flex items-center gap-2">
+                  {isExpanded ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                  <h3 className="font-medium text-sm">
+                    {group.label}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({group.count} project{group.count !== 1 ? 's' : ''})
+                    </span>
+                  </h3>
+                </div>
               </div>
-            </div>
 
-            {isExpanded && (
-              <Table className="text-xs">
-                <GroupedProjectsTableHeader />
-                <TableBody>
-                  {group.projects.length === 0 ? (
-                    <EmptyProjectRow />
-                  ) : (
-                    group.projects.map((project) => (
-                      <ProjectRow
-                        key={project.id}
-                        project={project}
-                        onUpdateProject={onUpdateProject}
-                        teams={teams}
-                        teamsLoading={teamsLoading}
-                      />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        );
-      })}
-    </div>
+              {isExpanded && (
+                <Table className="text-xs">
+                  <GroupedProjectsTableHeader />
+                  <TableBody>
+                    {group.projects.length === 0 ? (
+                      <EmptyProjectRow />
+                    ) : (
+                      group.projects.map((project) => (
+                        <ProjectRow
+                          key={project.id}
+                          project={project}
+                          onUpdateProject={onUpdateProject}
+                          teams={teams}
+                          teamsLoading={teamsLoading}
+                          onOpenSheet={handleOpenSheet}
+                        />
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <ProjectDetailsSheet
+        project={selectedProject}
+        isOpen={isSheetOpen}
+        onClose={handleCloseSheet}
+        onUpdateProject={onUpdateProject}
+        teams={teams}
+        teamsLoading={teamsLoading}
+      />
+    </>
   );
 }
 
@@ -172,11 +212,13 @@ function ProjectRow({
   onUpdateProject,
   teams,
   teamsLoading,
+  onOpenSheet,
 }: {
   project: Project;
   onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
   teams: TeamOption[];
   teamsLoading: boolean;
+  onOpenSheet: (project: Project) => void;
 }) {
   const handleTeamChange = (teamId: string) => {
     if (onUpdateProject) {
@@ -211,14 +253,24 @@ function ProjectRow({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <TableRow className={cn(project.archived && 'opacity-60')}>
+        <TableRow className={cn('group', project.archived && 'opacity-60')}>
           <TableCell className="py-1 px-2 font-medium">
-            <Link href={`/projects/${project.id}`} className="block cursor-pointer hover:underline">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-between">
+              <div
+                className="flex items-center gap-2 cursor-pointer hover:underline flex-1"
+                onClick={() => onOpenSheet(project)}
+              >
                 {project.archived && <ArchiveIcon className="h-3 w-3 text-muted-foreground" />}
                 {project.name}
               </div>
-            </Link>
+              <Link
+                href={`/projects/${project.id}`}
+                className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLinkIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </Link>
+            </div>
           </TableCell>
           <TableCell className="py-1 px-2">
             <ProjectTypeBadge type={project.type} />

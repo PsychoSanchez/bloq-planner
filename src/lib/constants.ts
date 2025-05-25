@@ -14,6 +14,9 @@ import {
   SettingsIcon,
   BarChartIcon,
   DatabaseIcon,
+  ChartLineIcon,
+  ShoppingCartIcon,
+  DollarSignIcon,
 } from 'lucide-react';
 import { Role } from './types';
 
@@ -46,6 +49,26 @@ export const PROJECT_AREAS = [
     id: 'tech',
     name: 'Tech',
     icon: CpuIcon,
+  },
+  {
+    id: 'analytics',
+    name: 'Analytics',
+    icon: BarChartIcon,
+  },
+  {
+    id: 'data_science',
+    name: 'Data Science',
+    icon: ChartLineIcon,
+  },
+  {
+    id: 'aquisition',
+    name: 'Aquisition',
+    icon: ShoppingCartIcon,
+  },
+  {
+    id: 'cvp',
+    name: 'CVP',
+    icon: DollarSignIcon,
   },
 ];
 
