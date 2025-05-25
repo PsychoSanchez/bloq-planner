@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { type } from 'arktype';
 import { fromProjectDocument } from '@/lib/models/project';
 import { fromTeamMemberDocument } from '@/lib/models/team-member';
+import { DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 
 // Get a specific planner by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,11 +25,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Planner not found' }, { status: 404 });
     }
 
+    // Get regular projects from database
+    const regularProjects = planner.projects.map(fromProjectDocument) || [];
+
+    // Always include all default projects in every planner
+    const allProjects = [...regularProjects, ...DEFAULT_PROJECTS];
+
     return NextResponse.json({
       id: planner._id.toString(),
       name: planner.name,
       assignees: planner.assignees.map(fromTeamMemberDocument) || [],
-      projects: planner.projects.map(fromProjectDocument) || [],
+      projects: allProjects,
     });
   } catch (error) {
     console.error('Failed to fetch planner:', error);
@@ -64,21 +71,39 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     await connectToDatabase();
 
+    // Separate regular projects from default projects
+    const regularProjectIds = sanitizedBody.projects.filter((projectId) => !projectId.startsWith('default-'));
+
+    // Only store regular project IDs in the database
+    const updateData = {
+      ...sanitizedBody,
+      projects: regularProjectIds,
+    };
+
     const updatedPlanner = await PlannerModel.findByIdAndUpdate(
       id,
-      { $set: sanitizedBody },
+      { $set: updateData },
       { new: true, runValidators: true },
-    ).lean();
+    )
+      .populate('projects')
+      .populate('assignees')
+      .lean();
 
     if (!updatedPlanner) {
       return NextResponse.json({ error: 'Planner not found' }, { status: 404 });
     }
 
+    // Get regular projects from database
+    const regularProjects = updatedPlanner.projects.map(fromProjectDocument) || [];
+
+    // Always include all default projects in every planner
+    const allProjects = [...regularProjects, ...DEFAULT_PROJECTS];
+
     return NextResponse.json({
       id: updatedPlanner._id.toString(),
       name: updatedPlanner.name,
-      assignees: updatedPlanner.assignees || [],
-      projects: updatedPlanner.projects || [],
+      assignees: updatedPlanner.assignees.map(fromTeamMemberDocument) || [],
+      projects: allProjects,
     });
   } catch (error) {
     console.error('Failed to update planner:', error);

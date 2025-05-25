@@ -91,8 +91,10 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
         const response = await fetch('/api/projects');
         if (!response.ok) throw new Error('Failed to fetch projects');
         const data = await response.json();
-        // Extract projects array from the response object
-        setAvailableProjects(data.projects || []);
+        // Only include regular projects in the selection dialog
+        // Default projects are always available automatically
+        const regularProjects = data.projects || [];
+        setAvailableProjects(regularProjects);
       } catch (error) {
         console.error('Error fetching projects:', error);
         toast({
@@ -204,7 +206,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
     setAssigneeSearch('');
   };
 
-  const isFormValid = name.trim() !== '' && selectedProjects.length > 0 && selectedAssignees.length > 0;
+  const isFormValid = name.trim() !== '' && selectedAssignees.length > 0;
 
   const defaultTrigger =
     mode === 'create' ? (
@@ -254,7 +256,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
           {/* Projects Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Projects ({selectedProjects.length})</Label>
+              <Label className="text-sm font-medium">Additional Projects ({selectedProjects.length})</Label>
               {selectedProjects.length > 0 && (
                 <Button
                   variant="ghost"
@@ -265,6 +267,9 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
                   Clear
                 </Button>
               )}
+            </div>
+            <div className="text-xs text-muted-foreground mb-2">
+              Default projects (Vacation, Duty, Sick Leave, Team Event) are always available
             </div>
 
             {isLoadingProjects ? (
@@ -312,7 +317,8 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
                             >
                               {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 flex items-center gap-1">
+                              {project.icon && <span className="text-xs">{project.icon}</span>}
                               <p className="text-xs font-medium truncate">{project.name}</p>
                             </div>
                             {project.type && (
@@ -427,9 +433,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
 
         <DialogFooter className="pt-3 border-t">
           <div className="flex items-center justify-between w-full">
-            <div className="text-xs text-muted-foreground">
-              {!isFormValid && <span>Select projects and team members</span>}
-            </div>
+            <div className="text-xs text-muted-foreground">{!isFormValid && <span>Select team members</span>}</div>
             <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting} className="h-8 px-4">
               {isSubmitting ? (
                 <>

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { fromPlannerDocument, PlannerModel } from '@/lib/models/planner';
+import { PlannerModel } from '@/lib/models/planner';
 import { Planner } from '@/lib/types';
 import { type } from 'arktype';
 import { fromTeamMemberDocument } from '@/lib/models/team-member';
 import { fromProjectDocument } from '@/lib/models/project';
+import { DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 
 export async function GET() {
   try {
@@ -16,7 +17,8 @@ export async function GET() {
       id: planner._id.toString(),
       name: planner.name,
       assignees: planner.assignees.map(fromTeamMemberDocument) || [],
-      projects: planner.projects.map(fromProjectDocument) || [],
+      // Always include default projects in every planner
+      projects: [...(planner.projects.map(fromProjectDocument) || []), ...DEFAULT_PROJECTS],
     }));
 
     return NextResponse.json(formattedPlanners);
@@ -42,10 +44,15 @@ export async function POST(request: NextRequest) {
     }
 
     await connectToDatabase();
+
+    // Separate regular projects from default projects
+    const regularProjectIds = sanitizedBody.projects.filter((projectId) => !projectId.startsWith('default-'));
+
+    // Only store regular project IDs in the database
     const newPlanner = new PlannerModel({
       name: sanitizedBody.name,
       assignees: sanitizedBody.assignees || [],
-      projects: sanitizedBody.projects || [],
+      projects: regularProjectIds,
     });
 
     await newPlanner.save();
@@ -56,7 +63,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create planner' }, { status: 500 });
     }
 
-    return NextResponse.json(fromPlannerDocument(savedPlanner), { status: 201 });
+    // Get regular projects from database
+    const regularProjects = savedPlanner.projects.map(fromProjectDocument) || [];
+
+    // Always include all default projects in every planner
+    const allProjects = [...regularProjects, ...DEFAULT_PROJECTS];
+
+    return NextResponse.json(
+      {
+        id: savedPlanner._id.toString(),
+        name: savedPlanner.name,
+        assignees: savedPlanner.assignees.map(fromTeamMemberDocument) || [],
+        projects: allProjects,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Failed to create planner:', error);
     return NextResponse.json({ error: 'Failed to create planner' }, { status: 500 });
