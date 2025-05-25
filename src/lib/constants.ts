@@ -17,7 +17,6 @@ import {
   ChartLineIcon,
   ShoppingCartIcon,
   DollarSignIcon,
-  WrenchIcon,
 } from 'lucide-react';
 import { Role } from './types';
 
@@ -197,30 +196,50 @@ export const generateQuarterOptions = () => {
 
 export const QUARTER_OPTIONS = generateQuarterOptions();
 
-export const PROJECT_TYPES = [
+// Define project type options based on the actual Project interface
+export const PROJECT_TYPE_OPTIONS = [
   {
-    id: 'product_discovery',
-    name: 'Product Discovery',
-    icon: TelescopeIcon,
+    id: 'regular' as const,
+    name: 'Regular',
   },
   {
-    id: 'design',
-    name: 'Design',
-    icon: PaletteIcon,
+    id: 'tech-debt' as const,
+    name: 'Tech Debt',
   },
   {
-    id: 'feature',
-    name: 'Feature',
-    icon: CodeIcon,
+    id: 'team-event' as const,
+    name: 'Team Event',
   },
   {
-    id: 'bug',
-    name: 'Bug',
-    icon: BugIcon,
+    id: 'spillover' as const,
+    name: 'Spillover',
   },
   {
-    id: 'technical_debt',
-    name: 'Technical Debt',
-    icon: WrenchIcon,
+    id: 'blocked' as const,
+    name: 'Blocked',
+  },
+  {
+    id: 'hack' as const,
+    name: 'Hack',
+  },
+  {
+    id: 'sick-leave' as const,
+    name: 'Sick Leave',
+  },
+  {
+    id: 'vacation' as const,
+    name: 'Vacation',
+  },
+  {
+    id: 'onboarding' as const,
+    name: 'Onboarding',
+  },
+  {
+    id: 'duty' as const,
+    name: 'Team Duty',
+  },
+  {
+    id: 'risky-week' as const,
+    name: 'Risk Alert',
   },
 ];

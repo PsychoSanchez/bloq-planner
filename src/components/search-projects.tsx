@@ -19,6 +19,7 @@ import { ProjectSortSelector } from './project-sort-selector';
 import { AdvancedProjectFilters } from './advanced-project-filters';
 import { Button } from './ui/button';
 import { TeamOption } from './team-selector';
+import { PROJECT_TYPE_OPTIONS } from '@/lib/constants';
 
 interface SearchProjectsProps {
   teams: TeamOption[];
@@ -80,39 +81,11 @@ export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
                 <SelectItem value="all" className="text-sm py-2">
                   All Types
                 </SelectItem>
-                <SelectItem value="regular" className="text-sm py-2">
-                  Regular
-                </SelectItem>
-                <SelectItem value="tech-debt" className="text-sm py-2">
-                  Tech Debt
-                </SelectItem>
-                <SelectItem value="team-event" className="text-sm py-2">
-                  Team Event
-                </SelectItem>
-                <SelectItem value="spillover" className="text-sm py-2">
-                  Spillover
-                </SelectItem>
-                <SelectItem value="blocked" className="text-sm py-2">
-                  Blocked
-                </SelectItem>
-                <SelectItem value="hack" className="text-sm py-2">
-                  Hack
-                </SelectItem>
-                <SelectItem value="sick-leave" className="text-sm py-2">
-                  Sick Leave
-                </SelectItem>
-                <SelectItem value="vacation" className="text-sm py-2">
-                  Vacation
-                </SelectItem>
-                <SelectItem value="onboarding" className="text-sm py-2">
-                  Onboarding
-                </SelectItem>
-                <SelectItem value="duty" className="text-sm py-2">
-                  Team Duty
-                </SelectItem>
-                <SelectItem value="risky-week" className="text-sm py-2">
-                  Risk Alert
-                </SelectItem>
+                {PROJECT_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.id} value={option.id} className="text-sm py-2">
+                    {option.name}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>

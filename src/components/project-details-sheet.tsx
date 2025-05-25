@@ -16,6 +16,7 @@ import { PrioritySelector } from '@/components/priroty-selector';
 import { ProjectAreaSelector } from '@/components/project-area-selector';
 import { TeamSelector } from '@/components/team-selector';
 import { QuarterSelector } from '@/components/quarter-selector';
+import { ProjectTypeSelector } from '@/components/project-type-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 
 interface ProjectDetailsSheetProps {
@@ -199,8 +200,17 @@ export function ProjectDetailsSheet({
             <h3 className="text-sm font-medium text-foreground">Project Properties</h3>
 
             <div className="space-y-4">
-              {/* Priority & Quarter */}
+              {/* Type & Priority */}
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</Label>
+                  <ProjectTypeSelector
+                    type="inline"
+                    value={project.type}
+                    onSelect={(value) => handleSelectChange('type', value)}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Priority</Label>
                   <PrioritySelector
@@ -209,7 +219,10 @@ export function ProjectDetailsSheet({
                     onSelect={(value) => handleSelectChange('priority', value)}
                   />
                 </div>
+              </div>
 
+              {/* Quarter & Area */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Quarter</Label>
                   <QuarterSelector
@@ -218,10 +231,7 @@ export function ProjectDetailsSheet({
                     onSelect={(value) => handleSelectChange('quarter', value)}
                   />
                 </div>
-              </div>
 
-              {/* Area & Color */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Area</Label>
                   <ProjectAreaSelector
@@ -230,14 +240,15 @@ export function ProjectDetailsSheet({
                     onSelect={(value) => handleSelectChange('area', value)}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Color</Label>
-                  <ColorSelector
-                    selectedColorName={project.color || DEFAULT_PROJECT_COLOR_NAME}
-                    onColorChange={(color) => handleSelectChange('color', color)}
-                  />
-                </div>
+              {/* Color */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Color</Label>
+                <ColorSelector
+                  selectedColorName={project.color || DEFAULT_PROJECT_COLOR_NAME}
+                  onColorChange={(color) => handleSelectChange('color', color)}
+                />
               </div>
 
               {/* Team */}

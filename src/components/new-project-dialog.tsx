@@ -14,26 +14,25 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { PlusIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
+import { ProjectTypeSelector } from './project-type-selector';
+import { Project } from '@/lib/types';
 
 export function NewProjectDialog() {
   const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    slug: string;
+    type: Project['type'];
+    area: string;
+    priority: string;
+  }>({
     name: '',
     slug: '',
     type: 'regular',
@@ -128,22 +127,10 @@ export function NewProjectDialog() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="type">Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Project Types</SelectLabel>
-                    <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="tech-debt">Tech Debt</SelectItem>
-                    <SelectItem value="team-event">Team Event</SelectItem>
-                    <SelectItem value="spillover">Spillover</SelectItem>
-                    <SelectItem value="blocked">Blocked</SelectItem>
-                    <SelectItem value="hack">Hack</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <ProjectTypeSelector
+                value={formData.type}
+                onSelect={(value) => setFormData({ ...formData, type: value })}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="area">Area</Label>

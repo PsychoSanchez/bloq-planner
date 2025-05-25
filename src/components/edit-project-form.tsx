@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Project } from '@/lib/types';
-import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { ColorSelector } from './color-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 import { ROLES_TO_DISPLAY } from '@/lib/constants';
@@ -18,6 +17,7 @@ import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamOption, TeamSelector } from './team-selector';
 import { QuarterSelector } from './quarter-selector';
+import { ProjectTypeSelector } from './project-type-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +56,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       roi: project.roi || '',
       cost: project.cost || '',
       impact: project.impact || '',
+      type: project.type,
     }),
     [project],
   );
@@ -87,6 +88,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       currentData.roi !== originalData.roi ||
       currentData.cost !== originalData.cost ||
       currentData.impact !== originalData.impact ||
+      currentData.type !== originalData.type ||
       currentEstimates !== originalEstimates
     );
   }, [formData, initialFormData]);
@@ -320,10 +322,11 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
               teams={teams}
               loading={teamsLoading}
             />
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Type:</span>
-              <ProjectTypeBadge type={project.type} />
-            </div>
+            <ProjectTypeSelector
+              type="inline"
+              value={formData.type}
+              onSelect={(value) => handleSelectChange('type', value)}
+            />
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground text-xs">Lead:</span>
               <Input
