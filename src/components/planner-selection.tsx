@@ -1,3 +1,5 @@
+// Needs to be rethought and refactored
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { EmptyPlaceholder } from '@/components/ui/empty-placeholder';
 import { useToast } from '@/components/ui/use-toast';
-import { createPlanner, deletePlanner, getPlanners } from '@/lib/planner-api';
-import { PlusCircle, Trash, Check } from 'lucide-react';
+import { createPlanner, deletePlanner, getPlanners, updatePlanner } from '@/lib/planner-api';
+import { PlusCircle, Trash, Check, Edit } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { Planner, Project, Assignee } from '@/lib/types';
 import {
@@ -38,17 +40,26 @@ interface PlannerCreateData {
   assignees: string[];
 }
 
-interface CreatePlannerDialogProps {
-  onCreatePlanner: (data: { name: string; projects: Project[]; assignees: Assignee[] }) => Promise<void>;
+interface PlannerDialogProps {
+  mode: 'create' | 'edit';
+  planner?: Planner; // Required for edit mode
+  onSubmit: (data: { name: string; projects: Project[]; assignees: Assignee[] }) => Promise<void>;
   yearValue: number;
   quarterValue: number;
+  trigger?: React.ReactNode;
 }
 
-function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: CreatePlannerDialogProps) {
+function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigger }: PlannerDialogProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(`Q${quarterValue} ${yearValue} Lego Planner`);
-  const [selectedProjects, setSelectedProjects] = useState<Project[]>([]);
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
+  const [name, setName] = useState(
+    mode === 'edit' && planner ? planner.name : `Q${quarterValue} ${yearValue} Lego Planner`,
+  );
+  const [selectedProjects, setSelectedProjects] = useState<Project[]>(
+    mode === 'edit' && planner ? planner.projects : [],
+  );
+  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>(
+    mode === 'edit' && planner ? planner.assignees : [],
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Data states
@@ -131,6 +142,15 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
     }
   }, [open, toast]);
 
+  // Reset form when dialog opens in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && planner && open) {
+      setName(planner.name);
+      setSelectedProjects(planner.projects);
+      setSelectedAssignees(planner.assignees);
+    }
+  }, [mode, open]);
+
   const toggleProject = (project: Project) => {
     setSelectedProjects((prev) => {
       const exists = prev.some((p) => p.id === project.id);
@@ -156,7 +176,7 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      await onCreatePlanner({
+      await onSubmit({
         name,
         projects: selectedProjects,
         assignees: selectedAssignees,
@@ -164,21 +184,39 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
       setOpen(false);
       resetForm();
     } catch (error) {
-      console.error('Failed to create planner:', error);
+      console.error(`Failed to ${mode} planner:`, error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const resetForm = () => {
-    setName(`Q${quarterValue} ${yearValue} Lego Planner`);
-    setSelectedProjects([]);
-    setSelectedAssignees([]);
+    if (mode === 'create') {
+      setName(`Q${quarterValue} ${yearValue} Lego Planner`);
+      setSelectedProjects([]);
+      setSelectedAssignees([]);
+    } else if (mode === 'edit' && planner) {
+      setName(planner.name);
+      setSelectedProjects(planner.projects);
+      setSelectedAssignees(planner.assignees);
+    }
     setProjectSearch('');
     setAssigneeSearch('');
   };
 
   const isFormValid = name.trim() !== '' && selectedProjects.length > 0 && selectedAssignees.length > 0;
+
+  const defaultTrigger =
+    mode === 'create' ? (
+      <Button className="gap-2">
+        <PlusCircle className="h-4 w-4" />
+        New Planner
+      </Button>
+    ) : (
+      <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Edit className="h-4 w-4" />
+      </Button>
+    );
 
   return (
     <Dialog
@@ -188,17 +226,14 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
         setOpen(newOpen);
       }}
     >
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <PlusCircle className="h-4 w-4" />
-          New Planner
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-3">
-          <DialogTitle>Create New Lego Planner</DialogTitle>
+          <DialogTitle>{mode === 'create' ? 'Create New Lego Planner' : 'Edit Lego Planner'}</DialogTitle>
           <DialogDescription>
-            Configure your planner for Q{quarterValue} {yearValue}
+            {mode === 'create'
+              ? `Configure your planner for Q${quarterValue} ${yearValue}`
+              : `Update your planner configuration`}
           </DialogDescription>
         </DialogHeader>
 
@@ -264,7 +299,10 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
                               'flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors',
                               isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
                             )}
-                            onClick={() => toggleProject(project)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleProject(project);
+                            }}
                           >
                             <div
                               className={cn(
@@ -342,7 +380,10 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
                               'flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors',
                               isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
                             )}
-                            onClick={() => toggleAssignee(assignee)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleAssignee(assignee);
+                            }}
                           >
                             <div
                               className={cn(
@@ -393,10 +434,12 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
               {isSubmitting ? (
                 <>
                   <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                  Creating...
+                  {mode === 'create' ? 'Creating...' : 'Updating...'}
                 </>
-              ) : (
+              ) : mode === 'create' ? (
                 'Create Planner'
+              ) : (
+                'Update Planner'
               )}
             </Button>
           </div>
@@ -404,6 +447,19 @@ function CreatePlannerDialog({ onCreatePlanner, yearValue, quarterValue }: Creat
       </DialogContent>
     </Dialog>
   );
+}
+
+// Legacy component for backward compatibility
+function CreatePlannerDialog({
+  onCreatePlanner,
+  yearValue,
+  quarterValue,
+}: {
+  onCreatePlanner: (data: { name: string; projects: Project[]; assignees: Assignee[] }) => Promise<void>;
+  yearValue: number;
+  quarterValue: number;
+}) {
+  return <PlannerDialog mode="create" onSubmit={onCreatePlanner} yearValue={yearValue} quarterValue={quarterValue} />;
 }
 
 export function PlannerSelection() {
@@ -467,6 +523,42 @@ export function PlannerSelection() {
       toast({
         title: 'Error',
         description: 'Failed to create new planner',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to handle in the dialog
+    }
+  };
+
+  const handleUpdatePlanner = async (
+    plannerId: string,
+    data: { name: string; projects: Project[]; assignees: Assignee[] },
+  ) => {
+    try {
+      // Extract just the IDs for the API
+      const plannerData = {
+        name: data.name,
+        projects: data.projects.map((project) => project.id),
+        assignees: data.assignees.map((assignee) => assignee.id),
+      };
+
+      // Update the planner
+      const response = await updatePlanner(plannerId, plannerData);
+
+      if (response.success) {
+        // Reload the planners list
+        const updatedPlanners = await getPlanners(yearValue, quarterValue);
+        setPlanners(updatedPlanners.planners);
+
+        toast({
+          title: 'Success',
+          description: 'Planner updated successfully',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update planner:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update planner',
         variant: 'destructive',
       });
       throw error; // Re-throw to handle in the dialog
@@ -554,14 +646,28 @@ export function PlannerSelection() {
                 <div className="text-xs text-muted-foreground">
                   Q{quarterValue} {yearValue}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={(e) => handleDeletePlanner(planner.id, e)}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <PlannerDialog
+                    mode="edit"
+                    planner={planner}
+                    onSubmit={(data) => handleUpdatePlanner(planner.id, data)}
+                    yearValue={yearValue}
+                    quarterValue={quarterValue}
+                    trigger={
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => handleDeletePlanner(planner.id, e)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
               </CompactCardFooter>
             </CompactCard>
           ))}

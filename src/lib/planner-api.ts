@@ -12,6 +12,13 @@ export interface ApiResponse {
   error?: string;
 }
 
+// Type for updating planner that matches the API route expectations
+export interface PlannerUpdateData {
+  name: string;
+  projects: string[];
+  assignees: string[];
+}
+
 /**
  * Fetch all planners
  */
@@ -94,7 +101,7 @@ export async function createPlanner(
 /**
  * Update an existing planner
  */
-export async function updatePlanner(id: string, updates: Partial<Planner>): Promise<ApiResponse> {
+export async function updatePlanner(id: string, updates: PlannerUpdateData): Promise<ApiResponse> {
   const response = await fetch(`/api/planner/${id}`, {
     method: 'PATCH',
     headers: {
