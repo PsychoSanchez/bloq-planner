@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckIcon, XIcon, CalendarIcon, ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CheckIcon, XIcon, CalendarIcon, ArchiveIcon, ArchiveRestoreIcon, AlertCircleIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamOption, TeamSelector } from './team-selector';
 import { QuarterSelector } from './quarter-selector';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 interface EditProjectFormProps {
   project: Project;
@@ -28,32 +30,79 @@ interface EditProjectFormProps {
 
 export function EditProjectForm({ project, onCancel, teams, teamsLoading }: EditProjectFormProps) {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: project.name,
-    slug: project.slug,
-    description: project.description || '',
-    priority: project.priority || 'medium',
-    teamId: project.teamId || '',
-    leadId: project.leadId || '',
-    area: project.area || '',
-    quarter: project.quarter || '',
-    dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
-    color: project.color || DEFAULT_PROJECT_COLOR_NAME,
-    archived: project.archived || false,
-    estimates: ROLES_TO_DISPLAY.reduce(
-      (acc, role) => {
-        const existingEstimate = project.estimates?.find((est) => est.department === role);
-        acc[role] = existingEstimate ? existingEstimate.value : 0;
-        return acc;
-      },
-      {} as Record<string, number>,
-    ),
-    roi: project.roi || '',
-    cost: project.cost || '',
-    impact: project.impact || '',
-  });
+  const { toast } = useToast();
 
+  const initialFormData = useMemo(
+    () => ({
+      name: project.name,
+      slug: project.slug,
+      description: project.description || '',
+      priority: project.priority || 'medium',
+      teamId: project.teamId || '',
+      leadId: project.leadId || '',
+      area: project.area || '',
+      quarter: project.quarter || '',
+      dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
+      color: project.color || DEFAULT_PROJECT_COLOR_NAME,
+      archived: project.archived || false,
+      estimates: ROLES_TO_DISPLAY.reduce(
+        (acc, role) => {
+          const existingEstimate = project.estimates?.find((est) => est.department === role);
+          acc[role] = existingEstimate ? existingEstimate.value : 0;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      roi: project.roi || '',
+      cost: project.cost || '',
+      impact: project.impact || '',
+    }),
+    [project],
+  );
+
+  const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Deep comparison function for detecting changes
+  const hasUnsavedChanges = useMemo(() => {
+    const currentData = { ...formData };
+    const originalData = { ...initialFormData };
+
+    // Convert estimates objects to comparable format
+    const currentEstimates = JSON.stringify(currentData.estimates);
+    const originalEstimates = JSON.stringify(originalData.estimates);
+
+    return (
+      currentData.name !== originalData.name ||
+      currentData.slug !== originalData.slug ||
+      currentData.description !== originalData.description ||
+      currentData.priority !== originalData.priority ||
+      currentData.teamId !== originalData.teamId ||
+      currentData.leadId !== originalData.leadId ||
+      currentData.area !== originalData.area ||
+      currentData.quarter !== originalData.quarter ||
+      currentData.dependencies !== originalData.dependencies ||
+      currentData.color !== originalData.color ||
+      currentData.archived !== originalData.archived ||
+      currentData.roi !== originalData.roi ||
+      currentData.cost !== originalData.cost ||
+      currentData.impact !== originalData.impact ||
+      currentEstimates !== originalEstimates
+    );
+  }, [formData, initialFormData]);
+
+  // Warning before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -108,6 +157,16 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     setFormData((prev) => ({ ...prev, archived: !prev.archived }));
   };
 
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to cancel? Your changes will be lost.',
+      );
+      if (!confirmed) return;
+    }
+    onCancel();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -135,10 +194,22 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
         throw new Error('Failed to update project');
       }
 
+      // Show success toast
+      toast({
+        title: 'Project updated successfully',
+        description: `"${formData.name}" has been saved with your changes.`,
+      });
+
       router.refresh();
       onCancel();
     } catch (error) {
       console.error('Error updating project:', error);
+      // Show error toast
+      toast({
+        title: 'Failed to update project',
+        description: 'There was an error saving your changes. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -149,7 +220,13 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 flex-1">
-            <Button type="button" variant="outline" size="sm" onClick={onCancel} className="text-xs px-2 py-1 h-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+              className="text-xs px-2 py-1 h-auto"
+            >
               <XIcon className="h-3 w-3 mr-1" />
               Cancel
             </Button>
@@ -172,16 +249,28 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
                 </>
               )}
             </Button>
+
+            {/* Unsaved changes indicator */}
+            {hasUnsavedChanges && (
+              <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-xs font-medium">
+                <AlertCircleIcon className="h-3 w-3" />
+                <span>Unsaved changes</span>
+              </div>
+            )}
           </div>
+
           <Button
             type="submit"
             variant="default"
             size="sm"
-            disabled={isSubmitting}
-            className="text-xs px-2 py-1 h-auto"
+            disabled={isSubmitting || !hasUnsavedChanges}
+            className={cn(
+              'text-xs px-2 py-1 h-auto transition-all',
+              hasUnsavedChanges && 'ring-2 ring-blue-500/20 shadow-sm',
+            )}
           >
             <CheckIcon className="h-3 w-3 mr-1" />
-            Save Changes
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
 
