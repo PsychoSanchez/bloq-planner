@@ -5,7 +5,7 @@ export const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'default-vacation',
     name: 'Vacation',
-    slug: 'vacation',
+    slug: 'TIME OFF',
     type: 'vacation',
     color: '#10B981', // Green
     description: 'Time off for vacation',
@@ -15,7 +15,7 @@ export const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'default-duty',
     name: 'Duty',
-    slug: 'duty',
+    slug: 'DUTY',
     type: 'duty',
     color: '#6366F1', // Indigo
     description: 'On-call duty or support responsibilities',
@@ -25,7 +25,7 @@ export const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'default-sick-leave',
     name: 'Sick Leave',
-    slug: 'sick-leave',
+    slug: 'SICK',
     type: 'sick-leave',
     color: '#EF4444', // Red
     description: 'Time off for illness',
@@ -35,7 +35,7 @@ export const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'default-team-event',
     name: 'Team Event',
-    slug: 'team-event',
+    slug: 'TEAM',
     type: 'team-event',
     color: '#F59E0B', // Amber
     description: 'Team building activities, meetings, or events',

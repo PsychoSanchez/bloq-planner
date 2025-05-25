@@ -20,6 +20,22 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { parseAsInteger, useQueryState } from 'nuqs';
+import { getAllAvailableProjects, isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
+import {
+  Wrench,
+  Calendar,
+  ArrowRightCircle,
+  XCircle,
+  Sparkles,
+  FileCode2,
+  Thermometer,
+  PalmtreeIcon,
+  GraduationCap,
+  Shield,
+  AlertTriangle,
+  Check,
+  Trash2,
+} from 'lucide-react';
 
 // Predefined column width sizes
 const COLUMN_SIZES = {
@@ -76,6 +92,34 @@ const useLegoPlannerViewSize = () => {
   return { selectedSize, setColumnSize, resetColumnSize, columnWidth };
 };
 
+// Helper function to get project icon
+const getProjectIcon = (projectType: string) => {
+  switch (projectType) {
+    case 'tech-debt':
+      return <Wrench className="h-3.5 w-3.5" />;
+    case 'team-event':
+      return <Calendar className="h-3.5 w-3.5" />;
+    case 'spillover':
+      return <ArrowRightCircle className="h-3.5 w-3.5" />;
+    case 'blocked':
+      return <XCircle className="h-3.5 w-3.5" />;
+    case 'hack':
+      return <Sparkles className="h-3.5 w-3.5" />;
+    case 'sick-leave':
+      return <Thermometer className="h-3.5 w-3.5" />;
+    case 'vacation':
+      return <PalmtreeIcon className="h-3.5 w-3.5" />;
+    case 'onboarding':
+      return <GraduationCap className="h-3.5 w-3.5" />;
+    case 'duty':
+      return <Shield className="h-3.5 w-3.5" />;
+    case 'risky-week':
+      return <AlertTriangle className="h-3.5 w-3.5" />;
+    default:
+      return <FileCode2 className="h-3.5 w-3.5" />;
+  }
+};
+
 export function LegoPlanner({
   initialData: plannerData,
   getAssignmentsForWeekAndAssignee,
@@ -92,6 +136,20 @@ export function LegoPlanner({
   const { selectedSize, setColumnSize, columnWidth, resetColumnSize } = useLegoPlannerViewSize();
 
   const weeks = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
+
+  // Get all available projects (regular + default)
+  const allAvailableProjects = useMemo(() => {
+    return getAllAvailableProjects(plannerData.projects);
+  }, [plannerData.projects]);
+
+  // Separate regular and default projects for context menu
+  const regularProjects = useMemo(() => {
+    return plannerData.projects.filter((p) => !isDefaultProject(p.id));
+  }, [plannerData.projects]);
+
+  const defaultProjects = useMemo(() => {
+    return DEFAULT_PROJECTS;
+  }, []);
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -243,7 +301,7 @@ export function LegoPlanner({
               {weeks.map((week, index) => {
                 const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
                 const project = assignment
-                  ? plannerData.projects.find((p) => p.id === assignment.projectId)
+                  ? allAvailableProjects.find((p) => p.id === assignment.projectId)
                   : undefined;
 
                 return (
@@ -265,48 +323,100 @@ export function LegoPlanner({
                       <ContextMenuTrigger>
                         <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
                       </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        {plannerData.projects.map((p, i) => (
+                      <ContextMenuContent className="w-56">
+                        {/* Regular Projects */}
+                        {regularProjects.length > 0 && (
                           <>
-                            {i !== 0 ? <ContextMenuSeparator /> : null}
-                            <ContextMenuItem
-                              key={p.id}
-                              onClick={() => {
-                                if (assignment) {
-                                  updateAssignment({
-                                    id: assignment.id,
-                                    assigneeId: assignee.id,
-                                    plannerId: plannerData.id,
-                                    week: week.weekNumber,
-                                    year: currentYear,
-                                    quarter: currentQuarter,
-                                    projectId: p.id,
-                                  });
-                                } else {
-                                  createAssignment({
-                                    assigneeId: assignee.id,
-                                    projectId: p.id,
-                                    plannerId: plannerData.id,
-                                    week: week.weekNumber,
-                                    year: currentYear,
-                                    quarter: currentQuarter,
-                                  });
-                                }
-                              }}
-                            >
-                              {p.name}
-                            </ContextMenuItem>
+                            {regularProjects.map((p) => (
+                              <ContextMenuItem
+                                key={p.id}
+                                className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer"
+                                onClick={() => {
+                                  if (assignment) {
+                                    updateAssignment({
+                                      id: assignment.id,
+                                      assigneeId: assignee.id,
+                                      plannerId: plannerData.id,
+                                      week: week.weekNumber,
+                                      year: currentYear,
+                                      quarter: currentQuarter,
+                                      projectId: p.id,
+                                    });
+                                  } else {
+                                    createAssignment({
+                                      assigneeId: assignee.id,
+                                      projectId: p.id,
+                                      plannerId: plannerData.id,
+                                      week: week.weekNumber,
+                                      year: currentYear,
+                                      quarter: currentQuarter,
+                                    });
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  {getProjectIcon(p.type)}
+                                  <span className="truncate">{p.name}</span>
+                                </div>
+                                {assignment?.projectId === p.id && <Check className="h-3.5 w-3.5 text-green-600" />}
+                              </ContextMenuItem>
+                            ))}
                           </>
-                        ))}
+                        )}
+
+                        {/* Default Projects */}
+                        {defaultProjects.length > 0 && (
+                          <>
+                            {regularProjects.length > 0 && <ContextMenuSeparator />}
+                            {defaultProjects.map((p) => (
+                              <ContextMenuItem
+                                key={p.id}
+                                className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer"
+                                onClick={() => {
+                                  if (assignment) {
+                                    updateAssignment({
+                                      id: assignment.id,
+                                      assigneeId: assignee.id,
+                                      plannerId: plannerData.id,
+                                      week: week.weekNumber,
+                                      year: currentYear,
+                                      quarter: currentQuarter,
+                                      projectId: p.id,
+                                    });
+                                  } else {
+                                    createAssignment({
+                                      assigneeId: assignee.id,
+                                      projectId: p.id,
+                                      plannerId: plannerData.id,
+                                      week: week.weekNumber,
+                                      year: currentYear,
+                                      quarter: currentQuarter,
+                                    });
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  {getProjectIcon(p.type)}
+                                  <span className="truncate text-muted-foreground">{p.name}</span>
+                                </div>
+                                {assignment?.projectId === p.id && <Check className="h-3.5 w-3.5 text-green-600" />}
+                              </ContextMenuItem>
+                            ))}
+                          </>
+                        )}
+
+                        {/* Remove Assignment Option */}
                         {assignment && (
                           <>
                             <ContextMenuSeparator />
                             <ContextMenuItem
+                              className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer text-destructive focus:text-destructive"
                               onClick={() => {
                                 deleteAssignment(assignment.id);
                               }}
                             >
-                              Remove Assignment
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Remove Assignment</span>
                             </ContextMenuItem>
                           </>
                         )}
