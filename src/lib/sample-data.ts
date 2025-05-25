@@ -1,5 +1,13 @@
 import { Assignment, Assignee, PlannerData, Project, WeekData } from './types';
 
+// Helper function to format date as YYYY-MM-DD without timezone issues
+const formatDateToYMD = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Get the start date for a specific quarter and year
 const getQuarterStartDate = (year: number, quarter: number): Date => {
   const month = (quarter - 1) * 3;
@@ -18,16 +26,36 @@ export const generateWeeks = (year: number, quarter: number): WeekData[] => {
   // Get the first day of the quarter
   const quarterStart = getQuarterStartDate(year, quarter);
 
-  // Adjust to the closest previous Sunday (week start)
+  // Adjust to the closest previous Monday (week start)
   const startDate = new Date(quarterStart);
   const dayOfWeek = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
-  if (dayOfWeek > 0) {
-    startDate.setDate(startDate.getDate() - dayOfWeek);
+
+  // Adjust to Monday: if it's Sunday (0), go back 6 days; otherwise go back (dayOfWeek - 1) days
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  if (daysToSubtract > 0) {
+    startDate.setDate(startDate.getDate() - daysToSubtract);
   }
 
-  // Get week number of the first week
-  const firstWeekNumber =
-    Math.ceil((startDate.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  // Calculate week number based on Monday-starting weeks from January 1st
+  const getWeekNumber = (date: Date): number => {
+    const jan1 = new Date(year, 0, 1);
+    const jan1DayOfWeek = jan1.getDay();
+
+    // Find the first Monday of the year (or Jan 1 if it's already Monday)
+    const firstMonday = new Date(jan1);
+    const daysToFirstMonday = jan1DayOfWeek === 0 ? 1 : jan1DayOfWeek === 1 ? 0 : 8 - jan1DayOfWeek;
+    firstMonday.setDate(jan1.getDate() + daysToFirstMonday);
+
+    // If the date is before the first Monday, it belongs to week 1 (short week starting Jan 1)
+    if (date < firstMonday) {
+      return 1;
+    }
+
+    // Calculate week number from first Monday
+    const diffTime = date.getTime() - firstMonday.getTime();
+    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
+    return diffWeeks + 2; // +2 because week 1 is the short week before first Monday
+  };
 
   // Generate approximately 13 weeks (one quarter)
   const weeksCount = getWeeksInQuarter();
@@ -40,9 +68,9 @@ export const generateWeeks = (year: number, quarter: number): WeekData[] => {
     weekEndDate.setDate(weekStartDate.getDate() + 6);
 
     weeks.push({
-      weekNumber: firstWeekNumber + i,
-      startDate: weekStartDate.toISOString().split('T')[0],
-      endDate: weekEndDate.toISOString().split('T')[0],
+      weekNumber: getWeekNumber(weekStartDate),
+      startDate: formatDateToYMD(weekStartDate),
+      endDate: formatDateToYMD(weekEndDate),
     });
   }
 

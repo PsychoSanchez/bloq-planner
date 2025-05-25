@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   Check,
   Trash2,
+  Target,
 } from 'lucide-react';
 
 // Predefined column width sizes
@@ -53,6 +54,54 @@ interface LegoPlannerProps {
   updateAssignment: (assignment: Assignment) => void;
   deleteAssignment: (assignmentId: string) => void;
 }
+
+// Utility functions for current date and week detection
+const isCurrentWeek = (weekStartDate: string, weekEndDate: string): boolean => {
+  const now = new Date();
+  const start = new Date(weekStartDate);
+  const end = new Date(weekEndDate);
+
+  // Set end date to end of day (23:59:59.999) to include the entire end day
+  end.setHours(23, 59, 59, 999);
+
+  return now >= start && now <= end;
+};
+
+const isCurrentDate = (weekStartDate: string, weekEndDate: string): boolean => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = new Date(weekStartDate);
+  const end = new Date(weekEndDate);
+
+  // Set end date to end of day to include the entire end day
+  end.setHours(23, 59, 59, 999);
+
+  return today >= start && today <= end;
+};
+
+// Calculate the position of current day within the week (0-6, Monday to Sunday)
+const getCurrentDayPositionInWeek = (weekStartDate: string): number => {
+  const now = new Date();
+  const start = new Date(weekStartDate);
+
+  // Ensure we're comparing dates at midnight to avoid time zone issues
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+
+  const diffTime = today.getTime() - weekStart.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // Clamp between 0-6 (Monday to Sunday)
+  return Math.max(0, Math.min(6, diffDays));
+};
+
+// Calculate the exact position within the day (0-1, representing progress through the day)
+const getCurrentTimePositionInDay = (): number => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  return (hours * 60 + minutes) / (24 * 60); // 0 = start of day, 1 = end of day
+};
 
 const useLegoPlannerViewSize = () => {
   const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
@@ -132,6 +181,7 @@ export function LegoPlanner({
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [isInspectModeEnabled, setIsInspectModeEnabled] = useState<boolean>(false);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+  const [highlightCurrentWeek, setHighlightCurrentWeek] = useState<boolean>(true);
 
   const { selectedSize, setColumnSize, columnWidth, resetColumnSize } = useLegoPlannerViewSize();
 
@@ -150,6 +200,11 @@ export function LegoPlanner({
   const defaultProjects = useMemo(() => {
     return DEFAULT_PROJECTS;
   }, []);
+
+  // Find current week in the displayed weeks
+  const currentWeekIndex = useMemo(() => {
+    return weeks.findIndex((week) => isCurrentWeek(week.startDate, week.endDate));
+  }, [weeks]);
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -190,8 +245,22 @@ export function LegoPlanner({
     }
   };
 
+  const handleHighlightCurrentWeekToggle = (checked: boolean) => {
+    setHighlightCurrentWeek(checked);
+  };
+
   const handleAssigneesChange = (assigneeIds: string[]) => {
     setSelectedAssigneeIds(assigneeIds);
+  };
+
+  const scrollToCurrentWeek = () => {
+    if (currentWeekIndex >= 0 && tableRef.current) {
+      const headerCells = tableRef.current.querySelectorAll('thead th');
+      const targetCell = headerCells[currentWeekIndex + 1]; // +1 because first cell is assignee column
+      if (targetCell) {
+        targetCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
   };
 
   const renderAssigneeName = (assignee: Assignee) => {
@@ -225,6 +294,22 @@ export function LegoPlanner({
                 Inspect
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="highlight-current"
+                checked={highlightCurrentWeek}
+                onCheckedChange={handleHighlightCurrentWeekToggle}
+              />
+              <Label htmlFor="highlight-current" className="text-xs text-muted-foreground">
+                Current Week
+              </Label>
+            </div>
+            {currentWeekIndex >= 0 && (
+              <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={scrollToCurrentWeek}>
+                <Target className="h-3 w-3 mr-1" />
+                Go to Current
+              </Button>
+            )}
             <div className="flex items-center gap-1">
               <ToggleGroup
                 type="single"
@@ -272,24 +357,67 @@ export function LegoPlanner({
                 />
               </div>
             </TableHead>
-            {weeks.map((week) => (
-              <TableHead
-                key={week.weekNumber}
-                className="p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative"
-                style={{
-                  minWidth: `${columnWidth}px`,
-                  width: `${columnWidth}px`,
-                  transition: 'width 0.2s ease-in-out',
-                }}
-              >
-                <div className="flex flex-col items-center justify-center h-7 p-0.5 text-foreground dark:text-gray-300">
-                  <div className="text-xs font-medium">
-                    {new Date(week.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {weeks.map((week) => {
+              const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
+              const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
+
+              // Calculate precise position for current time marker
+              const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
+              const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
+              const markerPosition = ((dayPosition + timePosition) / 7) * 100; // Convert to percentage
+
+              return (
+                <TableHead
+                  key={week.weekNumber}
+                  className={cn(
+                    'p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative',
+                    highlightCurrentWeek && isCurrentWeekCell && 'bg-amber-50/30 dark:bg-amber-950/20',
+                  )}
+                  style={{
+                    minWidth: `${columnWidth}px`,
+                    width: `${columnWidth}px`,
+                    transition: 'width 0.2s ease-in-out',
+                  }}
+                >
+                  <div className="flex flex-col items-center justify-center h-7 p-0.5 text-foreground dark:text-gray-300">
+                    <div
+                      className={cn('text-xs font-medium', isCurrentWeekCell && 'text-amber-700 dark:text-amber-300')}
+                    >
+                      {new Date(week.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                    <div
+                      className={cn(
+                        'text-xs mt-1 text-muted-foreground dark:text-gray-400',
+                        isCurrentWeekCell && 'text-amber-600 dark:text-amber-400',
+                      )}
+                    >
+                      Week {week.weekNumber}
+                    </div>
                   </div>
-                  <div className="text-xs mt-1 text-muted-foreground dark:text-gray-400">Week {week.weekNumber}</div>
-                </div>
-              </TableHead>
-            ))}
+                  {/* Current time marker with arrow */}
+                  {isCurrentDateCell && (
+                    <>
+                      {/* Subtle vertical line */}
+                      <div
+                        className="absolute top-0 w-0.5 h-full bg-gradient-to-b from-amber-400 to-amber-600 opacity-60 z-10"
+                        style={{ left: `${markerPosition}%` }}
+                      />
+                      {/* Arrow indicator at top */}
+                      <div
+                        className="absolute top-0 w-0 h-0 z-20"
+                        style={{
+                          left: `${markerPosition}%`,
+                          transform: 'translateX(-50%)',
+                          borderLeft: '4px solid transparent',
+                          borderRight: '4px solid transparent',
+                          borderTop: '6px solid #f59e0b',
+                        }}
+                      />
+                    </>
+                  )}
+                </TableHead>
+              );
+            })}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -298,18 +426,27 @@ export function LegoPlanner({
               <TableCell className="p-0 font-medium border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background">
                 {renderAssigneeName(assignee)}
               </TableCell>
-              {weeks.map((week, index) => {
+              {weeks.map((week) => {
                 const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
                 const project = assignment
                   ? allAvailableProjects.find((p) => p.id === assignment.projectId)
                   : undefined;
 
+                const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
+                const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
+
+                // Calculate precise position for current time marker
+                const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
+                const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
+                const markerPosition = ((dayPosition + timePosition) / 7) * 100; // Convert to percentage
+
                 return (
                   <TableCell
-                    key={index}
+                    key={week.weekNumber}
                     className={cn(
-                      'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300',
+                      'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300 relative',
                       hoveredProjectId && project && project.id !== hoveredProjectId && 'opacity-30',
+                      highlightCurrentWeek && isCurrentWeekCell && 'bg-amber-50/20 dark:bg-amber-950/10',
                     )}
                     style={{
                       minWidth: `${columnWidth}px`,
@@ -422,6 +559,13 @@ export function LegoPlanner({
                         )}
                       </ContextMenuContent>
                     </ContextMenu>
+                    {/* Current time marker line for cells */}
+                    {isCurrentDateCell && (
+                      <div
+                        className="absolute top-0 w-0.5 h-full bg-gradient-to-b from-amber-400 to-amber-600 opacity-40 z-10"
+                        style={{ left: `${markerPosition}%` }}
+                      />
+                    )}
                   </TableCell>
                 );
               })}
