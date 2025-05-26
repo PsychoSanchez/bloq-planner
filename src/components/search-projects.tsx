@@ -10,13 +10,26 @@ import { ProjectSortSelector } from './project-sort-selector';
 import { AdvancedProjectFilters } from './advanced-project-filters';
 import { Button } from './ui/button';
 import { TeamOption } from './team-selector';
+import { ColumnToggle } from './column-toggle';
+import { ColumnDefinition } from '@/hooks/use-column-visibility';
 
 interface SearchProjectsProps {
   teams: TeamOption[];
   teamsLoading: boolean;
+  columns: ColumnDefinition[];
+  isColumnVisible: (columnId: string) => boolean;
+  toggleColumn: (columnId: string) => void;
+  resetToDefaults: () => void;
 }
 
-export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
+export function SearchProjects({
+  teams,
+  teamsLoading,
+  columns,
+  isColumnVisible,
+  toggleColumn,
+  resetToDefaults,
+}: SearchProjectsProps) {
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
 
   const [includeArchived, setIncludeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
@@ -64,6 +77,12 @@ export function SearchProjects({ teams, teamsLoading }: SearchProjectsProps) {
 
         {/* View Controls */}
         <div className="flex gap-2 items-center">
+          <ColumnToggle
+            columns={columns}
+            isColumnVisible={isColumnVisible}
+            toggleColumn={toggleColumn}
+            resetToDefaults={resetToDefaults}
+          />
           <ProjectGroupSelector />
           <ProjectSortSelector />
         </div>

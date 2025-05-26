@@ -32,29 +32,42 @@ interface GroupedProjectsTableProps {
   onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
   teams: TeamOption[];
   teamsLoading: boolean;
+  isColumnVisible: (columnId: string) => boolean;
 }
 
-function GroupedProjectsTableHeader() {
+function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
+  const visibleColumns = [
+    { id: 'name', label: 'Name', className: 'min-w-[200px]' },
+    { id: 'type', label: 'Type', className: 'w-[100px]' },
+    { id: 'priority', label: 'Priority', className: 'w-[100px]' },
+    { id: 'quarter', label: 'Quarter', className: 'w-[100px]' },
+    { id: 'team', label: 'Team', className: 'w-[200px]' },
+    { id: 'lead', label: 'Lead', className: 'w-[200px]' },
+    { id: 'dependencies', label: 'Dependencies', className: 'w-[200px]' },
+    { id: 'area', label: 'Area', className: 'w-[200px]' },
+  ].filter((column) => isColumnVisible(column.id));
+
   return (
     <TableHeader>
       <TableRow>
-        <TableHead className="min-w-[200px]">Name</TableHead>
-        <TableHead className="w-[100px]">Type</TableHead>
-        <TableHead className="w-[100px]">Priority</TableHead>
-        <TableHead className="w-[100px]">Quarter</TableHead>
-        <TableHead className="w-[200px]">Team</TableHead>
-        <TableHead className="w-[200px]">Lead</TableHead>
-        <TableHead className="w-[200px]">Dependencies</TableHead>
-        <TableHead className="w-[200px]">Area</TableHead>
+        {visibleColumns.map((column) => (
+          <TableHead key={column.id} className={column.className}>
+            {column.label}
+          </TableHead>
+        ))}
       </TableRow>
     </TableHeader>
   );
 }
 
-function EmptyProjectRow() {
+function EmptyProjectRow({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
+  const visibleColumnCount = ['name', 'type', 'priority', 'quarter', 'team', 'lead', 'dependencies', 'area'].filter(
+    (columnId) => isColumnVisible(columnId),
+  ).length;
+
   return (
     <TableRow>
-      <TableCell colSpan={8} className="h-16 text-center text-xs">
+      <TableCell colSpan={visibleColumnCount} className="h-16 text-center text-xs">
         No projects found.
       </TableCell>
     </TableRow>
@@ -67,6 +80,7 @@ export function GroupedProjectsTable({
   onUpdateProject,
   teams,
   teamsLoading,
+  isColumnVisible,
 }: GroupedProjectsTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(groups.map((g) => g.label)));
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -117,10 +131,10 @@ export function GroupedProjectsTable({
       <>
         <div className="rounded-sm border">
           <Table className="text-xs">
-            <GroupedProjectsTableHeader />
+            <GroupedProjectsTableHeader isColumnVisible={isColumnVisible} />
             <TableBody>
               {allProjects.length === 0 ? (
-                <EmptyProjectRow />
+                <EmptyProjectRow isColumnVisible={isColumnVisible} />
               ) : (
                 allProjects.map((project) => (
                   <ProjectRow
@@ -130,6 +144,7 @@ export function GroupedProjectsTable({
                     teams={teams}
                     teamsLoading={teamsLoading}
                     onOpenSheet={handleOpenSheet}
+                    isColumnVisible={isColumnVisible}
                   />
                 ))
               )}
@@ -173,10 +188,10 @@ export function GroupedProjectsTable({
 
               {isExpanded && (
                 <Table className="text-xs">
-                  <GroupedProjectsTableHeader />
+                  <GroupedProjectsTableHeader isColumnVisible={isColumnVisible} />
                   <TableBody>
                     {group.projects.length === 0 ? (
-                      <EmptyProjectRow />
+                      <EmptyProjectRow isColumnVisible={isColumnVisible} />
                     ) : (
                       group.projects.map((project) => (
                         <ProjectRow
@@ -186,6 +201,7 @@ export function GroupedProjectsTable({
                           teams={teams}
                           teamsLoading={teamsLoading}
                           onOpenSheet={handleOpenSheet}
+                          isColumnVisible={isColumnVisible}
                         />
                       ))
                     )}
@@ -214,12 +230,14 @@ function ProjectRow({
   teams,
   teamsLoading,
   onOpenSheet,
+  isColumnVisible,
 }: {
   project: Project;
   onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
   teams: TeamOption[];
   teamsLoading: boolean;
   onOpenSheet: (project: Project) => void;
+  isColumnVisible: (columnId: string) => boolean;
 }) {
   const handleTeamChange = (teamId: string) => {
     if (onUpdateProject) {
@@ -261,79 +279,95 @@ function ProjectRow({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <TableRow className={cn('group', project.archived && 'opacity-60')}>
-          <TableCell className="py-1 px-2 font-medium">
-            <div className="flex items-center gap-2 justify-between">
-              <div
-                className="flex items-center gap-2 cursor-pointer hover:underline flex-1"
-                onClick={() => onOpenSheet(project)}
-              >
-                {project.archived && <ArchiveIcon className="h-3 w-3 text-muted-foreground" />}
-                {project.name}
+          {isColumnVisible('name') && (
+            <TableCell className="py-1 px-2 font-medium">
+              <div className="flex items-center gap-2 justify-between">
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:underline flex-1"
+                  onClick={() => onOpenSheet(project)}
+                >
+                  {project.archived && <ArchiveIcon className="h-3 w-3 text-muted-foreground" />}
+                  {project.name}
+                </div>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLinkIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </Link>
               </div>
-              <Link
-                href={`/projects/${project.id}`}
-                className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLinkIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-              </Link>
-            </div>
-          </TableCell>
-          <TableCell className="py-1 px-2">
-            <ProjectTypeBadge type={project.type} />
-          </TableCell>
-          <TableCell className="py-1 px-2">
-            <PrioritySelector
-              type="inline"
-              value={project.priority || 'medium'}
-              onSelect={(value) =>
-                onUpdateProject?.(project.id, { priority: value as 'low' | 'medium' | 'high' | 'urgent' })
-              }
-            />
-          </TableCell>
-          <TableCell className="py-1 px-2">
-            <QuarterSelector
-              type="inline"
-              value={project.quarter || ''}
-              onSelect={(value) => onUpdateProject?.(project.id, { quarter: value })}
-            />
-          </TableCell>
-          <TableCell className="py-1 px-2">
-            {onUpdateProject ? (
-              <TeamSelector
+            </TableCell>
+          )}
+          {isColumnVisible('type') && (
+            <TableCell className="py-1 px-2">
+              <ProjectTypeBadge type={project.type} />
+            </TableCell>
+          )}
+          {isColumnVisible('priority') && (
+            <TableCell className="py-1 px-2">
+              <PrioritySelector
                 type="inline"
-                value={project.teamId}
-                onSelect={handleTeamChange}
-                placeholder="Select team"
-                teams={teams}
-                loading={teamsLoading}
+                value={project.priority || 'medium'}
+                onSelect={(value) =>
+                  onUpdateProject?.(project.id, { priority: value as 'low' | 'medium' | 'high' | 'urgent' })
+                }
               />
-            ) : (
-              project.teamId || '--'
-            )}
-          </TableCell>
-          <TableCell className="py-1 px-2">
-            {onUpdateProject ? (
-              <PersonSelector
+            </TableCell>
+          )}
+          {isColumnVisible('quarter') && (
+            <TableCell className="py-1 px-2">
+              <QuarterSelector
                 type="inline"
-                value={project.leadId}
-                onSelect={handleLeadChange}
-                placeholder="Select lead"
-                teams={teams}
-                loading={teamsLoading}
+                value={project.quarter || ''}
+                onSelect={(value) => onUpdateProject?.(project.id, { quarter: value })}
               />
-            ) : (
-              teams.find((t) => t.id === project.leadId && t.type === 'person')?.name || '--'
-            )}
-          </TableCell>
-          <TableCell className="py-1 px-2">{project.dependencies?.length || '--'}</TableCell>
-          <TableCell className="py-1 px-2">
-            <ProjectAreaSelector
-              type="inline"
-              value={project.area || ''}
-              onSelect={(value) => onUpdateProject?.(project.id, { area: value })}
-            />
-          </TableCell>
+            </TableCell>
+          )}
+          {isColumnVisible('team') && (
+            <TableCell className="py-1 px-2">
+              {onUpdateProject ? (
+                <TeamSelector
+                  type="inline"
+                  value={project.teamId}
+                  onSelect={handleTeamChange}
+                  placeholder="Select team"
+                  teams={teams}
+                  loading={teamsLoading}
+                />
+              ) : (
+                project.teamId || '--'
+              )}
+            </TableCell>
+          )}
+          {isColumnVisible('lead') && (
+            <TableCell className="py-1 px-2">
+              {onUpdateProject ? (
+                <PersonSelector
+                  type="inline"
+                  value={project.leadId}
+                  onSelect={handleLeadChange}
+                  placeholder="Select lead"
+                  teams={teams}
+                  loading={teamsLoading}
+                />
+              ) : (
+                teams.find((t) => t.id === project.leadId && t.type === 'person')?.name || '--'
+              )}
+            </TableCell>
+          )}
+          {isColumnVisible('dependencies') && (
+            <TableCell className="py-1 px-2">{project.dependencies?.length || '--'}</TableCell>
+          )}
+          {isColumnVisible('area') && (
+            <TableCell className="py-1 px-2">
+              <ProjectAreaSelector
+                type="inline"
+                value={project.area || ''}
+                onSelect={(value) => onUpdateProject?.(project.id, { area: value })}
+              />
+            </TableCell>
+          )}
         </TableRow>
       </ContextMenuTrigger>
 

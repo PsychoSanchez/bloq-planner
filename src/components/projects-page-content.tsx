@@ -12,12 +12,148 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { trpc } from '@/utils/trpc';
 import { useOptimisticProjects } from '@/hooks/use-optimistic-projects';
+import { useColumnVisibility, ColumnDefinition } from '@/hooks/use-column-visibility';
 
 const EMPTY_ARRAY = [] as string[];
 
+// Define the available columns for the projects table
+const PROJECT_COLUMNS: ColumnDefinition[] = [
+  { id: 'name', label: 'Name', defaultVisible: true },
+  { id: 'type', label: 'Type', defaultVisible: true },
+  { id: 'priority', label: 'Priority', defaultVisible: true },
+  { id: 'quarter', label: 'Quarter', defaultVisible: true },
+  { id: 'team', label: 'Team', defaultVisible: true },
+  { id: 'lead', label: 'Lead', defaultVisible: true },
+  { id: 'dependencies', label: 'Dependencies', defaultVisible: false },
+  { id: 'area', label: 'Area', defaultVisible: true },
+];
+
 // Skeleton component for loading state
-function ProjectsTableSkeleton({ isGrouped }: { isGrouped: boolean }) {
+function ProjectsTableSkeleton({
+  isGrouped,
+  isColumnVisible,
+}: {
+  isGrouped: boolean;
+  isColumnVisible: (columnId: string) => boolean;
+}) {
   const skeletonRows = Array.from({ length: 8 }, (_, i) => i);
+
+  const renderSkeletonCells = () => {
+    const cells = [];
+    if (isColumnVisible('name')) {
+      cells.push(
+        <TableCell key="name" className="py-2 px-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('type')) {
+      cells.push(
+        <TableCell key="type" className="py-2 px-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('priority')) {
+      cells.push(
+        <TableCell key="priority" className="py-2 px-2">
+          <Skeleton className="h-4 w-12" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('quarter')) {
+      cells.push(
+        <TableCell key="quarter" className="py-2 px-2">
+          <Skeleton className="h-4 w-16" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('team')) {
+      cells.push(
+        <TableCell key="team" className="py-2 px-2">
+          <Skeleton className="h-4 w-20" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('lead')) {
+      cells.push(
+        <TableCell key="lead" className="py-2 px-2">
+          <Skeleton className="h-4 w-16" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('dependencies')) {
+      cells.push(
+        <TableCell key="dependencies" className="py-2 px-2">
+          <Skeleton className="h-4 w-8" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('area')) {
+      cells.push(
+        <TableCell key="area" className="py-2 px-2">
+          <Skeleton className="h-4 w-24" />
+        </TableCell>,
+      );
+    }
+    return cells;
+  };
+
+  const renderSkeletonHeader = () => {
+    const headers = [];
+    if (isColumnVisible('name'))
+      headers.push(
+        <TableHead key="name" className="min-w-[200px]">
+          Name
+        </TableHead>,
+      );
+    if (isColumnVisible('type'))
+      headers.push(
+        <TableHead key="type" className="w-[100px]">
+          Type
+        </TableHead>,
+      );
+    if (isColumnVisible('priority'))
+      headers.push(
+        <TableHead key="priority" className="w-[100px]">
+          Priority
+        </TableHead>,
+      );
+    if (isColumnVisible('quarter'))
+      headers.push(
+        <TableHead key="quarter" className="w-[150px]">
+          Quarter
+        </TableHead>,
+      );
+    if (isColumnVisible('team'))
+      headers.push(
+        <TableHead key="team" className="w-[150px]">
+          Team
+        </TableHead>,
+      );
+    if (isColumnVisible('lead'))
+      headers.push(
+        <TableHead key="lead" className="w-[100px]">
+          Lead
+        </TableHead>,
+      );
+    if (isColumnVisible('dependencies'))
+      headers.push(
+        <TableHead key="dependencies" className="w-[100px]">
+          Dependencies
+        </TableHead>,
+      );
+    if (isColumnVisible('area'))
+      headers.push(
+        <TableHead key="area" className="w-[200px]">
+          Area
+        </TableHead>,
+      );
+    return headers;
+  };
 
   if (isGrouped) {
     return (
@@ -31,48 +167,11 @@ function ProjectsTableSkeleton({ isGrouped }: { isGrouped: boolean }) {
           </div>
           <Table className="text-xs">
             <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[200px]">Name</TableHead>
-                <TableHead className="w-[100px]">Type</TableHead>
-                <TableHead className="w-[100px]">Priority</TableHead>
-                <TableHead className="w-[150px]">Quarter</TableHead>
-                <TableHead className="w-[150px]">Team</TableHead>
-                <TableHead className="w-[100px]">Lead</TableHead>
-                <TableHead className="w-[100px]">Dependencies</TableHead>
-                <TableHead className="w-[200px]">Area</TableHead>
-              </TableRow>
+              <TableRow>{renderSkeletonHeader()}</TableRow>
             </TableHeader>
             <TableBody>
               {skeletonRows.slice(0, 4).map((index) => (
-                <TableRow key={`group1-${index}`}>
-                  <TableCell className="py-2 px-2">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-4 w-40" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-12" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-16" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-20" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-16" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-8" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                </TableRow>
+                <TableRow key={`group1-${index}`}>{renderSkeletonCells()}</TableRow>
               ))}
             </TableBody>
           </Table>
@@ -87,48 +186,11 @@ function ProjectsTableSkeleton({ isGrouped }: { isGrouped: boolean }) {
           </div>
           <Table className="text-xs">
             <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[200px]">Name</TableHead>
-                <TableHead className="w-[100px]">Type</TableHead>
-                <TableHead className="w-[100px]">Priority</TableHead>
-                <TableHead className="w-[150px]">Quarter</TableHead>
-                <TableHead className="w-[150px]">Team</TableHead>
-                <TableHead className="w-[100px]">Lead</TableHead>
-                <TableHead className="w-[100px]">Dependencies</TableHead>
-                <TableHead className="w-[200px]">Area</TableHead>
-              </TableRow>
+              <TableRow>{renderSkeletonHeader()}</TableRow>
             </TableHeader>
             <TableBody>
               {skeletonRows.slice(0, 3).map((index) => (
-                <TableRow key={`group2-${index}`}>
-                  <TableCell className="py-2 px-2">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <Skeleton className="h-4 w-36" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-5 w-14 rounded-full" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-10" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-14" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-18" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-14" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-6" />
-                  </TableCell>
-                  <TableCell className="py-2 px-2">
-                    <Skeleton className="h-4 w-20" />
-                  </TableCell>
-                </TableRow>
+                <TableRow key={`group2-${index}`}>{renderSkeletonCells()}</TableRow>
               ))}
             </TableBody>
           </Table>
@@ -142,51 +204,11 @@ function ProjectsTableSkeleton({ isGrouped }: { isGrouped: boolean }) {
     <div className="rounded-sm border">
       <Table className="text-xs">
         <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[200px]">Name</TableHead>
-            <TableHead className="w-[100px]">Type</TableHead>
-            <TableHead className="w-[100px]">Priority</TableHead>
-            <TableHead className="w-[150px]">Quarter</TableHead>
-            <TableHead className="w-[150px]">Team</TableHead>
-            <TableHead className="w-[100px]">Lead</TableHead>
-            <TableHead className="w-[100px]">Dependencies</TableHead>
-            <TableHead className="w-[200px]">Area</TableHead>
-          </TableRow>
+          <TableRow>{renderSkeletonHeader()}</TableRow>
         </TableHeader>
         <TableBody>
           {skeletonRows.map((index) => (
-            <TableRow key={index}>
-              <TableCell className="py-2 px-2">
-                <div className="flex items-center gap-2 justify-between">
-                  <div className="flex items-center gap-2 flex-1">
-                    <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-4 w-44" />
-                  </div>
-                  <Skeleton className="h-3 w-3" />
-                </div>
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-12" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-16" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-20" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-16" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-8" />
-              </TableCell>
-              <TableCell className="py-2 px-2">
-                <Skeleton className="h-4 w-24" />
-              </TableCell>
-            </TableRow>
+            <TableRow key={index}>{renderSkeletonCells()}</TableRow>
           ))}
         </TableBody>
       </Table>
@@ -210,6 +232,12 @@ export function ProjectsPageContent() {
   const [quarters] = useQueryState('quarters', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [areas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
+
+  // Column visibility
+  const { isColumnVisible, toggleColumn, resetToDefaults } = useColumnVisibility({
+    storageKey: 'projects-table-columns',
+    columns: PROJECT_COLUMNS,
+  });
 
   // Use the optimistic projects hook
   const {
@@ -263,9 +291,16 @@ export function ProjectsPageContent() {
 
   return (
     <div className="space-y-4">
-      <SearchProjects teams={teams} teamsLoading={teamsLoading} />
+      <SearchProjects
+        teams={teams}
+        teamsLoading={teamsLoading}
+        columns={PROJECT_COLUMNS}
+        isColumnVisible={isColumnVisible}
+        toggleColumn={toggleColumn}
+        resetToDefaults={resetToDefaults}
+      />
       {projectsLoading ? (
-        <ProjectsTableSkeleton isGrouped={isGrouped} />
+        <ProjectsTableSkeleton isGrouped={isGrouped} isColumnVisible={isColumnVisible} />
       ) : (
         <GroupedProjectsTable
           groups={groups}
@@ -273,6 +308,7 @@ export function ProjectsPageContent() {
           onUpdateProject={handleUpdateProject}
           teams={teams}
           teamsLoading={teamsLoading}
+          isColumnVisible={isColumnVisible}
         />
       )}
     </div>
