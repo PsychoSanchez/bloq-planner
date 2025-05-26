@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamOption, TeamSelector } from './team-selector';
+import { PersonSelector } from './person-selector';
 import { QuarterSelector } from './quarter-selector';
 import { ProjectTypeSelector } from './project-type-selector';
 import { useToast } from '@/components/ui/use-toast';
@@ -357,17 +358,15 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
               value={formData.type}
               onSelect={(value) => handleSelectChange('type', value)}
             />
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-xs">Lead:</span>
-              <Input
-                id="leadId"
-                name="leadId"
-                value={formData.leadId}
-                onChange={handleChange}
-                placeholder="Assign lead"
-                className="border-0 border-b-0 focus:border-b focus:border-primary focus:outline-none p-1 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-muted/50 rounded-xs shadow-none bg-input/0 dark:bg-input/0"
-              />
-            </div>
+            {/* TODO: Figure out why lead selector doesn't display proper user name */}
+            <PersonSelector
+              type="inline"
+              value={formData.leadId}
+              onSelect={(value) => handleSelectChange('leadId', value)}
+              teams={teams}
+              loading={teamsLoading}
+              placeholder="Select lead"
+            />
           </div>
         </div>
 

@@ -89,7 +89,7 @@ export function TeamSelector({
           </SelectGroup>
         ))}
         {teams.length === 0 && (
-          <SelectItem value="" disabled>
+          <SelectItem value="__no_teams_available__" disabled>
             No teams available
           </SelectItem>
         )}

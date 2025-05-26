@@ -22,6 +22,7 @@ import { PrioritySelector } from './priroty-selector';
 import { ProjectTypeSelector } from './project-type-selector';
 import { ColorSelector } from './color-selector';
 import { TeamSelector, TeamOption } from './team-selector';
+import { PersonSelector } from './person-selector';
 import { QuarterSelector } from './quarter-selector';
 import { Project } from '@/lib/types';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
@@ -334,12 +335,12 @@ export function NewProjectDialog() {
 
               <div className="grid gap-2">
                 <Label htmlFor="leadId">Project Lead</Label>
-                <Input
-                  id="leadId"
-                  name="leadId"
+                <PersonSelector
                   value={formData.leadId}
-                  onChange={handleChange}
-                  placeholder="Assign project lead"
+                  onSelect={(value) => handleSelectChange('leadId', value)}
+                  teams={teams}
+                  loading={teamsLoading}
+                  placeholder="Select project lead"
                 />
               </div>
 

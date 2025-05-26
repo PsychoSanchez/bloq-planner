@@ -83,7 +83,7 @@ export function PersonSelector({
           </SelectGroup>
         ))}
         {Object.keys(personsByDepartment).length === 0 && (
-          <SelectItem value="" disabled>
+          <SelectItem value="__no_persons_available__" disabled>
             No persons available
           </SelectItem>
         )}

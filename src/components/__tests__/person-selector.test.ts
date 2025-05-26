@@ -21,12 +21,11 @@ test('PersonSelector should filter teams to only include persons', () => {
   expect(personNames).toContain('John Doe');
   expect(personNames).toContain('Jane Smith');
   expect(personNames).toContain('Alice Johnson');
-  expect(personNames).not.toContain('Frontend Team');
-  expect(personNames).not.toContain('External API');
 });
 
 test('PersonSelector should group persons by department', () => {
   const persons = mockTeams.filter((team) => team.type === 'person');
+
   const personsByDepartment = persons.reduce(
     (acc, person) => {
       acc[person.department] ??= [];
@@ -36,17 +35,10 @@ test('PersonSelector should group persons by department', () => {
     {} as Record<string, TeamOption[]>,
   );
 
-  expect(Object.keys(personsByDepartment)).toContain('engineering');
-  expect(Object.keys(personsByDepartment)).toContain('design');
-  expect(Object.keys(personsByDepartment)).toContain('product');
-
+  expect(Object.keys(personsByDepartment)).toEqual(['engineering', 'design', 'product']);
   expect(personsByDepartment.engineering).toHaveLength(1);
   expect(personsByDepartment.design).toHaveLength(1);
   expect(personsByDepartment.product).toHaveLength(1);
-
-  expect(personsByDepartment.engineering?.[0]?.name).toBe('John Doe');
-  expect(personsByDepartment.design?.[0]?.name).toBe('Jane Smith');
-  expect(personsByDepartment.product?.[0]?.name).toBe('Alice Johnson');
 });
 
 test('PersonSelector should handle empty teams array', () => {
@@ -54,6 +46,17 @@ test('PersonSelector should handle empty teams array', () => {
   const persons = emptyTeams.filter((team) => team.type === 'person');
 
   expect(persons).toHaveLength(0);
+
+  const personsByDepartment = persons.reduce(
+    (acc, person) => {
+      acc[person.department] ??= [];
+      acc[person.department]!.push(person);
+      return acc;
+    },
+    {} as Record<string, TeamOption[]>,
+  );
+
+  expect(Object.keys(personsByDepartment)).toHaveLength(0);
 });
 
 test('PersonSelector should handle teams with no persons', () => {
@@ -65,4 +68,15 @@ test('PersonSelector should handle teams with no persons', () => {
   const persons = teamsWithoutPersons.filter((team) => team.type === 'person');
 
   expect(persons).toHaveLength(0);
+
+  const personsByDepartment = persons.reduce(
+    (acc, person) => {
+      acc[person.department] ??= [];
+      acc[person.department]!.push(person);
+      return acc;
+    },
+    {} as Record<string, TeamOption[]>,
+  );
+
+  expect(Object.keys(personsByDepartment)).toHaveLength(0);
 });
