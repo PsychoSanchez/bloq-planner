@@ -3,12 +3,12 @@ import { TeamOption } from '@/components/team-selector';
 
 // Mock team data for testing
 const mockTeams: TeamOption[] = [
-  { id: '1', name: 'John Doe', department: 'engineering', type: 'person' },
-  { id: '2', name: 'Jane Smith', department: 'design', type: 'person' },
-  { id: '3', name: 'Frontend Team', department: 'engineering', type: 'team' },
-  { id: '4', name: 'Backend Team', department: 'engineering', type: 'team' },
-  { id: '5', name: 'External API', department: 'operations', type: 'dependency' },
-  { id: '6', name: 'Alice Johnson', department: 'product', type: 'person' },
+  { id: '1', name: 'John Doe', role: 'engineering', type: 'person' },
+  { id: '2', name: 'Jane Smith', role: 'design', type: 'person' },
+  { id: '3', name: 'Frontend Team', role: 'engineering', type: 'team' },
+  { id: '4', name: 'Backend Team', role: 'engineering', type: 'team' },
+  { id: '5', name: 'External API', role: 'operations', type: 'dependency' },
+  { id: '6', name: 'Alice Johnson', role: 'product_management', type: 'person' },
 ];
 
 test('PersonSelector should filter teams to only include persons', () => {
@@ -23,22 +23,22 @@ test('PersonSelector should filter teams to only include persons', () => {
   expect(personNames).toContain('Alice Johnson');
 });
 
-test('PersonSelector should group persons by department', () => {
+test('PersonSelector should group persons by role', () => {
   const persons = mockTeams.filter((team) => team.type === 'person');
 
-  const personsByDepartment = persons.reduce(
+  const personsByRole = persons.reduce(
     (acc, person) => {
-      acc[person.department] ??= [];
-      acc[person.department]!.push(person);
+      acc[person.role] ??= [];
+      acc[person.role]!.push(person);
       return acc;
     },
     {} as Record<string, TeamOption[]>,
   );
 
-  expect(Object.keys(personsByDepartment)).toEqual(['engineering', 'design', 'product']);
-  expect(personsByDepartment.engineering).toHaveLength(1);
-  expect(personsByDepartment.design).toHaveLength(1);
-  expect(personsByDepartment.product).toHaveLength(1);
+  expect(Object.keys(personsByRole)).toEqual(['engineering', 'design', 'product_management']);
+  expect(personsByRole.engineering).toHaveLength(1);
+  expect(personsByRole.design).toHaveLength(1);
+  expect(personsByRole.product_management).toHaveLength(1);
 });
 
 test('PersonSelector should handle empty teams array', () => {
@@ -47,36 +47,36 @@ test('PersonSelector should handle empty teams array', () => {
 
   expect(persons).toHaveLength(0);
 
-  const personsByDepartment = persons.reduce(
+  const personsByRole = persons.reduce(
     (acc, person) => {
-      acc[person.department] ??= [];
-      acc[person.department]!.push(person);
+      acc[person.role] ??= [];
+      acc[person.role]!.push(person);
       return acc;
     },
     {} as Record<string, TeamOption[]>,
   );
 
-  expect(Object.keys(personsByDepartment)).toHaveLength(0);
+  expect(Object.keys(personsByRole)).toHaveLength(0);
 });
 
 test('PersonSelector should handle teams with no persons', () => {
   const teamsWithoutPersons: TeamOption[] = [
-    { id: '1', name: 'Frontend Team', department: 'engineering', type: 'team' },
-    { id: '2', name: 'External API', department: 'operations', type: 'dependency' },
+    { id: '1', name: 'Frontend Team', role: 'engineering', type: 'team' },
+    { id: '2', name: 'External API', role: 'operations', type: 'dependency' },
   ];
 
   const persons = teamsWithoutPersons.filter((team) => team.type === 'person');
 
   expect(persons).toHaveLength(0);
 
-  const personsByDepartment = persons.reduce(
+  const personsByRole = persons.reduce(
     (acc, person) => {
-      acc[person.department] ??= [];
-      acc[person.department]!.push(person);
+      acc[person.role] ??= [];
+      acc[person.role]!.push(person);
       return acc;
     },
     {} as Record<string, TeamOption[]>,
   );
 
-  expect(Object.keys(personsByDepartment)).toHaveLength(0);
+  expect(Object.keys(personsByRole)).toHaveLength(0);
 });

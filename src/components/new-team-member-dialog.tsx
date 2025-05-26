@@ -26,10 +26,7 @@ export function NewTeamMemberDialog() {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     role: '',
-    department: '',
-    title: '',
     type: 'person' as const,
   });
 
@@ -46,10 +43,7 @@ export function NewTeamMemberDialog() {
       setOpen(false);
       setFormData({
         name: '',
-        email: '',
         role: '',
-        department: '',
-        title: '',
         type: 'person',
       });
       // Invalidate and refetch team members
@@ -109,41 +103,6 @@ export function NewTeamMemberDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="department" className="text-right">
-                Department
-              </Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => handleSelectChange('department', value)}
-                required
-              >
-                <SelectTrigger id="department" className="col-span-3">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="engineering">Engineering</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="product">Product</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">
                 Role
               </Label>
@@ -155,19 +114,6 @@ export function NewTeamMemberDialog() {
                   type="dropdown"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="col-span-3"
-                required
-              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">

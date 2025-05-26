@@ -307,7 +307,7 @@ export function ProjectsPageContent() {
       .map((member) => ({
         id: member.id,
         name: member.name,
-        department: member.department || '',
+        role: member.role,
         type: member.type as 'person' | 'team' | 'dependency' | 'event',
       })) || [];
 

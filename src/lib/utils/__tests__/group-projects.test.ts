@@ -256,9 +256,9 @@ test('groupProjects - sorting by priority within groups', () => {
 
 test('groupProjects - group by team with team names', () => {
   const teams = [
-    { id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const },
-    { id: 'team-2', name: 'Design Team', department: 'Design', type: 'team' as const },
-    { id: 'person-1', name: 'John Doe', department: 'Engineering', type: 'person' as const },
+    { id: 'team-1', name: 'Engineering Team', role: 'engineering', type: 'team' as const },
+    { id: 'team-2', name: 'Design Team', role: 'design', type: 'team' as const },
+    { id: 'person-1', name: 'John Doe', role: 'engineering', type: 'person' as const },
   ];
 
   const result = groupProjects(mockProjects, 'team', undefined, undefined, teams);
@@ -279,9 +279,9 @@ test('groupProjects - group by team with team names', () => {
 
 test('groupProjects - group by lead with person names', () => {
   const teams = [
-    { id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const },
-    { id: 'person-1', name: 'John Doe', department: 'Engineering', type: 'person' as const },
-    { id: 'person-2', name: 'Jane Smith', department: 'Design', type: 'person' as const },
+    { id: 'team-1', name: 'Engineering Team', role: 'engineering', type: 'team' as const },
+    { id: 'person-1', name: 'John Doe', role: 'engineering', type: 'person' as const },
+    { id: 'person-2', name: 'Jane Smith', role: 'design', type: 'person' as const },
   ];
 
   const projectsWithLeads: Project[] = [
@@ -332,7 +332,7 @@ test('groupProjects - group by lead with person names', () => {
 });
 
 test('groupProjects - fallback to ID when team/lead not found', () => {
-  const teams = [{ id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const }];
+  const teams = [{ id: 'team-1', name: 'Engineering Team', role: 'engineering', type: 'team' as const }];
 
   const projectsWithMissingTeam: Project[] = [
     {

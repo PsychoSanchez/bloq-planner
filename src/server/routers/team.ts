@@ -6,16 +6,12 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 // Define arktype schemas
 const getTeamMembersInput = type({
-  'department?': 'string',
   'search?': 'string',
 });
 
 const createTeamMemberInput = type({
   name: 'string < 255',
-  email: 'string < 255',
   role: 'string < 100',
-  department: 'string < 100',
-  title: 'string < 255',
   type: 'string < 32',
 });
 
@@ -32,10 +28,6 @@ export const teamRouter = router({
       // Build query
       const query: Record<string, unknown> = {};
 
-      if (input.department && input.department !== 'all') {
-        query.department = input.department;
-      }
-
       if (input.search) {
         query.name = { $regex: input.search, $options: 'i' };
       }
@@ -44,10 +36,7 @@ export const teamRouter = router({
       return teamMembers.map((member) => ({
         id: member._id.toString(),
         name: member.name,
-        email: member.email,
         role: member.role,
-        department: member.department,
-        title: member.title,
         type: member.type,
       }));
     } catch (error) {
@@ -70,20 +59,17 @@ export const teamRouter = router({
       return {
         id: teamMember._id.toString(),
         name: teamMember.name,
-        email: teamMember.email,
         role: teamMember.role,
-        department: teamMember.department,
-        title: teamMember.title,
         type: teamMember.type,
       };
     } catch (error: unknown) {
       console.error('Error creating team member:', error);
 
-      // Check for duplicate email error
+      // Check for duplicate name error
       if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: 'Email already exists',
+          message: 'Name already exists',
         });
       }
 
@@ -114,10 +100,7 @@ export const teamRouter = router({
       return {
         id: updatedMember._id.toString(),
         name: updatedMember.name,
-        email: updatedMember.email,
         role: updatedMember.role,
-        department: updatedMember.department,
-        title: updatedMember.title,
         type: updatedMember.type,
       };
     } catch (error: unknown) {

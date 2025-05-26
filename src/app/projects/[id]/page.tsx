@@ -28,8 +28,8 @@ async function getTeams(): Promise<TeamOption[]> {
   return teams.map(fromTeamMemberDocument).map((team) => ({
     id: team.id,
     name: team.name,
-    department: team.role || '',
-    type: 'team',
+    role: team.role || 'other',
+    type: team.type as 'person' | 'team' | 'dependency' | 'event',
   }));
 }
 

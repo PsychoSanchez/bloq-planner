@@ -4,23 +4,14 @@ import { type } from 'arktype';
 describe('Team tRPC ArkType Validation', () => {
   test('should validate getTeamMembers input correctly', () => {
     const getTeamMembersInput = type({
-      'department?': 'string',
       'search?': 'string',
     });
 
     // Valid inputs
-    expect(getTeamMembersInput({ department: 'engineering' })).toEqual({ department: 'engineering' });
     expect(getTeamMembersInput({ search: 'john' })).toEqual({ search: 'john' });
-    expect(getTeamMembersInput({ department: 'design', search: 'jane' })).toEqual({
-      department: 'design',
-      search: 'jane',
-    });
     expect(getTeamMembersInput({})).toEqual({});
 
     // Invalid inputs
-    const invalidDepartment = getTeamMembersInput({ department: 123 });
-    expect(invalidDepartment instanceof type.errors).toBe(true);
-
     const invalidSearch = getTeamMembersInput({ search: 456 });
     expect(invalidSearch instanceof type.errors).toBe(true);
   });
@@ -28,33 +19,45 @@ describe('Team tRPC ArkType Validation', () => {
   test('should validate createTeamMember input correctly', () => {
     const createTeamMemberInput = type({
       name: 'string < 255',
-      email: 'string < 255',
       role: 'string < 100',
-      department: 'string < 100',
-      title: 'string < 255',
       type: 'string < 32',
     });
 
-    // Valid input
+    // Valid input with all required fields
     const validInput = {
       name: 'John Doe',
-      email: 'john@example.com',
       role: 'engineer',
-      department: 'engineering',
-      title: 'Software Engineer',
       type: 'person',
     };
     expect(createTeamMemberInput(validInput)).toEqual(validInput);
+
+    // Valid input with different type
+    const validInputTeam = {
+      name: 'Design Team',
+      role: 'design',
+      type: 'team',
+    };
+    expect(createTeamMemberInput(validInputTeam)).toEqual(validInputTeam);
 
     // Invalid inputs
     const tooLongName = createTeamMemberInput({ ...validInput, name: 'x'.repeat(256) });
     expect(tooLongName instanceof type.errors).toBe(true);
 
-    const tooLongEmail = createTeamMemberInput({ ...validInput, email: 'x'.repeat(256) });
-    expect(tooLongEmail instanceof type.errors).toBe(true);
-
     const tooLongRole = createTeamMemberInput({ ...validInput, role: 'x'.repeat(101) });
     expect(tooLongRole instanceof type.errors).toBe(true);
+
+    const tooLongType = createTeamMemberInput({ ...validInput, type: 'x'.repeat(33) });
+    expect(tooLongType instanceof type.errors).toBe(true);
+
+    // Missing required fields
+    const missingName = createTeamMemberInput({ role: 'engineer', type: 'person' });
+    expect(missingName instanceof type.errors).toBe(true);
+
+    const missingRole = createTeamMemberInput({ name: 'John Doe', type: 'person' });
+    expect(missingRole instanceof type.errors).toBe(true);
+
+    const missingType = createTeamMemberInput({ name: 'John Doe', role: 'engineer' });
+    expect(missingType instanceof type.errors).toBe(true);
   });
 
   test('should validate updateTeamMemberRole input correctly', () => {

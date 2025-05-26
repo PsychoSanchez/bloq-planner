@@ -3,13 +3,13 @@ import { TeamOption } from '@/components/team-selector';
 
 // Mock team data for testing integration scenarios
 const mockTeamsWithMixedTypes: TeamOption[] = [
-  { id: 'person-1', name: 'Alice Johnson', department: 'engineering', type: 'person' },
-  { id: 'person-2', name: 'Bob Smith', department: 'design', type: 'person' },
-  { id: 'person-3', name: 'Carol Davis', department: 'product', type: 'person' },
-  { id: 'team-1', name: 'Frontend Team', department: 'engineering', type: 'team' },
-  { id: 'team-2', name: 'Design System Team', department: 'design', type: 'team' },
-  { id: 'dep-1', name: 'External API', department: 'operations', type: 'dependency' },
-  { id: 'event-1', name: 'Product Launch', department: 'marketing', type: 'event' },
+  { id: 'person-1', name: 'Alice Johnson', role: 'engineering', type: 'person' },
+  { id: 'person-2', name: 'Bob Smith', role: 'design', type: 'person' },
+  { id: 'person-3', name: 'Carol Davis', role: 'product_management', type: 'person' },
+  { id: 'team-1', name: 'Frontend Team', role: 'engineering', type: 'team' },
+  { id: 'team-2', name: 'Design System Team', role: 'design', type: 'team' },
+  { id: 'dep-1', name: 'External API', role: 'operations', type: 'dependency' },
+  { id: 'event-1', name: 'Product Launch', role: 'marketing', type: 'event' },
 ];
 
 test('PersonSelector integration - should only show persons for lead selection', () => {
@@ -34,59 +34,61 @@ test('PersonSelector integration - should only show persons for lead selection',
 });
 
 test('PersonSelector integration - should handle lead selection in project forms', () => {
-  const selectedLeadId = 'person-2';
+  const persons = mockTeamsWithMixedTypes.filter((team) => team.type === 'person');
 
-  // Simulate finding the selected person (what PersonSelector does for display)
-  const selectedPerson = mockTeamsWithMixedTypes.find((team) => team.id === selectedLeadId && team.type === 'person');
+  // Simulate selecting a lead
+  const selectedLeadId = 'person-1';
+  const selectedLead = persons.find((person) => person.id === selectedLeadId);
 
-  expect(selectedPerson).toBeDefined();
-  expect(selectedPerson?.name).toBe('Bob Smith');
-  expect(selectedPerson?.department).toBe('design');
-  expect(selectedPerson?.type).toBe('person');
+  expect(selectedLead).toBeDefined();
+  expect(selectedLead?.name).toBe('Alice Johnson');
+  expect(selectedLead?.type).toBe('person');
 });
 
 test('PersonSelector integration - should handle invalid lead selection gracefully', () => {
-  // Test selecting a team ID instead of person ID (should not work)
-  const invalidLeadId = 'team-1';
-
-  const selectedPerson = mockTeamsWithMixedTypes.find((team) => team.id === invalidLeadId && team.type === 'person');
-
-  expect(selectedPerson).toBeUndefined();
-});
-
-test('PersonSelector integration - should group persons by department for better UX', () => {
   const persons = mockTeamsWithMixedTypes.filter((team) => team.type === 'person');
 
-  // Group by department (what PersonSelector does internally)
-  const personsByDepartment = persons.reduce(
+  // Try to select a team as lead (should not be found)
+  const invalidLeadId = 'team-1';
+  const selectedLead = persons.find((person) => person.id === invalidLeadId);
+
+  expect(selectedLead).toBeUndefined();
+});
+
+test('PersonSelector integration - should group persons by role for better UX', () => {
+  const persons = mockTeamsWithMixedTypes.filter((team) => team.type === 'person');
+
+  // Group by role (what PersonSelector does internally)
+  const personsByRole = persons.reduce(
     (acc, person) => {
-      acc[person.department] ??= [];
-      acc[person.department]!.push(person);
+      acc[person.role] ??= [];
+      acc[person.role]!.push(person);
       return acc;
     },
     {} as Record<string, TeamOption[]>,
   );
 
-  // Verify departments are properly grouped
-  expect(Object.keys(personsByDepartment)).toEqual(['engineering', 'design', 'product']);
-  expect(personsByDepartment.engineering).toHaveLength(1);
-  expect(personsByDepartment.design).toHaveLength(1);
-  expect(personsByDepartment.product).toHaveLength(1);
+  // Verify roles are properly grouped
+  expect(Object.keys(personsByRole)).toEqual(['engineering', 'design', 'product_management']);
+  expect(personsByRole.engineering).toHaveLength(1);
+  expect(personsByRole.design).toHaveLength(1);
+  expect(personsByRole.product_management).toHaveLength(1);
 
-  // Verify correct persons in each department
-  expect(personsByDepartment.engineering?.[0]?.name).toBe('Alice Johnson');
-  expect(personsByDepartment.design?.[0]?.name).toBe('Bob Smith');
-  expect(personsByDepartment.product?.[0]?.name).toBe('Carol Davis');
+  // Verify correct persons in each role
+  expect(personsByRole.engineering?.[0]?.name).toBe('Alice Johnson');
+  expect(personsByRole.design?.[0]?.name).toBe('Bob Smith');
+  expect(personsByRole.product_management?.[0]?.name).toBe('Carol Davis');
 });
 
 test('PersonSelector integration - should work with empty lead selection', () => {
-  const emptyLeadId = '';
+  const persons = mockTeamsWithMixedTypes.filter((team) => team.type === 'person');
 
-  const selectedPerson = mockTeamsWithMixedTypes.find((team) => team.id === emptyLeadId && team.type === 'person');
+  // Simulate no lead selected
+  const selectedLeadId = '';
+  const selectedLead = persons.find((person) => person.id === selectedLeadId);
 
-  expect(selectedPerson).toBeUndefined();
+  expect(selectedLead).toBeUndefined();
 
-  // Verify that empty selection is handled gracefully
-  const displayValue = selectedPerson ? selectedPerson.name : emptyLeadId;
-  expect(displayValue).toBe('');
+  // Should still be able to show available persons
+  expect(persons).toHaveLength(3);
 });

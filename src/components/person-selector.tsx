@@ -33,13 +33,13 @@ export function PersonSelector({
   loading = false,
   type = 'dropdown',
 }: PersonSelectorProps) {
-  // Filter teams to only show persons and group by department
-  const personsByDepartment = useMemo(() => {
+  // Filter teams to only show persons and group by role
+  const personsByRole = useMemo(() => {
     const persons = teams.filter((team) => team.type === 'person');
     return persons.reduce(
       (acc, person) => {
-        acc[person.department] ??= [];
-        acc[person.department]!.push(person);
+        acc[person.role] ??= [];
+        acc[person.role]!.push(person);
         return acc;
       },
       {} as Record<string, TeamOption[]>,
@@ -70,10 +70,10 @@ export function PersonSelector({
         </SelectValue>
       </SelectComponent>
       <SelectContent>
-        {Object.entries(personsByDepartment).map(([department, departmentPersons]) => (
-          <SelectGroup key={department}>
-            <SelectLabel className="capitalize">{department}</SelectLabel>
-            {departmentPersons.map((person) => (
+        {Object.entries(personsByRole).map(([role, rolePersons]) => (
+          <SelectGroup key={role}>
+            <SelectLabel className="capitalize">{role}</SelectLabel>
+            {rolePersons.map((person) => (
               <SelectItem key={person.id} value={person.id} className="text-xs">
                 <div className="flex items-center justify-between w-full">
                   <span>{person.name}</span>
@@ -82,7 +82,7 @@ export function PersonSelector({
             ))}
           </SelectGroup>
         ))}
-        {Object.keys(personsByDepartment).length === 0 && (
+        {Object.keys(personsByRole).length === 0 && (
           <SelectItem value="__no_persons_available__" disabled>
             No persons available
           </SelectItem>

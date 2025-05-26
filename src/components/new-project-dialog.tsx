@@ -73,7 +73,7 @@ export function NewProjectDialog() {
       .map((member) => ({
         id: member.id,
         name: member.name,
-        department: member.department || '', // Ensure department is always a string
+        role: member.role,
         type: member.type as 'person' | 'team' | 'dependency' | 'event',
       })) || [];
 

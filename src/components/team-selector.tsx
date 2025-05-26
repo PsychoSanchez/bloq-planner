@@ -16,7 +16,7 @@ import { UserIcon } from 'lucide-react';
 export interface TeamOption {
   id: string;
   name: string;
-  department: string;
+  role: string;
   type: 'person' | 'team' | 'dependency' | 'event';
 }
 
@@ -39,12 +39,12 @@ export function TeamSelector({
   loading = false,
   type = 'dropdown',
 }: TeamSelectorProps) {
-  // Group teams by department
-  const teamsByDepartment = useMemo(() => {
+  // Group teams by role
+  const teamsByRole = useMemo(() => {
     return teams.reduce(
       (acc, team) => {
-        acc[team.department] ??= [];
-        acc[team.department]!.push(team);
+        acc[team.role] ??= [];
+        acc[team.role]!.push(team);
         return acc;
       },
       {} as Record<string, TeamOption[]>,
@@ -75,10 +75,10 @@ export function TeamSelector({
         </SelectValue>
       </SelectComponent>
       <SelectContent>
-        {Object.entries(teamsByDepartment).map(([department, departmentTeams]) => (
-          <SelectGroup key={department}>
-            <SelectLabel className="capitalize">{department}</SelectLabel>
-            {departmentTeams.map((team) => (
+        {Object.entries(teamsByRole).map(([role, roleTeams]) => (
+          <SelectGroup key={role}>
+            <SelectLabel className="capitalize">{role}</SelectLabel>
+            {roleTeams.map((team) => (
               <SelectItem key={team.id} value={team.id} className="text-xs">
                 <div className="flex items-center justify-between w-full">
                   <span>{team.name}</span>

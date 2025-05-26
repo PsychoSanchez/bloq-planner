@@ -11,7 +11,6 @@ import { useQueryState, parseAsString } from 'nuqs';
 
 export function TeamMembersList() {
   const [currentSearch] = useQueryState('search', parseAsString.withDefault(''));
-  const [currentDepartment] = useQueryState('department', parseAsString.withDefault('all'));
 
   // tRPC query for fetching team members
   const {
@@ -21,7 +20,6 @@ export function TeamMembersList() {
     refetch,
   } = trpc.team.getTeamMembers.useQuery({
     search: currentSearch || undefined,
-    department: currentDepartment === 'all' ? undefined : currentDepartment,
   });
 
   // tRPC mutation for updating team member role
@@ -71,7 +69,7 @@ export function TeamMembersList() {
             <TableRow className="h-8">
               <TableHead className="py-1">Name</TableHead>
               <TableHead className="py-1 w-[200px]">Role</TableHead>
-              <TableHead className="py-1 w-[200px]">Team</TableHead>
+              <TableHead className="py-1 w-[200px]">Type</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -113,7 +111,7 @@ export function TeamMembersList() {
                     />
                   </TableCell>
                   <TableCell className="py-1">
-                    {member.department ? <span className="capitalize">{member.department}</span> : 'N/A'}
+                    {member.type ? <span className="capitalize">{member.type}</span> : 'N/A'}
                   </TableCell>
                 </TableRow>
               ))
