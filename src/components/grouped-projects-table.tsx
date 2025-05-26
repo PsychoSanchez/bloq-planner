@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ArchiveRestoreIcon, Ext
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamSelector, TeamOption } from '@/components/team-selector';
+import { PersonSelector } from '@/components/person-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
@@ -41,7 +42,7 @@ function GroupedProjectsTableHeader() {
         <TableHead className="w-[100px]">Type</TableHead>
         <TableHead className="w-[100px]">Priority</TableHead>
         <TableHead className="w-[150px]">Quarter</TableHead>
-        <TableHead className="w-[150px]">Team</TableHead>
+        <TableHead className="w-[200px]">Team</TableHead>
         <TableHead className="w-[100px]">Lead</TableHead>
         <TableHead className="w-[100px]">Dependencies</TableHead>
         <TableHead className="w-[200px]">Area</TableHead>
@@ -244,6 +245,12 @@ function ProjectRow({
     }
   };
 
+  const handleLeadChange = (leadId: string) => {
+    if (onUpdateProject) {
+      onUpdateProject(project.id, { leadId });
+    }
+  };
+
   const handleArchiveToggle = () => {
     if (onUpdateProject) {
       onUpdateProject(project.id, { archived: !project.archived });
@@ -305,7 +312,20 @@ function ProjectRow({
               project.teamId || '--'
             )}
           </TableCell>
-          <TableCell className="py-1 px-2">{project.leadId || '--'}</TableCell>
+          <TableCell className="py-1 px-2">
+            {onUpdateProject ? (
+              <PersonSelector
+                type="inline"
+                value={project.leadId}
+                onSelect={handleLeadChange}
+                placeholder="Select lead"
+                teams={teams}
+                loading={teamsLoading}
+              />
+            ) : (
+              teams.find((t) => t.id === project.leadId && t.type === 'person')?.name || '--'
+            )}
+          </TableCell>
           <TableCell className="py-1 px-2">{project.dependencies?.length || '--'}</TableCell>
           <TableCell className="py-1 px-2">
             <ProjectAreaSelector
@@ -414,6 +434,31 @@ function ProjectRow({
                   {area.name}
                 </ContextMenuItem>
               ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+
+          {/* Lead Section */}
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <span className="flex items-center gap-2">
+                Lead
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {teams.find((t) => t.id === project.leadId && t.type === 'person')?.name || 'None'}
+                </span>
+              </span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              <ContextMenuItem onClick={() => handleLeadChange('')} className="text-muted-foreground">
+                Remove Lead
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {teams
+                .filter((t) => t.type === 'person')
+                .map((person) => (
+                  <ContextMenuItem key={person.id} onClick={() => handleLeadChange(person.id)}>
+                    {person.name}
+                  </ContextMenuItem>
+                ))}
             </ContextMenuSubContent>
           </ContextMenuSub>
 

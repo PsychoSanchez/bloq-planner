@@ -15,6 +15,7 @@ import { ColorSelector } from '@/components/color-selector';
 import { PrioritySelector } from '@/components/priroty-selector';
 import { ProjectAreaSelector } from '@/components/project-area-selector';
 import { TeamSelector } from '@/components/team-selector';
+import { PersonSelector } from '@/components/person-selector';
 import { QuarterSelector } from '@/components/quarter-selector';
 import { ProjectTypeSelector } from '@/components/project-type-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
@@ -266,50 +267,17 @@ export function ProjectDetailsSheet({
 
               {/* Lead */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Project Lead
-                  </Label>
-                  {editingField !== 'leadId' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                      onClick={() => handleStartEdit('leadId', project.leadId || '')}
-                    >
-                      <EditIcon className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-                {editingField === 'leadId' ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      className="text-sm"
-                      placeholder="Enter lead name or email"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveEdit();
-                        if (e.key === 'Escape') handleCancelEdit();
-                      }}
-                    />
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={handleSaveEdit} className="h-7 px-3">
-                        <CheckIcon className="h-3 w-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-7 px-3">
-                        <XIcon className="h-3 w-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm bg-muted/30 rounded-md p-3 border border-border/50">
-                    {project.leadId || <span className="italic text-muted-foreground/70">No lead assigned</span>}
-                  </div>
-                )}
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Project Lead
+                </Label>
+                <PersonSelector
+                  type="inline"
+                  value={project.leadId || ''}
+                  onSelect={(value) => handleSelectChange('leadId', value)}
+                  teams={teams}
+                  loading={teamsLoading}
+                  placeholder="Select lead"
+                />
               </div>
             </div>
           </div>
