@@ -16,7 +16,7 @@ import { PrioritySelector } from '@/components/priroty-selector';
 import { ProjectAreaSelector } from '@/components/project-area-selector';
 import { TeamSelector } from '@/components/team-selector';
 import { PersonSelector } from '@/components/person-selector';
-import { QuarterSelector } from '@/components/quarter-selector';
+import { QuarterMultiSelector } from './quarter-multi-selector';
 import { ProjectTypeSelector } from '@/components/project-type-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 
@@ -60,8 +60,14 @@ export function ProjectDetailsSheet({
     setEditValue('');
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    if (onUpdateProject) {
+  const handleSelectChange = (field: string, value: string | string[]) => {
+    if (!onUpdateProject || !project) return;
+
+    if (field === 'quarters') {
+      onUpdateProject(project.id, { quarters: Array.isArray(value) ? value : [value] });
+    } else if (field === 'teamIds') {
+      onUpdateProject(project.id, { teamIds: typeof value === 'string' ? (value ? [value] : []) : value });
+    } else {
       onUpdateProject(project.id, { [field]: value });
     }
   };
@@ -226,10 +232,10 @@ export function ProjectDetailsSheet({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Quarter</Label>
-                  <QuarterSelector
+                  <QuarterMultiSelector
                     type="inline"
-                    value={project.quarter || ''}
-                    onSelect={(value) => handleSelectChange('quarter', value)}
+                    value={project.quarters || []}
+                    onSelect={(value) => handleSelectChange('quarters', value)}
                   />
                 </div>
 
@@ -257,8 +263,8 @@ export function ProjectDetailsSheet({
                 <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team</Label>
                 <TeamSelector
                   type="inline"
-                  value={project.teamId || ''}
-                  onSelect={(value) => handleSelectChange('teamId', value)}
+                  value={(project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : '') || ''}
+                  onSelect={(value) => handleSelectChange('teamIds', value)}
                   teams={teams}
                   loading={teamsLoading}
                   placeholder="Select team"

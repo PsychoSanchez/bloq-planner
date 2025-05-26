@@ -10,9 +10,9 @@ const mockProjects: Project[] = [
     slug: 'project-a',
     type: 'regular',
     priority: 'high',
-    teamId: 'team-1',
+    teamIds: ['team-1'],
     area: 'tech',
-    quarter: '2025Q1',
+    quarters: ['2025Q1'],
   },
   {
     id: '2',
@@ -20,18 +20,18 @@ const mockProjects: Project[] = [
     slug: 'project-b',
     type: 'tech-debt',
     priority: 'medium',
-    teamId: 'team-2',
+    teamIds: ['team-2'],
     area: 'quality',
-    quarter: '2025Q2',
+    quarters: ['2025Q2'],
   },
   {
     id: '3',
     name: 'Project C',
     slug: 'project-c',
     type: 'regular',
-    teamId: 'team-1',
+    teamIds: ['team-1'],
     area: 'tech',
-    quarter: '2025Q1',
+    quarters: ['2025Q1'],
   },
   {
     id: '4',
@@ -39,9 +39,9 @@ const mockProjects: Project[] = [
     slug: 'project-d',
     type: 'regular',
     priority: 'low',
-    teamId: 'team-3',
+    teamIds: ['team-3'],
     area: 'monetization',
-    // No quarter specified
+    // No quarters specified
   },
   {
     id: '5',
@@ -49,9 +49,9 @@ const mockProjects: Project[] = [
     slug: 'archived-project',
     type: 'regular',
     priority: 'high',
-    teamId: 'team-1',
+    teamIds: ['team-1'],
     area: 'tech',
-    quarter: '2025Q1',
+    quarters: ['2025Q1'],
     archived: true,
   },
 ];
@@ -124,6 +124,61 @@ test('groupProjects - group by quarter', () => {
   expect(noQuarterGroup?.count).toBe(1);
 });
 
+test('groupProjects - projects with multiple quarters appear in all quarter groups', () => {
+  const projectsWithMultipleQuarters: Project[] = [
+    {
+      id: '1',
+      name: 'Multi-Quarter Project',
+      slug: 'multi-quarter-project',
+      type: 'regular',
+      quarters: ['2025Q1', '2025Q2', '2025Q3'], // Project spans 3 quarters
+    },
+    {
+      id: '2',
+      name: 'Single Quarter Project',
+      slug: 'single-quarter-project',
+      type: 'regular',
+      quarters: ['2025Q2'], // Only in Q2
+    },
+    {
+      id: '3',
+      name: 'No Quarter Project',
+      slug: 'no-quarter-project',
+      type: 'regular',
+      // No quarters
+    },
+  ];
+
+  const result = groupProjects(projectsWithMultipleQuarters, 'quarter');
+
+  expect(result).toHaveLength(4); // Q1, Q2, Q3, and No Quarter
+
+  const q1Group = result.find((g) => g.label === 'Q1 2025');
+  const q2Group = result.find((g) => g.label === 'Q2 2025');
+  const q3Group = result.find((g) => g.label === 'Q3 2025');
+  const noQuarterGroup = result.find((g) => g.label === 'No Quarter');
+
+  // Q1 should only have the multi-quarter project
+  expect(q1Group).toBeDefined();
+  expect(q1Group?.count).toBe(1);
+  expect(q1Group?.projects[0]?.name).toBe('Multi-Quarter Project');
+
+  // Q2 should have both the multi-quarter project and single quarter project
+  expect(q2Group).toBeDefined();
+  expect(q2Group?.count).toBe(2);
+  expect(q2Group?.projects.map((p) => p.name).sort()).toEqual(['Multi-Quarter Project', 'Single Quarter Project']);
+
+  // Q3 should only have the multi-quarter project
+  expect(q3Group).toBeDefined();
+  expect(q3Group?.count).toBe(1);
+  expect(q3Group?.projects[0]?.name).toBe('Multi-Quarter Project');
+
+  // No Quarter should have the project with no quarters
+  expect(noQuarterGroup).toBeDefined();
+  expect(noQuarterGroup?.count).toBe(1);
+  expect(noQuarterGroup?.projects[0]?.name).toBe('No Quarter Project');
+});
+
 test('groupProjects - empty array returns empty groups', () => {
   const result = groupProjects([], 'type');
   expect(result).toHaveLength(0);
@@ -147,21 +202,21 @@ test('groupProjects - quarters are sorted chronologically', () => {
       name: 'Project A',
       slug: 'project-a',
       type: 'regular',
-      quarter: '2024Q4',
+      quarters: ['2024Q4'],
     },
     {
       id: '2',
       name: 'Project B',
       slug: 'project-b',
       type: 'regular',
-      quarter: '2025Q1',
+      quarters: ['2025Q1'],
     },
     {
       id: '3',
       name: 'Project C',
       slug: 'project-c',
       type: 'regular',
-      quarter: '2024Q3',
+      quarters: ['2024Q3'],
     },
     {
       id: '4',
@@ -340,14 +395,14 @@ test('groupProjects - fallback to ID when team/lead not found', () => {
       name: 'Project A',
       slug: 'project-a',
       type: 'regular',
-      teamId: 'team-1',
+      teamIds: ['team-1'],
     },
     {
       id: '2',
       name: 'Project B',
       slug: 'project-b',
       type: 'regular',
-      teamId: 'missing-team',
+      teamIds: ['missing-team'],
     },
   ];
 

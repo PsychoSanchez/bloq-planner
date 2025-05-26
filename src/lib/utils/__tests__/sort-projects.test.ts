@@ -6,36 +6,45 @@ import { Project } from '../../types';
 const mockProjects: Project[] = [
   {
     id: '1',
-    name: 'Charlie Project',
-    slug: 'charlie-project',
-    type: 'regular',
-    priority: 'high',
-    area: 'tech',
-    quarter: '2025Q1',
+    name: 'Alpha Project',
+    slug: 'alpha-project',
+    type: 'hack',
+    priority: 'urgent',
+    quarters: ['2025Q1'],
+    area: 'monetization',
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-20T00:00:00Z',
+    cost: 1000,
+    impact: 5000,
+    roi: 5,
   },
   {
     id: '2',
-    name: 'Alpha Project',
-    slug: 'alpha-project',
+    name: 'Beta Project',
+    slug: 'beta-project',
     type: 'tech-debt',
-    priority: 'urgent',
+    priority: 'high',
+    quarters: ['2024Q4'],
     area: 'quality',
-    quarter: '2024Q4',
     createdAt: '2024-01-02T00:00:00Z',
-    updatedAt: '2024-01-10T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z',
+    cost: 2000,
+    impact: 3000,
+    roi: 1.5,
   },
   {
     id: '3',
-    name: 'Beta Project',
-    slug: 'beta-project',
-    type: 'hack',
+    name: 'Charlie Project',
+    slug: 'charlie-project',
+    type: 'regular',
     priority: 'medium',
-    area: 'monetization',
-    quarter: '2025Q2',
+    quarters: ['2025Q2'],
+    area: 'tech',
     createdAt: '2024-01-03T00:00:00Z',
-    updatedAt: '2024-01-20T00:00:00Z',
+    updatedAt: '2024-01-10T00:00:00Z',
+    cost: 500,
+    impact: 1000,
+    roi: 2,
   },
   {
     id: '4',
@@ -100,10 +109,11 @@ test('sortProjects - sort by updatedAt descending', () => {
   ]);
 });
 
-test('sortProjects - sort by quarter ascending', () => {
+test('sortProjects - sort by quarter', () => {
   const result = sortProjects(mockProjects, 'quarter', 'asc');
-  const quarters = result.map((p) => p.quarter);
-  expect(quarters).toEqual(['2024Q4', '2025Q1', '2025Q2', undefined]);
+
+  const quarters = result.map((p) => (p.quarters && p.quarters.length > 0 ? p.quarters[0] : ''));
+  expect(quarters).toEqual(['2024Q4', '2025Q1', '2025Q2', '']);
 });
 
 test('sortProjects - sort by area ascending', () => {

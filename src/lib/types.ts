@@ -41,10 +41,10 @@ export interface Project {
   color?: string;
   description?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  teamId?: string;
+  teamIds?: string[];
   leadId?: string;
   area?: string;
-  quarter?: string;
+  quarters?: string[];
   archived?: boolean;
   createdAt?: string;
   updatedAt?: string;

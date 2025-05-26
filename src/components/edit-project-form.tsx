@@ -17,7 +17,7 @@ import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamOption, TeamSelector } from './team-selector';
 import { PersonSelector } from './person-selector';
-import { QuarterSelector } from './quarter-selector';
+import { QuarterMultiSelector } from './quarter-multi-selector';
 import { ProjectTypeSelector } from './project-type-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -61,16 +61,16 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
   });
 
   const [formData, setFormData] = useState({
-    name: project.name || '',
+    name: project.name,
     slug: project.slug || '',
     type: project.type || 'regular',
     area: project.area || '',
     priority: project.priority || 'medium',
     description: project.description || '',
     color: project.color || 'blue',
-    teamId: project.teamId || '',
+    teamIds: project.teamIds || [],
     leadId: project.leadId || '',
-    quarter: project.quarter || '',
+    quarters: project.quarters || [],
     dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
     cost: project.cost?.toString() || '',
     impact: project.impact?.toString() || '',
@@ -92,10 +92,10 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       slug: project.slug,
       description: project.description || '',
       priority: project.priority || 'medium',
-      teamId: project.teamId || '',
+      teamIds: project.teamIds || [],
       leadId: project.leadId || '',
       area: project.area || '',
-      quarter: project.quarter || '',
+      quarters: project.quarters || [],
       dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
       color: project.color || DEFAULT_PROJECT_COLOR_NAME,
       archived: project.archived || false,
@@ -124,15 +124,21 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     const currentEstimates = JSON.stringify(currentData.estimates);
     const originalEstimates = JSON.stringify(originalData.estimates);
 
+    // Convert arrays to comparable format
+    const currentTeamIds = JSON.stringify(currentData.teamIds);
+    const originalTeamIds = JSON.stringify(originalData.teamIds);
+    const currentQuarters = JSON.stringify(currentData.quarters);
+    const originalQuarters = JSON.stringify(originalData.quarters);
+
     return (
       currentData.name !== originalData.name ||
       currentData.slug !== originalData.slug ||
       currentData.description !== originalData.description ||
       currentData.priority !== originalData.priority ||
-      currentData.teamId !== originalData.teamId ||
+      currentTeamIds !== originalTeamIds ||
       currentData.leadId !== originalData.leadId ||
       currentData.area !== originalData.area ||
-      currentData.quarter !== originalData.quarter ||
+      currentQuarters !== originalQuarters ||
       currentData.dependencies !== originalData.dependencies ||
       currentData.color !== originalData.color ||
       currentData.archived !== originalData.archived ||
@@ -162,7 +168,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -330,15 +336,15 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
               value={formData.area}
               onSelect={(value) => handleSelectChange('area', value)}
             />
-            <QuarterSelector
+            <QuarterMultiSelector
               type="inline"
-              value={formData.quarter}
-              onSelect={(value) => handleSelectChange('quarter', value)}
+              value={formData.quarters}
+              onSelect={(value) => handleSelectChange('quarters', value)}
             />
             <TeamSelector
               type="inline"
-              value={formData.teamId}
-              onSelect={(value) => handleSelectChange('teamId', value)}
+              value={formData.teamIds.length > 0 ? formData.teamIds[0] : ''}
+              onSelect={(value) => handleSelectChange('teamIds', value ? [value] : [])}
               teams={teams}
               loading={teamsLoading}
             />

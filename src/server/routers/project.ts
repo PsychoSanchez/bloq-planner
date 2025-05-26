@@ -107,7 +107,8 @@ export const projectRouter = router({
 
     // Legacy single quarter filter (for backward compatibility)
     if (quarter) {
-      query.quarter = quarter;
+      // Use quarters array field instead of old quarter field
+      query.quarters = { $in: [quarter] };
     }
 
     // New multidimensional filters using $in operator for OR logic within each dimension
@@ -118,7 +119,8 @@ export const projectRouter = router({
     if (quarters.length > 0) {
       // If both legacy quarter and new quarters are provided, use the new one
       if (!quarter) {
-        query.quarter = { $in: quarters };
+        // Use $in to match projects that have at least one quarter in the filter
+        query.quarters = { $in: quarters };
       }
     }
 

@@ -9,10 +9,10 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'upd
   updatedAt: Date;
   description?: string;
   priority?: 'low' | 'medium' | 'high';
-  teamId?: string;
+  teamIds?: string[];
   leadId?: string;
   area?: string;
-  quarter?: string;
+  quarters?: string[];
   archived?: boolean;
   dependencies?: Array<{
     team: string;
@@ -75,10 +75,10 @@ const projectSchema = new Schema<ProjectDocument>(
     },
     description: { type: String },
     priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'] },
-    teamId: { type: String },
+    teamIds: { type: [String], default: [] },
     leadId: { type: String },
     area: { type: String },
-    quarter: { type: String },
+    quarters: { type: [String], default: [] },
     archived: { type: Boolean, default: false },
     roi: { type: Number, default: 0 },
     impact: { type: Number, default: 0 },
@@ -173,10 +173,10 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
     type: doc.type,
     description: doc.description,
     priority: doc.priority,
-    teamId: doc.teamId,
+    teamIds: doc.teamIds,
     leadId: doc.leadId,
     area: doc.area,
-    quarter: doc.quarter,
+    quarters: doc.quarters,
     archived: doc.archived,
     roi: calculatedRoi,
     impact: doc.impact,

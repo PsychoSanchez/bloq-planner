@@ -33,6 +33,28 @@ export function groupProjects(
   const groups = new Map<string, Project[]>();
 
   sortedProjects.forEach((project) => {
+    // Special handling for quarter grouping - projects should appear in all their quarters
+    if (groupBy === 'quarter') {
+      if (project.quarters && project.quarters.length > 0) {
+        // Add project to each quarter group it belongs to
+        project.quarters.forEach((quarter) => {
+          if (!groups.has(quarter)) {
+            groups.set(quarter, []);
+          }
+          groups.get(quarter)!.push(project);
+        });
+      } else {
+        // Project has no quarters
+        const noQuarterKey = 'No Quarter';
+        if (!groups.has(noQuarterKey)) {
+          groups.set(noQuarterKey, []);
+        }
+        groups.get(noQuarterKey)!.push(project);
+      }
+      return; // Skip the regular grouping logic for quarters
+    }
+
+    // Regular grouping logic for all other group types
     let groupKey: string;
 
     switch (groupBy) {
@@ -43,12 +65,13 @@ export function groupProjects(
         groupKey = project.priority || 'No Priority';
         break;
       case 'team':
-        if (project.teamId) {
+        if (project.teamIds && project.teamIds.length > 0) {
+          const teamId = project.teamIds[0] || '';
           if (teams) {
-            const team = teams.find((t) => t.id === project.teamId && t.type === 'team');
-            groupKey = team ? team.name : project.teamId;
+            const team = teams.find((t) => t.id === teamId && t.type === 'team');
+            groupKey = team ? team.name : teamId || 'Unknown Team';
           } else {
-            groupKey = project.teamId;
+            groupKey = teamId || 'Unknown Team';
           }
         } else {
           groupKey = 'No Team';
@@ -68,9 +91,6 @@ export function groupProjects(
         break;
       case 'area':
         groupKey = project.area || 'No Area';
-        break;
-      case 'quarter':
-        groupKey = project.quarter || 'No Quarter';
         break;
       default:
         groupKey = 'Other';

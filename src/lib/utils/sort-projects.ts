@@ -24,7 +24,10 @@ export function sortProjects(projects: Project[], sortBy: SortByOption, sortDire
         comparison = compareDate(a.updatedAt, b.updatedAt);
         break;
       case 'quarter':
-        comparison = compareQuarter(a.quarter, b.quarter);
+        comparison = compareQuarter(
+          a.quarters && a.quarters.length > 0 ? a.quarters[0] : undefined,
+          b.quarters && b.quarters.length > 0 ? b.quarters[0] : undefined,
+        );
         break;
       case 'area':
         comparison = compareStringField(a.area, b.area);

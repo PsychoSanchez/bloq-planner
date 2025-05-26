@@ -23,7 +23,7 @@ import { ProjectTypeSelector } from './project-type-selector';
 import { ColorSelector } from './color-selector';
 import { TeamSelector, TeamOption } from './team-selector';
 import { PersonSelector } from './person-selector';
-import { QuarterSelector } from './quarter-selector';
+import { QuarterMultiSelector } from './quarter-multi-selector';
 import { Project } from '@/lib/types';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 import { ROLES_TO_DISPLAY } from '@/lib/constants';
@@ -92,9 +92,9 @@ export function NewProjectDialog() {
     priority: 'low' | 'medium' | 'high' | 'urgent';
     description: string;
     color: string;
-    teamId: string;
+    teamIds: string[];
     leadId: string;
-    quarter: string;
+    quarters: string[];
     dependencies: string;
     cost: string;
     impact: string;
@@ -108,9 +108,9 @@ export function NewProjectDialog() {
     priority: 'medium',
     description: '',
     color: DEFAULT_PROJECT_COLOR_NAME,
-    teamId: '',
+    teamIds: [],
     leadId: '',
-    quarter: '',
+    quarters: [],
     dependencies: '',
     cost: '',
     impact: '',
@@ -129,7 +129,7 @@ export function NewProjectDialog() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | string[]) => {
     setFormData({ ...formData, [name]: value });
   };
 
@@ -185,9 +185,9 @@ export function NewProjectDialog() {
         priority: 'medium',
         description: '',
         color: DEFAULT_PROJECT_COLOR_NAME,
-        teamId: '',
+        teamIds: [],
         leadId: '',
-        quarter: '',
+        quarters: [],
         dependencies: '',
         cost: '',
         impact: '',
@@ -289,10 +289,10 @@ export function NewProjectDialog() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="quarter">Quarter</Label>
-                  <QuarterSelector
-                    value={formData.quarter}
-                    onSelect={(value) => handleSelectChange('quarter', value)}
+                  <Label htmlFor="quarters">Quarters</Label>
+                  <QuarterMultiSelector
+                    value={formData.quarters}
+                    onSelect={(value) => handleSelectChange('quarters', value)}
                   />
                 </div>
               </div>
@@ -309,8 +309,8 @@ export function NewProjectDialog() {
                 <div className="grid gap-2">
                   <Label htmlFor="team">Team</Label>
                   <TeamSelector
-                    value={formData.teamId}
-                    onSelect={(value) => handleSelectChange('teamId', value)}
+                    value={formData.teamIds.length > 0 ? formData.teamIds[0] : ''}
+                    onSelect={(value) => handleSelectChange('teamIds', value ? [value] : [])}
                     teams={teams}
                     loading={teamsLoading}
                     placeholder="Select team"

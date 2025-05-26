@@ -17,11 +17,11 @@ interface CreateProjectInput {
   name: string;
   slug: string;
   type: string;
-  quarter?: string;
+  quarters?: string[];
   color?: string;
   description?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  teamId?: string;
+  teamIds?: string[];
   leadId?: string;
   area?: string;
   dependencies?: unknown[];
@@ -185,11 +185,11 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
         name: projectData.name,
         slug: projectData.slug,
         type: projectData.type as Project['type'],
-        quarter: projectData.quarter,
+        quarters: projectData.quarters,
         color: projectData.color,
         description: projectData.description,
         priority: projectData.priority || 'medium',
-        teamId: projectData.teamId,
+        teamIds: projectData.teamIds,
         leadId: projectData.leadId,
         area: projectData.area,
         dependencies: projectData.dependencies as Project['dependencies'],

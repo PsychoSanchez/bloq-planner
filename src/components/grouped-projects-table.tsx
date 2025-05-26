@@ -11,7 +11,7 @@ import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
 import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
-import { QuarterSelector } from './quarter-selector';
+import { QuarterMultiSelector } from './quarter-multi-selector';
 import { cn } from '@/lib/utils';
 import {
   ContextMenu,
@@ -41,7 +41,7 @@ function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (col
     { id: 'name', label: 'Name', className: 'min-w-[200px]' },
     { id: 'type', label: 'Type', className: 'w-[100px]' },
     { id: 'priority', label: 'Priority', className: 'w-[100px]' },
-    { id: 'quarter', label: 'Quarter', className: 'w-[100px]' },
+    { id: 'quarter', label: 'Quarter', className: 'w-[200px]' },
     { id: 'team', label: 'Team', className: 'w-[200px]' },
     { id: 'lead', label: 'Lead', className: 'w-[200px]' },
     { id: 'dependencies', label: 'Dependencies', className: 'w-[200px]' },
@@ -255,7 +255,7 @@ function ProjectRow({
 }) {
   const handleTeamChange = (teamId: string) => {
     if (onUpdateProject) {
-      onUpdateProject(project.id, { teamId });
+      onUpdateProject(project.id, { teamIds: teamId ? [teamId] : [] });
     }
   };
 
@@ -267,7 +267,7 @@ function ProjectRow({
 
   const handleQuarterChange = (quarter: string) => {
     if (onUpdateProject) {
-      onUpdateProject(project.id, { quarter });
+      onUpdateProject(project.id, { quarters: quarter ? [quarter] : [] });
     }
   };
 
@@ -331,10 +331,10 @@ function ProjectRow({
           )}
           {isColumnVisible('quarter') && (
             <TableCell className="py-1 px-2">
-              <QuarterSelector
+              <QuarterMultiSelector
                 type="inline"
-                value={project.quarter || ''}
-                onSelect={(value) => onUpdateProject?.(project.id, { quarter: value })}
+                value={project.quarters || []}
+                onSelect={(value) => onUpdateProject?.(project.id, { quarters: value })}
               />
             </TableCell>
           )}
@@ -343,14 +343,16 @@ function ProjectRow({
               {onUpdateProject ? (
                 <TeamSelector
                   type="inline"
-                  value={project.teamId}
+                  value={project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : ''}
                   onSelect={handleTeamChange}
                   placeholder="Select team"
                   teams={teams}
                   loading={teamsLoading}
                 />
+              ) : project.teamIds && project.teamIds.length > 0 ? (
+                teams.find((t) => t.id === project.teamIds![0])?.name || project.teamIds[0]
               ) : (
-                project.teamId || '--'
+                '--'
               )}
             </TableCell>
           )}
@@ -450,15 +452,13 @@ function ProjectRow({
               <span className="flex items-center gap-2">
                 Quarter
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {QUARTER_OPTIONS.find((q) => q.value === project.quarter)?.name || 'None'}
+                  {QUARTER_OPTIONS.find(
+                    (q) => q.value === (project.quarters && project.quarters.length > 0 ? project.quarters[0] : ''),
+                  )?.name || 'None'}
                 </span>
               </span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuItem onClick={() => handleQuarterChange('')} className="text-muted-foreground">
-                Remove Quarter
-              </ContextMenuItem>
-              <ContextMenuSeparator />
               {QUARTER_OPTIONS.map((quarter) => (
                 <ContextMenuItem key={quarter.id} onClick={() => handleQuarterChange(quarter.value)}>
                   {quarter.name}
@@ -473,7 +473,8 @@ function ProjectRow({
               <span className="flex items-center gap-2">
                 Team
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {teams.find((t) => t.id === project.teamId)?.name || 'None'}
+                  {teams.find((t) => t.id === (project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : ''))
+                    ?.name || 'None'}
                 </span>
               </span>
             </ContextMenuSubTrigger>
