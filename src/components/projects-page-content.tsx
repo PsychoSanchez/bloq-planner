@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { parseAsString, parseAsBoolean, parseAsArrayOf, useQueryState } from 'nuqs';
 import { SearchProjects } from '@/components/search-projects';
 import { GroupedProjectsTable } from '@/components/grouped-projects-table';
-import { Project } from '@/lib/types';
 import { groupProjects } from '@/lib/utils/group-projects';
 import { GroupByOption } from '@/components/project-group-selector';
 import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
@@ -12,7 +11,7 @@ import { TeamOption } from '@/components/team-selector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { trpc } from '@/utils/trpc';
-import { toast } from '@/components/ui/use-toast';
+import { useOptimisticProjects } from '@/hooks/use-optimistic-projects';
 
 const EMPTY_ARRAY = [] as string[];
 
@@ -212,22 +211,21 @@ export function ProjectsPageContent() {
   const [areas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
 
-  // Use tRPC to fetch projects
+  // Use the optimistic projects hook
   const {
-    data: projectsData,
+    projects,
     isLoading: projectsLoading,
     error: projectsError,
-  } = trpc.project.getProjects.useQuery({
+    updateProject: handleUpdateProject,
+  } = useOptimisticProjects({
     search: search || undefined,
-    type: type !== 'all' ? type : undefined,
+    type,
     includeArchived,
     priorities: priorities.length > 0 ? priorities : undefined,
     quarters: quarters.length > 0 ? quarters : undefined,
     areas: areas.length > 0 ? areas : undefined,
     leads: leads.length > 0 ? leads : undefined,
   });
-
-  const projects = projectsData?.projects || [];
 
   // Use tRPC to fetch team members
   const { data: teamMembers, isLoading: teamsLoading, error: teamMembersError } = trpc.team.getTeamMembers.useQuery({});
@@ -243,31 +241,6 @@ export function ProjectsPageContent() {
         type: member.type as 'person' | 'team' | 'dependency' | 'event',
       })) || [];
 
-  // tRPC mutation for updating projects
-  const utils = trpc.useUtils();
-  const updateProjectMutation = trpc.project.patchProject.useMutation({
-    onSuccess: (updatedProject) => {
-      // Invalidate and refetch projects
-      utils.project.getProjects.invalidate();
-
-      // Show success toast
-      toast({
-        title: 'Project updated successfully',
-        description: `"${updatedProject.name}" has been updated.`,
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating project:', error);
-
-      // Show error toast
-      toast({
-        title: 'Failed to update project',
-        description: error.message || 'There was an error updating the project. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
   // Show error if team members fetch fails
   useEffect(() => {
     if (teamMembersError) {
@@ -277,18 +250,6 @@ export function ProjectsPageContent() {
       console.error('Error fetching projects:', projectsError);
     }
   }, [teamMembersError, projectsError]);
-
-  const handleUpdateProject = async (projectId: string, updates: Partial<Project>) => {
-    try {
-      await updateProjectMutation.mutateAsync({
-        id: projectId,
-        ...updates,
-      });
-    } catch (error) {
-      // Error is already handled in the mutation onError callback
-      console.error('Error updating project:', error);
-    }
-  };
 
   // Group projects based on the selected groupBy option
   const groups = groupProjects(
