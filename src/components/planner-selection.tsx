@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { EmptyPlaceholder } from '@/components/ui/empty-placeholder';
 import { useToast } from '@/components/ui/use-toast';
-import { createPlanner, deletePlanner, getPlanners, updatePlanner } from '@/lib/planner-api';
 import { PlusCircle, Trash, Check, Edit } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { Planner, Project, Assignee } from '@/lib/types';
@@ -33,13 +32,6 @@ import {
   CompactCardFooter,
 } from '@/components/ui/compact-card';
 import { trpc } from '@/utils/trpc';
-
-// Custom type for planner creation that accepts string IDs
-interface PlannerCreateData {
-  name: string;
-  projects: string[];
-  assignees: string[];
-}
 
 interface PlannerDialogProps {
   mode: 'create' | 'edit';
@@ -439,9 +431,6 @@ function CreatePlannerDialog({
 }
 
 export function PlannerSelection() {
-  const [planners, setPlanners] = useState<Planner[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   const defaultYear = new Date().getFullYear();
   const defaultQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
   const [yearValue] = useQueryState('year', parseAsInteger.withDefault(defaultYear));
@@ -450,57 +439,97 @@ export function PlannerSelection() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Load planners for the selected quarter/year
-  useEffect(() => {
-    const loadPlanners = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getPlanners(yearValue, quarterValue);
-        setPlanners(response.planners);
-      } catch (error) {
-        console.error('Failed to load planners:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load planners',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Use tRPC to fetch planners
+  const {
+    data: plannersData,
+    isLoading,
+    error: plannersError,
+  } = trpc.planner.getPlanners.useQuery({
+    year: yearValue,
+    quarter: quarterValue,
+  });
 
-    loadPlanners();
-  }, [yearValue, quarterValue, toast]);
+  const planners = plannersData?.planners || [];
 
-  const handleCreatePlanner = async (data: { name: string; projects: Project[]; assignees: Assignee[] }) => {
-    try {
-      // Extract just the IDs for the API
-      const plannerData: PlannerCreateData = {
-        name: data.name,
-        projects: data.projects.map((project) => project.id),
-        assignees: data.assignees.map((assignee) => assignee.id),
-      };
+  // tRPC mutations
+  const utils = trpc.useUtils();
 
-      // Create the planner with the IDs only
-      const response = await createPlanner(yearValue, quarterValue, plannerData);
-
-      if (response.success && response.plannerId) {
-        // Reload the planners list
-        const updatedPlanners = await getPlanners(yearValue, quarterValue);
-        setPlanners(updatedPlanners.planners);
-
-        toast({
-          title: 'Success',
-          description: 'New planner created successfully',
-        });
-      }
-    } catch (error) {
+  const createPlannerMutation = trpc.planner.createPlanner.useMutation({
+    onSuccess: () => {
+      utils.planner.getPlanners.invalidate();
+      toast({
+        title: 'Success',
+        description: 'New planner created successfully',
+      });
+    },
+    onError: (error) => {
       console.error('Failed to create planner:', error);
       toast({
         title: 'Error',
         description: 'Failed to create new planner',
         variant: 'destructive',
       });
+    },
+  });
+
+  const updatePlannerMutation = trpc.planner.updatePlanner.useMutation({
+    onSuccess: () => {
+      utils.planner.getPlanners.invalidate();
+      toast({
+        title: 'Success',
+        description: 'Planner updated successfully',
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to update planner:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update planner',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deletePlannerMutation = trpc.planner.deletePlanner.useMutation({
+    onSuccess: () => {
+      utils.planner.getPlanners.invalidate();
+      toast({
+        title: 'Success',
+        description: 'Planner deleted successfully',
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to delete planner:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete planner',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Show error toast if planners fetch fails
+  useEffect(() => {
+    if (plannersError) {
+      console.error('Failed to load planners:', plannersError);
+      toast({
+        title: 'Error',
+        description: 'Failed to load planners',
+        variant: 'destructive',
+      });
+    }
+  }, [plannersError, toast]);
+
+  const handleCreatePlanner = async (data: { name: string; projects: Project[]; assignees: Assignee[] }) => {
+    try {
+      // Extract just the IDs for the API
+      await createPlannerMutation.mutateAsync({
+        name: data.name,
+        projects: data.projects.map((project) => project.id),
+        assignees: data.assignees.map((assignee) => assignee.id),
+      });
+    } catch (error) {
+      // Error is already handled in the mutation onError callback
       throw error; // Re-throw to handle in the dialog
     }
   };
@@ -511,32 +540,14 @@ export function PlannerSelection() {
   ) => {
     try {
       // Extract just the IDs for the API
-      const plannerData = {
+      await updatePlannerMutation.mutateAsync({
+        id: plannerId,
         name: data.name,
         projects: data.projects.map((project) => project.id),
         assignees: data.assignees.map((assignee) => assignee.id),
-      };
-
-      // Update the planner
-      const response = await updatePlanner(plannerId, plannerData);
-
-      if (response.success) {
-        // Reload the planners list
-        const updatedPlanners = await getPlanners(yearValue, quarterValue);
-        setPlanners(updatedPlanners.planners);
-
-        toast({
-          title: 'Success',
-          description: 'Planner updated successfully',
-        });
-      }
-    } catch (error) {
-      console.error('Failed to update planner:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update planner',
-        variant: 'destructive',
       });
+    } catch (error) {
+      // Error is already handled in the mutation onError callback
       throw error; // Re-throw to handle in the dialog
     }
   };
@@ -549,23 +560,10 @@ export function PlannerSelection() {
     event.stopPropagation();
 
     try {
-      await deletePlanner(plannerId);
-
-      // Reload the planners list
-      const updatedPlanners = await getPlanners(yearValue, quarterValue);
-      setPlanners(updatedPlanners.planners);
-
-      toast({
-        title: 'Success',
-        description: 'Planner deleted successfully',
-      });
+      await deletePlannerMutation.mutateAsync({ id: plannerId });
     } catch (error) {
+      // Error is already handled in the mutation onError callback
       console.error('Failed to delete planner:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete planner',
-        variant: 'destructive',
-      });
     }
   };
 

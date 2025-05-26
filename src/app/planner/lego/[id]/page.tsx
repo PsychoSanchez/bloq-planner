@@ -2,13 +2,13 @@
 
 import { LegoPlanner } from '@/components/lego-planner';
 import { ProjectAllocationPanel } from '@/components/project-allocation-panel';
-import { getPlanner } from '@/lib/planner-api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { Assignment, Planner } from '@/lib/types';
+import { Assignment } from '@/lib/types';
+import { trpc } from '@/utils/trpc';
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -124,34 +124,33 @@ export default function LegoPlannerDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [plannerData, setPlannerData] = useState<Planner | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const plannerId = params.id as string;
+
+  // Use tRPC to fetch planner data
+  const {
+    data: plannerData,
+    isLoading,
+    error: plannerError,
+  } = trpc.planner.getPlannerById.useQuery({
+    id: plannerId,
+  });
 
   const { assignments, getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } =
     useAssignments(plannerId);
-  useEffect(() => {
-    const loadPlanner = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getPlanner(plannerId);
-        setPlannerData(data);
-      } catch (error) {
-        console.error('Failed to load planner:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load planner. It may have been deleted.',
-          variant: 'destructive',
-        });
-        // Redirect back to planner selection after a delay
-        setTimeout(() => router.push('/planner/lego'), 2000);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    loadPlanner();
-  }, [plannerId, router, toast]);
+  // Show error toast and redirect if planner fetch fails
+  useEffect(() => {
+    if (plannerError) {
+      console.error('Failed to load planner:', plannerError);
+      toast({
+        title: 'Error',
+        description: 'Failed to load planner. It may have been deleted.',
+        variant: 'destructive',
+      });
+      // Redirect back to planner selection after a delay
+      setTimeout(() => router.push('/planner/lego'), 2000);
+    }
+  }, [plannerError, router, toast]);
 
   const handleBackClick = () => {
     router.push('/planner/lego');

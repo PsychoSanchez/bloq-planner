@@ -46,6 +46,19 @@ We've successfully migrated from REST API endpoints to tRPC to achieve:
   - `src/components/edit-project-form.tsx`
 - **Status**: ✅ Complete - REST API endpoints removed
 
+#### Planner API (`/api/planner`)
+- **Router**: `src/server/routers/planner.ts`
+- **Procedures**:
+  - `getPlanners` - Fetch all planners with optional year/quarter filtering
+  - `getPlannerById` - Fetch a single planner by ID
+  - `createPlanner` - Create a new planner
+  - `updatePlanner` - Update an existing planner
+  - `deletePlanner` - Delete a planner
+- **Components migrated**:
+  - `src/components/planner-selection.tsx`
+  - `src/app/planner/lego/[id]/page.tsx`
+- **Status**: ✅ Complete - REST API endpoints removed
+
 ### 🔄 Pending Migrations
 
 None - All major API endpoints have been migrated to tRPC.
@@ -124,6 +137,30 @@ const { data: projects } = trpc.project.getProjects.useQuery({
   priorities: ['high', 'urgent'],
   includeArchived: false
 });
+
+// Planners with year/quarter filtering
+const { data: planners } = trpc.planner.getPlanners.useQuery({
+  year: 2024,
+  quarter: 1
+});
+
+// Create planner with toast notifications
+const createPlannerMutation = trpc.planner.createPlanner.useMutation({
+  onSuccess: () => {
+    utils.planner.getPlanners.invalidate();
+    toast({
+      title: 'Success',
+      description: 'New planner created successfully',
+    });
+  },
+  onError: (error) => {
+    toast({
+      title: 'Error',
+      description: 'Failed to create new planner',
+      variant: 'destructive',
+    });
+  },
+});
 ```
 
 ### Server-side Usage
@@ -145,6 +182,7 @@ Tests are located in:
 - `src/server/routers/__tests__/team.test.ts`
 - `src/server/routers/__tests__/team-validation.test.ts`
 - `src/server/routers/__tests__/project.test.ts`
+- `src/server/routers/__tests__/planner.test.ts`
 
 Run tests with:
 ```bash
