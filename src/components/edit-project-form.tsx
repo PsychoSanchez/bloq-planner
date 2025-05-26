@@ -20,6 +20,7 @@ import { QuarterSelector } from './quarter-selector';
 import { ProjectTypeSelector } from './project-type-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { trpc } from '@/utils/trpc';
 
 interface EditProjectFormProps {
   project: Project;
@@ -31,6 +32,58 @@ interface EditProjectFormProps {
 export function EditProjectForm({ project, onCancel, teams, teamsLoading }: EditProjectFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // tRPC mutation for updating projects
+  const utils = trpc.useUtils();
+  const updateProjectMutation = trpc.project.patchProject.useMutation({
+    onSuccess: (updatedProject) => {
+      // Invalidate and refetch projects
+      utils.project.getProjects.invalidate();
+
+      // Show success toast
+      toast({
+        title: 'Project updated successfully',
+        description: `"${updatedProject.name}" has been saved with your changes.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating project:', error);
+
+      // Show error toast
+      toast({
+        title: 'Failed to update project',
+        description: error.message || 'There was an error saving your changes. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const [formData, setFormData] = useState({
+    name: project.name || '',
+    slug: project.slug || '',
+    type: project.type || 'regular',
+    area: project.area || '',
+    priority: project.priority || 'medium',
+    description: project.description || '',
+    color: project.color || 'blue',
+    teamId: project.teamId || '',
+    leadId: project.leadId || '',
+    quarter: project.quarter || '',
+    dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
+    cost: project.cost?.toString() || '',
+    impact: project.impact?.toString() || '',
+    roi: project.roi?.toString() || '',
+    archived: project.archived || false,
+    estimates: ROLES_TO_DISPLAY.reduce(
+      (acc, role) => {
+        const estimate = project.estimates?.find((est) => est.department === role);
+        acc[role] = estimate?.value || 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    ),
+  });
 
   const initialFormData = useMemo(
     () => ({
@@ -60,9 +113,6 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     }),
     [project],
   );
-
-  const [formData, setFormData] = useState(initialFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Deep comparison function for detecting changes
   const hasUnsavedChanges = useMemo(() => {
@@ -174,44 +224,24 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          dependencies: formData.dependencies
-            ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
-            : [],
-          // TODO: Breaks mongodb and causese maximum call stack size exceeded error
-          // estimates: ROLES_TO_DISPLAY.map((role) => ({
-          //   role,
-          //   value: formData.estimates[role] || 0,
-          // })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update project');
-      }
-
-      // Show success toast
-      toast({
-        title: 'Project updated successfully',
-        description: `"${formData.name}" has been saved with your changes.`,
+      await updateProjectMutation.mutateAsync({
+        id: project.id,
+        ...formData,
+        dependencies: formData.dependencies
+          ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
+          : [],
+        // TODO: Breaks mongodb and causese maximum call stack size exceeded error
+        // estimates: ROLES_TO_DISPLAY.map((role) => ({
+        //   role,
+        //   value: formData.estimates[role] || 0,
+        // })),
       });
 
       router.refresh();
       onCancel();
     } catch (error) {
+      // Error is already handled in the mutation onError callback
       console.error('Error updating project:', error);
-      // Show error toast
-      toast({
-        title: 'Failed to update project',
-        description: 'There was an error saving your changes. Please try again.',
-        variant: 'destructive',
-      });
     } finally {
       setIsSubmitting(false);
     }

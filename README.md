@@ -121,14 +121,6 @@ The project uses Shadcn UI components which can be easily customized:
 
 The project uses a MongoDB database for data persistence. API endpoints are implemented using Next.js App Router API routes.
 
-### API Routes
-
-- `GET /api/projects` - Get all projects with optional filtering
-- `POST /api/projects` - Create a new project
-- `GET /api/projects/:id` - Get a specific project by ID
-- `PUT /api/projects/:id` - Update a project
-- `DELETE /api/projects/:id` - Delete a project
-
 ### Data Models
 
 The project uses Mongoose for MongoDB object modeling:

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { parseAsString, parseAsBoolean, parseAsArrayOf, useQueryState } from 'nuqs';
 import { SearchProjects } from '@/components/search-projects';
 import { GroupedProjectsTable } from '@/components/grouped-projects-table';
@@ -12,6 +12,7 @@ import { TeamOption } from '@/components/team-selector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { trpc } from '@/utils/trpc';
+import { toast } from '@/components/ui/use-toast';
 
 const EMPTY_ARRAY = [] as string[];
 
@@ -211,8 +212,22 @@ export function ProjectsPageContent() {
   const [areas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use tRPC to fetch projects
+  const {
+    data: projectsData,
+    isLoading: projectsLoading,
+    error: projectsError,
+  } = trpc.project.getProjects.useQuery({
+    search: search || undefined,
+    type: type !== 'all' ? type : undefined,
+    includeArchived,
+    priorities: priorities.length > 0 ? priorities : undefined,
+    quarters: quarters.length > 0 ? quarters : undefined,
+    areas: areas.length > 0 ? areas : undefined,
+    leads: leads.length > 0 ? leads : undefined,
+  });
+
+  const projects = projectsData?.projects || [];
 
   // Use tRPC to fetch team members
   const { data: teamMembers, isLoading: teamsLoading, error: teamMembersError } = trpc.team.getTeamMembers.useQuery({});
@@ -228,69 +243,49 @@ export function ProjectsPageContent() {
         type: member.type as 'person' | 'team' | 'dependency' | 'event',
       })) || [];
 
+  // tRPC mutation for updating projects
+  const utils = trpc.useUtils();
+  const updateProjectMutation = trpc.project.patchProject.useMutation({
+    onSuccess: (updatedProject) => {
+      // Invalidate and refetch projects
+      utils.project.getProjects.invalidate();
+
+      // Show success toast
+      toast({
+        title: 'Project updated successfully',
+        description: `"${updatedProject.name}" has been updated.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating project:', error);
+
+      // Show error toast
+      toast({
+        title: 'Failed to update project',
+        description: error.message || 'There was an error updating the project. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Show error if team members fetch fails
   useEffect(() => {
     if (teamMembersError) {
       console.error('Error fetching teams:', teamMembersError);
     }
-  }, [teamMembersError]);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-
-        // Basic filters
-        if (search) params.set('search', search);
-        if (type && type !== 'all') params.set('type', type);
-        if (includeArchived) params.set('includeArchived', 'true');
-
-        // Advanced multidimensional filters
-        if (priorities.length > 0) params.set('priorities', priorities.join(','));
-        if (quarters.length > 0) params.set('quarters', quarters.join(','));
-        if (areas.length > 0) params.set('areas', areas.join(','));
-        if (leads.length > 0) params.set('leads', leads.join(','));
-
-        const queryParams = params.toString();
-        const response = await fetch(`/api/projects${queryParams ? `?${queryParams}` : ''}`);
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects || []);
-        } else {
-          console.error('Failed to fetch projects');
-          setProjects([]);
-        }
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-        setProjects([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
-  }, [search, type, includeArchived, priorities, quarters, areas, leads]);
+    if (projectsError) {
+      console.error('Error fetching projects:', projectsError);
+    }
+  }, [teamMembersError, projectsError]);
 
   const handleUpdateProject = async (projectId: string, updates: Partial<Project>) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
+      await updateProjectMutation.mutateAsync({
+        id: projectId,
+        ...updates,
       });
-
-      if (response.ok) {
-        // Update the local state
-        setProjects((prevProjects) =>
-          prevProjects.map((project) => (project.id === projectId ? { ...project, ...updates } : project)),
-        );
-      } else {
-        console.error('Failed to update project');
-      }
     } catch (error) {
+      // Error is already handled in the mutation onError callback
       console.error('Error updating project:', error);
     }
   };
@@ -307,7 +302,7 @@ export function ProjectsPageContent() {
   return (
     <div className="space-y-4">
       <SearchProjects teams={teams} teamsLoading={teamsLoading} />
-      {loading ? (
+      {projectsLoading ? (
         <ProjectsTableSkeleton isGrouped={isGrouped} />
       ) : (
         <GroupedProjectsTable

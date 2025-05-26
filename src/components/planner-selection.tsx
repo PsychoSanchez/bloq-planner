@@ -63,10 +63,6 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Data states
-  const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-
   // Search states
   const [projectSearch, setProjectSearch] = useState('');
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -99,36 +95,26 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
     }
   }, [teamMembersError, toast]);
 
-  // Fetch projects and team members from API
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoadingProjects(true);
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data = await response.json();
-        // Only include regular projects in the selection dialog
-        // Default projects are always available automatically
-        const regularProjects = data.projects || [];
-        setAvailableProjects(regularProjects);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load projects',
-          variant: 'destructive',
-        });
-        // Set empty array on error
-        setAvailableProjects([]);
-      } finally {
-        setIsLoadingProjects(false);
-      }
-    };
+  // Use tRPC to fetch projects
+  const {
+    data: projectsData,
+    isLoading: isLoadingProjects,
+    error: projectsError,
+  } = trpc.project.getProjects.useQuery({}, { enabled: open });
 
-    if (open) {
-      fetchProjects();
+  const availableProjects = projectsData?.projects || [];
+
+  // Show error toast if projects fetch fails
+  useEffect(() => {
+    if (projectsError) {
+      console.error('Error fetching projects:', projectsError);
+      toast({
+        title: 'Error',
+        description: 'Failed to load projects',
+        variant: 'destructive',
+      });
     }
-  }, [open, toast]);
+  }, [projectsError, toast]);
 
   // Reset form when dialog opens in edit mode
   useEffect(() => {

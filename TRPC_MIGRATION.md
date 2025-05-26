@@ -1,117 +1,186 @@
 # tRPC Migration Documentation
 
+This document outlines the migration from REST API endpoints to tRPC for type-safe API calls in the Lego Planner application.
+
 ## Overview
 
-This document outlines the complete migration from REST API endpoints to tRPC for the team management functionality in the Lego Planner application.
+We've successfully migrated from REST API endpoints to tRPC to achieve:
+- End-to-end type safety
+- Better developer experience with IntelliSense
+- Consistent validation using ArkType
+- React Query integration for caching and loading states
+- Real-time updates with optimistic updates and cache invalidation
+- Reduced boilerplate code
 
-## ✅ Migration Status: COMPLETE
+## Migration Status
 
-All components have been successfully migrated from REST API (`/api/team-members`) to tRPC. The old REST endpoint has been removed.
+### ✅ Completed Migrations
 
-## Migrated Components
+#### Team API (`/api/team-members`)
+- **Router**: `src/server/routers/team.ts`
+- **Procedures**:
+  - `getTeamMembers` - Fetch all team members with optional filtering
+  - `createTeamMember` - Create a new team member
+  - `updateTeamMemberRole` - Update a team member's role
+- **Components migrated**:
+  - `src/components/team-members-list.tsx`
+  - `src/components/new-team-member-dialog.tsx`
+  - `src/components/planner-selection.tsx`
+  - `src/components/new-project-dialog.tsx`
+  - `src/components/projects-page-content.tsx`
+- **Status**: ✅ Complete - REST API endpoint removed
 
-### 1. Team Page (`src/app/team/page.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Now uses `TeamMembersList` component with tRPC
-- **Features**: Full CRUD operations via tRPC
+#### Projects API (`/api/projects`)
+- **Router**: `src/server/routers/project.ts`
+- **Procedures**:
+  - `getProjects` - Fetch all projects with filtering (search, type, quarter, priorities, areas, leads, includeArchived)
+  - `getProjectById` - Fetch a single project by ID
+  - `createProject` - Create a new project
+  - `updateProject` - Full update of a project
+  - `patchProject` - Partial update of a project
+  - `deleteProject` - Delete a project
+- **Components migrated**:
+  - `src/components/projects-page-content.tsx`
+  - `src/components/new-project-dialog.tsx`
+  - `src/components/planner-selection.tsx`
+  - `src/components/edit-project-form.tsx`
+- **Status**: ✅ Complete - REST API endpoints removed
 
-### 2. Team Members List (`src/components/team-members-list.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Uses `trpc.team.getTeamMembers.useQuery()` and `trpc.team.updateTeamMemberRole.useMutation()`
-- **Features**: Real-time updates, skeleton loading, search and filtering
+### 🔄 Pending Migrations
 
-### 3. New Team Member Dialog (`src/components/new-team-member-dialog.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Uses `trpc.team.createTeamMember.useMutation()`
-- **Features**: Form validation, error handling, automatic refresh
+None - All major API endpoints have been migrated to tRPC.
 
-### 4. Planner Selection (`src/components/planner-selection.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Uses `trpc.team.getTeamMembers.useQuery()` for assignee selection
-- **Features**: Real-time team member loading
+## tRPC Setup
 
-### 5. New Project Dialog (`src/components/new-project-dialog.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Uses `trpc.team.getTeamMembers.useQuery()` for team selection
-- **Features**: Dynamic team loading
+### Core Files
 
-### 6. Projects Page Content (`src/components/projects-page-content.tsx`)
-- **Status**: ✅ Complete
-- **Changes**: Uses `trpc.team.getTeamMembers.useQuery()` for team data
-- **Features**: Team filtering and display
+1. **tRPC Configuration** (`src/server/trpc.ts`)
+   - Initializes tRPC with context
+   - Exports router and procedure builders
 
-## tRPC Implementation
+2. **Context** (`src/server/context.ts`)
+   - Defines the context interface for NextRequest
 
-### Server Setup
+3. **Main App Router** (`src/server/routers/_app.ts`)
+   - Combines all sub-routers
+   - Exports the main AppRouter type
 
-1. **tRPC Router** (`src/server/routers/team.ts`)
-   - `getTeamMembers` - Query with optional filtering
-   - `createTeamMember` - Mutation for creating team members
-   - `updateTeamMemberRole` - Mutation for updating roles
+4. **HTTP Handler** (`src/app/api/trpc/[trpc]/route.ts`)
+   - Handles HTTP requests for App Router
+   - Uses fetchRequestHandler
 
-2. **Validation** - Uses ArkType for input validation
-3. **Error Handling** - Comprehensive error handling with proper HTTP status codes
-4. **Testing** - Full test coverage for all procedures
+5. **Client Setup** (`src/utils/trpc.ts`)
+   - Creates tRPC React hooks
+   - Configures the client
 
-### Client Setup
+6. **Provider** (`src/components/providers/trpc-provider.tsx`)
+   - Wraps the app with tRPC and QueryClient providers
 
-1. **tRPC Client** (`src/utils/trpc.ts`) - React Query integration
-2. **Provider** (`src/components/providers/trpc-provider.tsx`) - App-wide tRPC context
-3. **Layout Integration** (`src/app/layout.tsx`) - Provider wrapper
+### Validation
 
-## Benefits Achieved
+All input validation uses **ArkType** instead of Zod for consistency with the existing codebase:
 
-- ✅ **End-to-end type safety** - Full TypeScript support from client to server
-- ✅ **Consistent validation** - ArkType schemas used across all operations
-- ✅ **Better DX** - IntelliSense and auto-completion
-- ✅ **React Query integration** - Automatic caching, loading states, and error handling
-- ✅ **Real-time updates** - Optimistic updates and cache invalidation
-- ✅ **Reduced boilerplate** - No manual fetch calls or response parsing
+```typescript
+import { type } from 'arktype';
 
-## Removed Files
+const getTeamMembersInput = type({
+  'search?': 'string',
+  'department?': 'string',
+});
 
-- ❌ `src/app/api/team-members/route.ts` - Old REST API endpoint (no longer needed)
-- ❌ `src/app/test-trpc/page.tsx` - Test page (migration complete)
-
-## Testing
-
-All tRPC functionality is thoroughly tested:
-- ✅ Router procedure tests
-- ✅ ArkType validation tests
-- ✅ Integration tests
-
-Run tests with: `bun test src/server/routers/__tests__/`
+const createTeamMemberInput = type({
+  name: 'string >= 1',
+  role: 'string >= 1',
+  'department?': 'string',
+  type: "'person' | 'team' | 'dependency' | 'event'",
+});
+```
 
 ## Usage Examples
 
-### Querying Team Members
-```typescript
-const { data: teamMembers, isLoading, error } = trpc.team.getTeamMembers.useQuery({
-  department: 'engineering',
-  search: 'john'
-});
-```
+### Client-side Usage
 
-### Creating Team Members
 ```typescript
-const createTeamMember = trpc.team.createTeamMember.useMutation({
+import { trpc } from '@/utils/trpc';
+
+// Query
+const { data, isLoading, error } = trpc.team.getTeamMembers.useQuery({
+  search: 'john',
+  department: 'engineering'
+});
+
+// Mutation with cache invalidation
+const utils = trpc.useUtils();
+const createMutation = trpc.team.createTeamMember.useMutation({
   onSuccess: () => {
-    // Handle success
     utils.team.getTeamMembers.invalidate();
   }
 });
-```
 
-### Updating Team Member Role
-```typescript
-const updateRole = trpc.team.updateTeamMemberRole.useMutation({
-  onSuccess: () => {
-    // Handle success
-    refetch();
-  }
+// Projects with filtering
+const { data: projects } = trpc.project.getProjects.useQuery({
+  search: 'api',
+  type: 'regular',
+  priorities: ['high', 'urgent'],
+  includeArchived: false
 });
 ```
 
-## Migration Complete! 🎉
+### Server-side Usage
 
-The team management functionality has been fully migrated to tRPC, providing better type safety, developer experience, and maintainability. 
+```typescript
+// In a router
+export const teamRouter = router({
+  getTeamMembers: publicProcedure
+    .input(getTeamMembersInput)
+    .query(async ({ input }) => {
+      // Implementation
+    }),
+});
+```
+
+## Testing
+
+Tests are located in:
+- `src/server/routers/__tests__/team.test.ts`
+- `src/server/routers/__tests__/team-validation.test.ts`
+- `src/server/routers/__tests__/project.test.ts`
+
+Run tests with:
+```bash
+bun test
+```
+
+## Benefits Achieved
+
+1. **Type Safety**: Full end-to-end type safety from client to server
+2. **Developer Experience**: IntelliSense and auto-completion for all API calls
+3. **Validation**: Consistent ArkType validation across all endpoints
+4. **Caching**: Built-in React Query caching and background refetching
+5. **Real-time Updates**: Optimistic updates and automatic cache invalidation
+6. **Error Handling**: Consistent error handling with proper TypeScript types
+7. **Performance**: Reduced bundle size and improved performance with tree-shaking
+
+## Migration Checklist
+
+- [x] Set up tRPC infrastructure
+- [x] Create team router with all CRUD operations
+- [x] Create project router with all CRUD operations
+- [x] Migrate team-related components
+- [x] Migrate project-related components
+- [x] Add comprehensive tests
+- [x] Remove old REST API endpoints
+- [x] Update documentation
+- [x] Verify TypeScript compilation
+- [x] Ensure all tests pass
+
+## Next Steps
+
+The tRPC migration is now complete! All major API endpoints have been migrated to provide:
+- Type-safe API calls
+- Better developer experience
+- Consistent validation
+- Improved performance
+- Real-time updates
+
+Future API endpoints should be built using tRPC following the established patterns in the existing routers. 

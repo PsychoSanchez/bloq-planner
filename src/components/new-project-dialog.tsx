@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,10 +29,34 @@ import { ROLES_TO_DISPLAY } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export function NewProjectDialog() {
-  const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // tRPC mutation for creating projects
+  const utils = trpc.useUtils();
+  const createProjectMutation = trpc.project.createProject.useMutation({
+    onSuccess: (newProject) => {
+      // Invalidate and refetch projects
+      utils.project.getProjects.invalidate();
+
+      // Show success toast
+      toast({
+        title: 'Project created successfully',
+        description: `"${newProject.name}" has been created.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating project:', error);
+
+      // Show error toast
+      toast({
+        title: 'Error creating project',
+        description: error.message || 'An error occurred while creating the project. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Use tRPC to fetch team members
   const {
@@ -65,7 +88,7 @@ export function NewProjectDialog() {
     slug: string;
     type: Project['type'];
     area: string;
-    priority: string;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
     description: string;
     color: string;
     teamId: string;
@@ -159,68 +182,40 @@ export function NewProjectDialog() {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          dependencies: formData.dependencies
-            ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
-            : [],
-        }),
+      await createProjectMutation.mutateAsync({
+        ...formData,
+        dependencies: formData.dependencies
+          ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
+          : [],
       });
 
-      if (response.ok) {
-        setOpen(false);
-        // Reset form
-        setFormData({
-          name: '',
-          slug: '',
-          type: 'regular',
-          area: '',
-          priority: 'medium',
-          description: '',
-          color: DEFAULT_PROJECT_COLOR_NAME,
-          teamId: '',
-          leadId: '',
-          quarter: '',
-          dependencies: '',
-          cost: '',
-          impact: '',
-          roi: '',
-          estimates: ROLES_TO_DISPLAY.reduce(
-            (acc, role) => {
-              acc[role] = 0;
-              return acc;
-            },
-            {} as Record<string, number>,
-          ),
-        });
-
-        toast({
-          title: 'Project created successfully',
-          description: `"${formData.name}" has been created.`,
-        });
-
-        // Refresh the projects page to show the new project
-        router.refresh();
-      } else {
-        console.error('Failed to create project:', await response.text());
-        toast({
-          title: 'Error',
-          description: 'Failed to create project. Please try again.',
-          variant: 'destructive',
-        });
-      }
+      setOpen(false);
+      // Reset form
+      setFormData({
+        name: '',
+        slug: '',
+        type: 'regular',
+        area: '',
+        priority: 'medium',
+        description: '',
+        color: DEFAULT_PROJECT_COLOR_NAME,
+        teamId: '',
+        leadId: '',
+        quarter: '',
+        dependencies: '',
+        cost: '',
+        impact: '',
+        roi: '',
+        estimates: ROLES_TO_DISPLAY.reduce(
+          (acc, role) => {
+            acc[role] = 0;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+      });
     } catch (error) {
       console.error('Error creating project:', error);
-      toast({
-        title: 'Error',
-        description: 'An error occurred while creating the project. Please try again.',
-        variant: 'destructive',
-      });
     } finally {
       setIsSubmitting(false);
     }
