@@ -22,11 +22,20 @@ const useAssignments = (plannerId: string) => {
   const utils = trpc.useUtils();
 
   const createAssignmentMutation = trpc.assignment.createAssignment.useMutation({
-    onSuccess: (newAssignment) => {
-      setAssignments((prev) => [...prev, newAssignment]);
+    onSuccess: (newAssignment, variables) => {
+      // Replace the optimistic assignment with the real one from the server
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === `temp-${variables.assigneeId}-${variables.week}-${variables.year}` ? newAssignment : a,
+        ),
+      );
       utils.assignment.getAssignments.invalidate();
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      // Revert the optimistic update
+      setAssignments((prev) =>
+        prev.filter((a) => a.id !== `temp-${variables.assigneeId}-${variables.week}-${variables.year}`),
+      );
       toast({
         title: 'Failed to create assignment',
         description: error.message || 'Failed to create assignment',
@@ -36,11 +45,18 @@ const useAssignments = (plannerId: string) => {
   });
 
   const updateAssignmentMutation = trpc.assignment.updateAssignment.useMutation({
-    onSuccess: (updatedAssignment) => {
-      setAssignments((prev) => prev.map((a) => (a.id === updatedAssignment.id ? updatedAssignment : a)));
+    onSuccess: () => {
+      // The optimistic update is already in place, just invalidate cache
       utils.assignment.getAssignments.invalidate();
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      // Revert the optimistic update by refetching from server data
+      if (assignmentsData) {
+        const originalAssignment = assignmentsData.find((a) => a.id === variables.id);
+        if (originalAssignment) {
+          setAssignments((prev) => prev.map((a) => (a.id === variables.id ? originalAssignment : a)));
+        }
+      }
       toast({
         title: 'Failed to update assignment',
         description: error.message || 'Failed to update assignment',
@@ -50,11 +66,18 @@ const useAssignments = (plannerId: string) => {
   });
 
   const deleteAssignmentMutation = trpc.assignment.deleteAssignment.useMutation({
-    onSuccess: (_, variables) => {
-      setAssignments((prev) => prev.filter((a) => a.id !== variables.id));
+    onSuccess: () => {
+      // The optimistic update is already in place, just invalidate cache
       utils.assignment.getAssignments.invalidate();
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      // Revert the optimistic update by restoring the deleted assignment
+      if (assignmentsData) {
+        const deletedAssignment = assignmentsData.find((a) => a.id === variables.id);
+        if (deletedAssignment) {
+          setAssignments((prev) => [...prev, deletedAssignment]);
+        }
+      }
       toast({
         title: 'Failed to delete assignment',
         description: error.message || 'Failed to delete assignment',
@@ -83,6 +106,16 @@ const useAssignments = (plannerId: string) => {
 
   const createAssignment = useCallback(
     async (assignment: Omit<Assignment, 'id'>) => {
+      // Generate a temporary ID for optimistic update
+      const tempId = `temp-${assignment.assigneeId}-${assignment.week}-${assignment.year}`;
+      const optimisticAssignment: Assignment = {
+        ...assignment,
+        id: tempId,
+      };
+
+      // Optimistic update: add the assignment immediately
+      setAssignments((prev) => [...prev, optimisticAssignment]);
+
       try {
         await createAssignmentMutation.mutateAsync(assignment);
       } catch (error) {
@@ -98,6 +131,9 @@ const useAssignments = (plannerId: string) => {
       if (!assignment.id) {
         throw new Error('Assignment ID is required for update');
       }
+
+      // Optimistic update: update the assignment immediately
+      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? { ...a, ...assignment } : a)));
 
       try {
         await updateAssignmentMutation.mutateAsync({
@@ -120,6 +156,9 @@ const useAssignments = (plannerId: string) => {
 
   const deleteAssignment = useCallback(
     async (assignmentId: string) => {
+      // Optimistic update: remove the assignment immediately
+      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+
       try {
         await deleteAssignmentMutation.mutateAsync({ id: assignmentId });
       } catch (error) {
