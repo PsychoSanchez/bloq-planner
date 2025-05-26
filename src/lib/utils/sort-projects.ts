@@ -29,6 +29,15 @@ export function sortProjects(projects: Project[], sortBy: SortByOption, sortDire
       case 'area':
         comparison = compareStringField(a.area, b.area);
         break;
+      case 'cost':
+        comparison = compareNumber(a.cost, b.cost);
+        break;
+      case 'impact':
+        comparison = compareNumber(a.impact, b.impact);
+        break;
+      case 'roi':
+        comparison = compareNumber(a.roi, b.roi);
+        break;
       default:
         comparison = 0;
     }
@@ -82,4 +91,11 @@ function compareStringField(a?: string, b?: string): number {
   if (!a) return 1;
   if (!b) return -1;
   return a.localeCompare(b);
+}
+
+function compareNumber(a?: number, b?: number): number {
+  if (!a && !b) return 0;
+  if (!a) return -1;
+  if (!b) return 1;
+  return a - b;
 }

@@ -26,6 +26,9 @@ const PROJECT_COLUMNS: ColumnDefinition[] = [
   { id: 'lead', label: 'Lead', defaultVisible: true },
   { id: 'dependencies', label: 'Dependencies', defaultVisible: false },
   { id: 'area', label: 'Area', defaultVisible: true },
+  { id: 'cost', label: 'Cost', defaultVisible: false },
+  { id: 'impact', label: 'Impact', defaultVisible: true },
+  { id: 'roi', label: 'ROI', defaultVisible: false },
 ];
 
 // Skeleton component for loading state
@@ -99,6 +102,27 @@ function ProjectsTableSkeleton({
         </TableCell>,
       );
     }
+    if (isColumnVisible('cost')) {
+      cells.push(
+        <TableCell key="cost" className="py-2 px-2">
+          <Skeleton className="h-4 w-16" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('roi')) {
+      cells.push(
+        <TableCell key="roi" className="py-2 px-2">
+          <Skeleton className="h-4 w-12" />
+        </TableCell>,
+      );
+    }
+    if (isColumnVisible('impact')) {
+      cells.push(
+        <TableCell key="impact" className="py-2 px-2">
+          <Skeleton className="h-4 w-20" />
+        </TableCell>,
+      );
+    }
     return cells;
   };
 
@@ -150,6 +174,24 @@ function ProjectsTableSkeleton({
       headers.push(
         <TableHead key="area" className="w-[200px]">
           Area
+        </TableHead>,
+      );
+    if (isColumnVisible('cost'))
+      headers.push(
+        <TableHead key="cost" className="w-[100px]">
+          Cost
+        </TableHead>,
+      );
+    if (isColumnVisible('roi'))
+      headers.push(
+        <TableHead key="roi" className="w-[80px]">
+          ROI
+        </TableHead>,
+      );
+    if (isColumnVisible('impact'))
+      headers.push(
+        <TableHead key="impact" className="w-[120px]">
+          Impact
         </TableHead>,
       );
     return headers;

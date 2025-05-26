@@ -89,7 +89,81 @@ const projectSchema = new Schema<ProjectDocument>(
   { timestamps: true },
 );
 
+// Pre-save middleware to automatically calculate ROI
+projectSchema.pre('save', function (next) {
+  // Calculate ROI = Impact / Cost, but only if cost > 0
+  if (this.cost && this.cost > 0 && this.impact !== undefined) {
+    this.roi = this.impact / this.cost;
+  } else {
+    this.roi = 0;
+  }
+  next();
+});
+
+// Pre-update middleware to automatically calculate ROI for findOneAndUpdate operations
+projectSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], async function (next) {
+  const update = this.getUpdate() as { $set?: Partial<ProjectDocument> } | null;
+
+  // Early return if no update or no $set
+  if (!update || !update.$set) {
+    return next();
+  }
+
+  const updateSet = update.$set;
+
+  // Check if we're updating cost or impact
+  if (updateSet.cost !== undefined || updateSet.impact !== undefined) {
+    // We need to get the current document to calculate ROI
+    const cost = updateSet.cost !== undefined ? updateSet.cost : undefined;
+    const impact = updateSet.impact !== undefined ? updateSet.impact : undefined;
+
+    // If we have both values or are updating one and need the other from the existing document
+    if (cost !== undefined && impact !== undefined) {
+      // Both values are being updated
+      if (cost > 0) {
+        updateSet.roi = impact / cost;
+      } else {
+        updateSet.roi = 0;
+      }
+    } else {
+      // We need to fetch the current document to get the missing value
+      try {
+        const doc = await this.model.findOne(this.getQuery());
+        if (doc) {
+          const currentCost = cost !== undefined ? cost : doc.cost || 0;
+          const currentImpact = impact !== undefined ? impact : doc.impact || 0;
+
+          if (currentCost > 0) {
+            updateSet.roi = currentImpact / currentCost;
+          } else {
+            updateSet.roi = 0;
+          }
+        } else {
+          // If we can't find the document, set ROI to 0
+          updateSet.roi = 0;
+        }
+      } catch (error) {
+        // If we can't fetch the document, just set ROI to 0
+        console.error('Error calculating ROI in pre-update middleware:', error);
+        updateSet.roi = 0;
+      }
+    }
+  }
+
+  next();
+});
+
 export const fromProjectDocument = (doc: ProjectDocument): Project => {
+  // Calculate ROI if not present or if cost/impact have changed
+  let calculatedRoi = doc.roi || 0;
+
+  // Recalculate ROI to ensure it's always up to date
+  if (doc.cost && doc.cost > 0 && doc.impact !== undefined) {
+    calculatedRoi = doc.impact / doc.cost;
+  } else {
+    calculatedRoi = 0;
+  }
+
   return {
     id: doc._id.toString(),
     name: doc.name,
@@ -104,7 +178,7 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
     area: doc.area,
     quarter: doc.quarter,
     archived: doc.archived,
-    roi: doc.roi,
+    roi: calculatedRoi,
     impact: doc.impact,
     cost: doc.cost,
     estimates: doc.estimates,

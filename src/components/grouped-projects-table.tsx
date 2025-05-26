@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/context-menu';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { ProjectDetailsSheet } from '@/components/project-details-sheet';
+import { InlineCurrencyEditor } from '@/components/inline-currency-editor';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
@@ -45,6 +46,9 @@ function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (col
     { id: 'lead', label: 'Lead', className: 'w-[200px]' },
     { id: 'dependencies', label: 'Dependencies', className: 'w-[200px]' },
     { id: 'area', label: 'Area', className: 'w-[200px]' },
+    { id: 'cost', label: 'Cost', className: 'w-[100px]' },
+    { id: 'impact', label: 'Impact', className: 'w-[100px]' },
+    { id: 'roi', label: 'ROI', className: 'w-[80px]' },
   ].filter((column) => isColumnVisible(column.id));
 
   return (
@@ -61,9 +65,19 @@ function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (col
 }
 
 function EmptyProjectRow({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
-  const visibleColumnCount = ['name', 'type', 'priority', 'quarter', 'team', 'lead', 'dependencies', 'area'].filter(
-    (columnId) => isColumnVisible(columnId),
-  ).length;
+  const visibleColumnCount = [
+    'name',
+    'type',
+    'priority',
+    'quarter',
+    'team',
+    'lead',
+    'dependencies',
+    'area',
+    'cost',
+    'impact',
+    'roi',
+  ].filter((columnId) => isColumnVisible(columnId)).length;
 
   return (
     <TableRow>
@@ -367,6 +381,39 @@ function ProjectRow({
                 onSelect={(value) => onUpdateProject?.(project.id, { area: value })}
               />
             </TableCell>
+          )}
+          {isColumnVisible('cost') && (
+            <TableCell className="py-1 px-2">
+              {onUpdateProject ? (
+                <InlineCurrencyEditor
+                  value={project.cost || 0}
+                  onSave={(value) => onUpdateProject(project.id, { cost: value })}
+                  placeholder="€0"
+                />
+              ) : project.cost ? (
+                `€${project.cost.toLocaleString()}`
+              ) : (
+                '--'
+              )}
+            </TableCell>
+          )}
+          {isColumnVisible('impact') && (
+            <TableCell className="py-1 px-2">
+              {onUpdateProject ? (
+                <InlineCurrencyEditor
+                  value={project.impact || 0}
+                  onSave={(value) => onUpdateProject(project.id, { impact: value })}
+                  placeholder="€0"
+                />
+              ) : project.impact ? (
+                `€${project.impact.toLocaleString()}`
+              ) : (
+                '--'
+              )}
+            </TableCell>
+          )}
+          {isColumnVisible('roi') && (
+            <TableCell className="py-1 px-2">{project.roi ? `${project.roi.toFixed(2)}x` : '--'}</TableCell>
           )}
         </TableRow>
       </ContextMenuTrigger>

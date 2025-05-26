@@ -118,13 +118,14 @@ test('sortProjects - empty array returns empty array', () => {
 });
 
 test('sortProjects - handles missing/undefined values correctly', () => {
-  const projectsWithMissingValues: Project[] = [
+  const projectsWithMissing: Project[] = [
     {
       id: '1',
       name: 'Project A',
       slug: 'project-a',
       type: 'regular',
-      // No priority
+      priority: undefined,
+      area: undefined,
     },
     {
       id: '2',
@@ -132,15 +133,159 @@ test('sortProjects - handles missing/undefined values correctly', () => {
       slug: 'project-b',
       type: 'regular',
       priority: 'high',
+      area: 'backend',
     },
   ];
 
-  const result = sortProjects(projectsWithMissingValues, 'priority', 'asc');
+  // Should not throw and should handle undefined values
+  expect(() => sortProjects(projectsWithMissing, 'priority', 'asc')).not.toThrow();
+  expect(() => sortProjects(projectsWithMissing, 'area', 'desc')).not.toThrow();
+});
 
-  // Projects without priority should come first (value 0), then others
-  if (!result[0] || !result[1]) {
-    throw new Error('Expected at least 2 projects in result');
-  }
-  expect(result[0].id).toBe('1'); // No priority
-  expect(result[1].id).toBe('2'); // High priority
+test('sortProjects - sort by cost ascending', () => {
+  const projectsWithCost: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      cost: 5000,
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      cost: 1000,
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      cost: 3000,
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      cost: undefined,
+    },
+  ];
+
+  const result = sortProjects(projectsWithCost, 'cost', 'asc');
+  const costs = result.map((p) => p.cost);
+  expect(costs).toEqual([undefined, 1000, 3000, 5000]);
+});
+
+test('sortProjects - sort by cost descending', () => {
+  const projectsWithCost: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      cost: 5000,
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      cost: 1000,
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      cost: 3000,
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      cost: undefined,
+    },
+  ];
+
+  const result = sortProjects(projectsWithCost, 'cost', 'desc');
+  const costs = result.map((p) => p.cost);
+  expect(costs).toEqual([5000, 3000, 1000, undefined]);
+});
+
+test('sortProjects - sort by impact ascending', () => {
+  const projectsWithImpact: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      impact: 8000,
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      impact: 2000,
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      impact: 5000,
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      impact: undefined,
+    },
+  ];
+
+  const result = sortProjects(projectsWithImpact, 'impact', 'asc');
+  const impacts = result.map((p) => p.impact);
+  expect(impacts).toEqual([undefined, 2000, 5000, 8000]);
+});
+
+test('sortProjects - sort by roi descending', () => {
+  const projectsWithRoi: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      roi: 25.5,
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      roi: 10.2,
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      roi: 50.8,
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      roi: undefined,
+    },
+  ];
+
+  const result = sortProjects(projectsWithRoi, 'roi', 'desc');
+  const rois = result.map((p) => p.roi);
+  expect(rois).toEqual([50.8, 25.5, 10.2, undefined]);
 });

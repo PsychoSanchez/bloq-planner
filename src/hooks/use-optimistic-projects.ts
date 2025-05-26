@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Project } from '@/lib/types';
 import { trpc } from '@/utils/trpc';
 import { toast } from '@/components/ui/use-toast';
@@ -27,7 +27,6 @@ interface CreateProjectInput {
   dependencies?: unknown[];
   cost?: number | string;
   impact?: number | string;
-  roi?: number | string;
   estimates?: unknown;
 }
 
@@ -52,7 +51,7 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
     leads: options.leads && options.leads.length > 0 ? options.leads : undefined,
   });
 
-  const serverProjects = projectsData?.projects || [];
+  const serverProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
 
   // Update local state when server data changes
   useEffect(() => {
@@ -197,7 +196,7 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
         cost: typeof projectData.cost === 'string' ? parseFloat(projectData.cost) || undefined : projectData.cost,
         impact:
           typeof projectData.impact === 'string' ? parseFloat(projectData.impact) || undefined : projectData.impact,
-        roi: typeof projectData.roi === 'string' ? parseFloat(projectData.roi) || undefined : projectData.roi,
+        roi: 0, // Will be calculated on backend
         estimates: projectData.estimates as Project['estimates'],
         archived: false,
         createdAt: new Date().toISOString(),

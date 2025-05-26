@@ -150,27 +150,7 @@ export function NewProjectDialog() {
 
   const handleBusinessImpactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const numValue = parseFloat(value) || 0;
-
-    setFormData((prev) => {
-      const newData = { ...prev, [name]: value };
-
-      // Calculate ROI when cost or impact changes
-      if (name === 'cost' || name === 'impact') {
-        const cost = name === 'cost' ? numValue : parseFloat(prev.cost) || 0;
-        const impact = name === 'impact' ? numValue : parseFloat(prev.impact) || 0;
-
-        // ROI = ((Impact - Cost) / Cost) * 100, but only if cost > 0
-        if (cost > 0) {
-          const roi = ((impact - cost) / cost) * 100;
-          newData.roi = roi.toFixed(2);
-        } else {
-          newData.roi = '';
-        }
-      }
-
-      return newData;
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,8 +163,13 @@ export function NewProjectDialog() {
     try {
       setIsSubmitting(true);
 
+      // Exclude ROI from form data since it's auto-calculated on backend
+      const { roi, ...projectData } = formData;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _ = roi; // Acknowledge that roi is intentionally unused
+
       await createProjectMutation.mutateAsync({
-        ...formData,
+        ...projectData,
         dependencies: formData.dependencies
           ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
           : [],

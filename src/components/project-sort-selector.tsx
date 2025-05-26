@@ -15,7 +15,17 @@ import {
 import { ArrowUpDownIcon, ArrowDownAZIcon, ArrowDownZAIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export type SortByOption = 'name' | 'type' | 'priority' | 'createdAt' | 'updatedAt' | 'quarter' | 'area';
+export type SortByOption =
+  | 'name'
+  | 'type'
+  | 'priority'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'quarter'
+  | 'area'
+  | 'cost'
+  | 'impact'
+  | 'roi';
 export type SortDirectionOption = 'asc' | 'desc';
 
 interface ProjectSortSelectorProps {
@@ -69,6 +79,15 @@ export function ProjectSortSelector({ type = 'dropdown' }: ProjectSortSelectorPr
             </SelectItem>
             <SelectItem value="area" className="text-xs py-1">
               Area
+            </SelectItem>
+            <SelectItem value="cost" className="text-xs py-1">
+              Cost
+            </SelectItem>
+            <SelectItem value="impact" className="text-xs py-1">
+              Impact
+            </SelectItem>
+            <SelectItem value="roi" className="text-xs py-1">
+              ROI
             </SelectItem>
           </SelectGroup>
         </SelectContent>

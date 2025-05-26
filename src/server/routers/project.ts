@@ -29,7 +29,6 @@ const createProjectInput = type({
   'dependencies?': 'unknown[]',
   'cost?': 'number | string',
   'impact?': 'number | string',
-  'roi?': 'number | string',
   'estimates?': 'unknown',
 });
 
@@ -63,6 +62,8 @@ const patchProjectInput = type({
   'archived?': 'boolean',
   'dependencies?': 'unknown',
   'estimates?': 'unknown',
+  'cost?': 'number',
+  'impact?': 'number',
 });
 
 const getProjectByIdInput = type({
