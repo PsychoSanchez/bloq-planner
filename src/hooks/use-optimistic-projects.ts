@@ -55,9 +55,7 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
 
   // Update local state when server data changes
   useEffect(() => {
-    if (serverProjects.length > 0) {
-      setOptimisticProjects(serverProjects);
-    }
+    setOptimisticProjects(serverProjects);
   }, [serverProjects]);
 
   // Use optimistic projects if available, otherwise fall back to server projects
