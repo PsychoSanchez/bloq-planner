@@ -41,10 +41,10 @@ function GroupedProjectsTableHeader() {
         <TableHead className="min-w-[200px]">Name</TableHead>
         <TableHead className="w-[100px]">Type</TableHead>
         <TableHead className="w-[100px]">Priority</TableHead>
-        <TableHead className="w-[150px]">Quarter</TableHead>
+        <TableHead className="w-[100px]">Quarter</TableHead>
         <TableHead className="w-[200px]">Team</TableHead>
-        <TableHead className="w-[100px]">Lead</TableHead>
-        <TableHead className="w-[100px]">Dependencies</TableHead>
+        <TableHead className="w-[200px]">Lead</TableHead>
+        <TableHead className="w-[200px]">Dependencies</TableHead>
         <TableHead className="w-[200px]">Area</TableHead>
       </TableRow>
     </TableHeader>

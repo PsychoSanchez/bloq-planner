@@ -257,6 +257,7 @@ export function ProjectsPageContent() {
     groupBy as GroupByOption,
     sortBy as SortByOption,
     sortDirection as SortDirectionOption,
+    teams,
   );
   const isGrouped = groupBy !== 'none';
 

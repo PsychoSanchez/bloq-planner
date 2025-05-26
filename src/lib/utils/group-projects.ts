@@ -1,6 +1,7 @@
 import { Project } from '../types';
 import { GroupByOption } from '@/components/project-group-selector';
 import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
+import { TeamOption } from '@/components/team-selector';
 import { sortProjects } from './sort-projects';
 
 export interface ProjectGroup {
@@ -14,6 +15,7 @@ export function groupProjects(
   groupBy: GroupByOption,
   sortBy?: SortByOption,
   sortDirection?: SortDirectionOption,
+  teams?: TeamOption[],
 ): ProjectGroup[] {
   // Sort projects first if sorting is specified
   const sortedProjects = sortBy && sortDirection ? sortProjects(projects, sortBy, sortDirection) : projects;
@@ -41,10 +43,28 @@ export function groupProjects(
         groupKey = project.priority || 'No Priority';
         break;
       case 'team':
-        groupKey = project.teamId || 'No Team';
+        if (project.teamId) {
+          if (teams) {
+            const team = teams.find((t) => t.id === project.teamId && t.type === 'team');
+            groupKey = team ? team.name : project.teamId;
+          } else {
+            groupKey = project.teamId;
+          }
+        } else {
+          groupKey = 'No Team';
+        }
         break;
       case 'lead':
-        groupKey = project.leadId || 'No Lead';
+        if (project.leadId) {
+          if (teams) {
+            const lead = teams.find((t) => t.id === project.leadId && t.type === 'person');
+            groupKey = lead ? lead.name : project.leadId;
+          } else {
+            groupKey = project.leadId;
+          }
+        } else {
+          groupKey = 'No Lead';
+        }
         break;
       case 'area':
         groupKey = project.area || 'No Area';

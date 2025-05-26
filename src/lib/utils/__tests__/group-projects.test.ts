@@ -253,3 +253,113 @@ test('groupProjects - sorting by priority within groups', () => {
   // Should be: high, high, low, undefined (from Project A, Archived Project, Project D, Project C)
   expect(priorities).toEqual(['high', 'high', 'low', undefined]);
 });
+
+test('groupProjects - group by team with team names', () => {
+  const teams = [
+    { id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const },
+    { id: 'team-2', name: 'Design Team', department: 'Design', type: 'team' as const },
+    { id: 'person-1', name: 'John Doe', department: 'Engineering', type: 'person' as const },
+  ];
+
+  const result = groupProjects(mockProjects, 'team', undefined, undefined, teams);
+
+  expect(result).toHaveLength(3);
+
+  const engineeringGroup = result.find((g) => g.label === 'Engineering Team');
+  const designGroup = result.find((g) => g.label === 'Design Team');
+  const team3Group = result.find((g) => g.label === 'team-3');
+
+  expect(engineeringGroup).toBeDefined();
+  expect(engineeringGroup?.count).toBe(3); // Project A, Project C, Archived Project
+  expect(designGroup).toBeDefined();
+  expect(designGroup?.count).toBe(1); // Project B
+  expect(team3Group).toBeDefined();
+  expect(team3Group?.count).toBe(1); // Project D
+});
+
+test('groupProjects - group by lead with person names', () => {
+  const teams = [
+    { id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const },
+    { id: 'person-1', name: 'John Doe', department: 'Engineering', type: 'person' as const },
+    { id: 'person-2', name: 'Jane Smith', department: 'Design', type: 'person' as const },
+  ];
+
+  const projectsWithLeads: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      leadId: 'person-1',
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      leadId: 'person-2',
+    },
+    {
+      id: '3',
+      name: 'Project C',
+      slug: 'project-c',
+      type: 'regular',
+      leadId: 'person-1',
+    },
+    {
+      id: '4',
+      name: 'Project D',
+      slug: 'project-d',
+      type: 'regular',
+      // No lead
+    },
+  ];
+
+  const result = groupProjects(projectsWithLeads, 'lead', undefined, undefined, teams);
+
+  expect(result).toHaveLength(3);
+
+  const johnGroup = result.find((g) => g.label === 'John Doe');
+  const janeGroup = result.find((g) => g.label === 'Jane Smith');
+  const noLeadGroup = result.find((g) => g.label === 'No Lead');
+
+  expect(johnGroup).toBeDefined();
+  expect(johnGroup?.count).toBe(2);
+  expect(janeGroup).toBeDefined();
+  expect(janeGroup?.count).toBe(1);
+  expect(noLeadGroup).toBeDefined();
+  expect(noLeadGroup?.count).toBe(1);
+});
+
+test('groupProjects - fallback to ID when team/lead not found', () => {
+  const teams = [{ id: 'team-1', name: 'Engineering Team', department: 'Engineering', type: 'team' as const }];
+
+  const projectsWithMissingTeam: Project[] = [
+    {
+      id: '1',
+      name: 'Project A',
+      slug: 'project-a',
+      type: 'regular',
+      teamId: 'team-1',
+    },
+    {
+      id: '2',
+      name: 'Project B',
+      slug: 'project-b',
+      type: 'regular',
+      teamId: 'missing-team',
+    },
+  ];
+
+  const result = groupProjects(projectsWithMissingTeam, 'team', undefined, undefined, teams);
+
+  expect(result).toHaveLength(2);
+
+  const engineeringGroup = result.find((g) => g.label === 'Engineering Team');
+  const missingGroup = result.find((g) => g.label === 'missing-team');
+
+  expect(engineeringGroup).toBeDefined();
+  expect(engineeringGroup?.count).toBe(1);
+  expect(missingGroup).toBeDefined();
+  expect(missingGroup?.count).toBe(1);
+});
