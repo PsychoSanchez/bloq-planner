@@ -12,86 +12,123 @@ import { trpc } from '@/utils/trpc';
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_isLoading, setIsLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const response = await fetch(`/api/assignments?plannerId=${plannerId}`);
-        const data = await response.json();
-        setAssignments(data);
-        setIsLoading(false);
-      } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to fetch assignments');
-        toast({
-          title: 'Failed to fetch assignments',
-          description: error instanceof Error ? error.message : 'Failed to fetch assignments',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAssignments();
-  }, [plannerId]);
+  // Use tRPC to fetch assignments
+  const { data: assignmentsData, error: assignmentsError } = trpc.assignment.getAssignments.useQuery({
+    plannerId: plannerId,
+  });
 
-  const createAssignment = useCallback(async (assignment: Omit<Assignment, 'id'>) => {
-    try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
-        body: JSON.stringify(assignment),
-      });
-      const data = await response.json();
-      setAssignments((prev) => [...prev, data]);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to create assignment');
+  // tRPC mutations
+  const utils = trpc.useUtils();
+
+  const createAssignmentMutation = trpc.assignment.createAssignment.useMutation({
+    onSuccess: (newAssignment) => {
+      setAssignments((prev) => [...prev, newAssignment]);
+      utils.assignment.getAssignments.invalidate();
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to create assignment',
-        description: error instanceof Error ? error.message : 'Failed to create assignment',
+        description: error.message || 'Failed to create assignment',
         variant: 'destructive',
       });
-    }
-  }, []);
+    },
+  });
 
-  const updateAssignment = useCallback(async (assignment: Partial<Assignment>) => {
-    try {
-      const response = await fetch(`/api/assignments/${assignment.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(assignment),
-      });
-      const data = await response.json();
-      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? data : a)));
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update assignment');
+  const updateAssignmentMutation = trpc.assignment.updateAssignment.useMutation({
+    onSuccess: (updatedAssignment) => {
+      setAssignments((prev) => prev.map((a) => (a.id === updatedAssignment.id ? updatedAssignment : a)));
+      utils.assignment.getAssignments.invalidate();
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to update assignment',
-        description: error instanceof Error ? error.message : 'Failed to update assignment',
+        description: error.message || 'Failed to update assignment',
         variant: 'destructive',
       });
-    }
-  }, []);
+    },
+  });
 
-  const deleteAssignment = useCallback(async (assignmentId: string) => {
-    try {
-      const response = await fetch(`/api/assignments/${assignmentId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete assignment');
-      }
-      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to delete assignment');
+  const deleteAssignmentMutation = trpc.assignment.deleteAssignment.useMutation({
+    onSuccess: (_, variables) => {
+      setAssignments((prev) => prev.filter((a) => a.id !== variables.id));
+      utils.assignment.getAssignments.invalidate();
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to delete assignment',
-        description: error instanceof Error ? error.message : 'Failed to delete assignment',
+        description: error.message || 'Failed to delete assignment',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update local state when tRPC data changes
+  useEffect(() => {
+    if (assignmentsData) {
+      setAssignments(assignmentsData);
+    }
+  }, [assignmentsData]);
+
+  // Show error toast if assignments fetch fails
+  useEffect(() => {
+    if (assignmentsError) {
+      toast({
+        title: 'Failed to fetch assignments',
+        description: assignmentsError.message || 'Failed to fetch assignments',
         variant: 'destructive',
       });
     }
-  }, []);
+  }, [assignmentsError]);
+
+  const createAssignment = useCallback(
+    async (assignment: Omit<Assignment, 'id'>) => {
+      try {
+        await createAssignmentMutation.mutateAsync(assignment);
+      } catch (error) {
+        // Error is already handled in the mutation onError callback
+        console.error('Failed to create assignment:', error);
+      }
+    },
+    [createAssignmentMutation],
+  );
+
+  const updateAssignment = useCallback(
+    async (assignment: Partial<Assignment>) => {
+      if (!assignment.id) {
+        throw new Error('Assignment ID is required for update');
+      }
+
+      try {
+        await updateAssignmentMutation.mutateAsync({
+          id: assignment.id,
+          assigneeId: assignment.assigneeId!,
+          projectId: assignment.projectId!,
+          plannerId: assignment.plannerId!,
+          week: assignment.week!,
+          year: assignment.year!,
+          quarter: assignment.quarter,
+          status: assignment.status,
+        });
+      } catch (error) {
+        // Error is already handled in the mutation onError callback
+        console.error('Failed to update assignment:', error);
+      }
+    },
+    [updateAssignmentMutation],
+  );
+
+  const deleteAssignment = useCallback(
+    async (assignmentId: string) => {
+      try {
+        await deleteAssignmentMutation.mutateAsync({ id: assignmentId });
+      } catch (error) {
+        // Error is already handled in the mutation onError callback
+        console.error('Failed to delete assignment:', error);
+      }
+    },
+    [deleteAssignmentMutation],
+  );
 
   const assignmentsByWeekAndAssignee = useMemo(() => {
     const result = new Map<number, Map<string, Assignment>>();

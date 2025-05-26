@@ -59,6 +59,18 @@ We've successfully migrated from REST API endpoints to tRPC to achieve:
   - `src/app/planner/lego/[id]/page.tsx`
 - **Status**: ✅ Complete - REST API endpoints removed
 
+#### Assignments API (`/api/assignments`)
+- **Router**: `src/server/routers/assignment.ts`
+- **Procedures**:
+  - `getAssignments` - Fetch assignments with optional filtering (year, quarter, assigneeId, projectId, plannerId)
+  - `getAssignmentById` - Fetch a single assignment by ID
+  - `createAssignment` - Create a new assignment
+  - `updateAssignment` - Update an existing assignment
+  - `deleteAssignment` - Delete an assignment
+- **Components migrated**:
+  - `src/app/planner/lego/[id]/page.tsx` (useAssignments hook)
+- **Status**: ✅ Complete - REST API endpoints removed
+
 ### 🔄 Pending Migrations
 
 None - All major API endpoints have been migrated to tRPC.
@@ -161,6 +173,28 @@ const createPlannerMutation = trpc.planner.createPlanner.useMutation({
     });
   },
 });
+
+// Assignments with filtering
+const { data: assignments } = trpc.assignment.getAssignments.useQuery({
+  plannerId: 'planner-id',
+  year: 2024,
+  quarter: 1
+});
+
+// Create assignment with optimistic updates
+const createAssignmentMutation = trpc.assignment.createAssignment.useMutation({
+  onSuccess: (newAssignment) => {
+    setAssignments((prev) => [...prev, newAssignment]);
+    utils.assignment.getAssignments.invalidate();
+  },
+  onError: (error) => {
+    toast({
+      title: 'Failed to create assignment',
+      description: error.message,
+      variant: 'destructive',
+    });
+  },
+});
 ```
 
 ### Server-side Usage
@@ -183,6 +217,7 @@ Tests are located in:
 - `src/server/routers/__tests__/team-validation.test.ts`
 - `src/server/routers/__tests__/project.test.ts`
 - `src/server/routers/__tests__/planner.test.ts`
+- `src/server/routers/__tests__/assignment.test.ts`
 
 Run tests with:
 ```bash
@@ -204,8 +239,12 @@ bun test
 - [x] Set up tRPC infrastructure
 - [x] Create team router with all CRUD operations
 - [x] Create project router with all CRUD operations
+- [x] Create planner router with all CRUD operations
+- [x] Create assignment router with all CRUD operations
 - [x] Migrate team-related components
 - [x] Migrate project-related components
+- [x] Migrate planner-related components
+- [x] Migrate assignment-related components
 - [x] Add comprehensive tests
 - [x] Remove old REST API endpoints
 - [x] Update documentation
