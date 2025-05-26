@@ -32,6 +32,7 @@ import {
   CompactCardContent,
   CompactCardFooter,
 } from '@/components/ui/compact-card';
+import { trpc } from '@/utils/trpc';
 
 // Custom type for planner creation that accepts string IDs
 interface PlannerCreateData {
@@ -64,9 +65,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
 
   // Data states
   const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
-  const [availableAssignees, setAvailableAssignees] = useState<Assignee[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  const [isLoadingAssignees, setIsLoadingAssignees] = useState(false);
 
   // Search states
   const [projectSearch, setProjectSearch] = useState('');
@@ -74,14 +73,31 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
 
   const { toast } = useToast();
 
-  // Filter projects and assignees based on search
-  const filteredProjects = availableProjects.filter((project) =>
-    project.name.toLowerCase().includes(projectSearch.toLowerCase()),
-  );
+  // Use tRPC to fetch team members
+  const {
+    data: teamMembers,
+    isLoading: isLoadingAssignees,
+    error: teamMembersError,
+  } = trpc.team.getTeamMembers.useQuery({}, { enabled: open });
 
-  const filteredAssignees = availableAssignees.filter((assignee) =>
-    assignee.name.toLowerCase().includes(assigneeSearch.toLowerCase()),
-  );
+  // Convert team members to assignees format
+  const availableAssignees: Assignee[] =
+    teamMembers?.map((member) => ({
+      id: member.id,
+      name: member.name,
+      type: (member.type as 'person' | 'team' | 'dependency' | 'event') || 'person',
+    })) || [];
+
+  // Show error toast if team members fetch fails
+  useEffect(() => {
+    if (teamMembersError) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load team members',
+        variant: 'destructive',
+      });
+    }
+  }, [teamMembersError, toast]);
 
   // Fetch projects and team members from API
   useEffect(() => {
@@ -109,38 +125,8 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
       }
     };
 
-    const fetchTeamMembers = async () => {
-      try {
-        setIsLoadingAssignees(true);
-        const response = await fetch('/api/team-members');
-        if (!response.ok) throw new Error('Failed to fetch team members');
-        const data = await response.json();
-
-        // Convert team members to assignees format
-        const assignees: Assignee[] = data.map(
-          (member: { id: string; name: string; type?: 'person' | 'team' | 'dependency' | 'event' }) => ({
-            id: member.id,
-            name: member.name,
-            type: member.type || 'person',
-          }),
-        );
-
-        setAvailableAssignees(assignees);
-      } catch (error) {
-        console.error('Error fetching team members:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load team members',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoadingAssignees(false);
-      }
-    };
-
     if (open) {
       fetchProjects();
-      fetchTeamMembers();
     }
   }, [open, toast]);
 
@@ -291,11 +277,11 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
                 />
 
                 <div className="border rounded-md max-h-[140px] overflow-y-auto">
-                  {filteredProjects.length === 0 ? (
+                  {availableProjects.length === 0 ? (
                     <div className="p-3 text-center text-xs text-muted-foreground">No projects match your search</div>
                   ) : (
                     <div className="p-1">
-                      {filteredProjects.map((project) => {
+                      {availableProjects.map((project) => {
                         const isSelected = selectedProjects.some((p) => p.id === project.id);
                         return (
                           <div
@@ -371,13 +357,13 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
                 />
 
                 <div className="border rounded-md max-h-[140px] overflow-y-auto">
-                  {filteredAssignees.length === 0 ? (
+                  {availableAssignees.length === 0 ? (
                     <div className="p-3 text-center text-xs text-muted-foreground">
                       No team members match your search
                     </div>
                   ) : (
                     <div className="p-1">
-                      {filteredAssignees.map((assignee) => {
+                      {availableAssignees.map((assignee) => {
                         const isSelected = selectedAssignees.some((a) => a.id === assignee.id);
                         return (
                           <div

@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from '@/components/ui/toaster';
+import { TRPCProvider } from '@/components/providers/trpc-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,22 +24,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <NuqsAdapter>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset className="overflow-hidden">
-                <header className="flex sticky top-0 bg-background h-16 shrink-0 items-center gap-2 border-b px-4">
-                  <SidebarTrigger className="-ml-1" />
-                  <Separator orientation="vertical" className="mr-2 h-4" />
-                  <DynamicBreadcrumb />
-                </header>
-                <div className="flex-1 flex flex-col mx-auto p-6 w-full">{children}</div>
-              </SidebarInset>
-            </SidebarProvider>
-            <Toaster />
-          </ThemeProvider>
-        </NuqsAdapter>
+        <TRPCProvider>
+          <NuqsAdapter>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset className="overflow-hidden">
+                  <header className="flex sticky top-0 bg-background h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="mr-2 h-4" />
+                    <DynamicBreadcrumb />
+                  </header>
+                  <div className="flex-1 flex flex-col mx-auto p-6 w-full">{children}</div>
+                </SidebarInset>
+              </SidebarProvider>
+              <Toaster />
+            </ThemeProvider>
+          </NuqsAdapter>
+        </TRPCProvider>
       </body>
     </html>
   );

@@ -60,9 +60,9 @@ test('groupProjects - no grouping returns all projects in one group', () => {
   const result = groupProjects(mockProjects, 'none');
 
   expect(result).toHaveLength(1);
-  expect(result[0].label).toBe('All Projects');
-  expect(result[0].projects).toHaveLength(5);
-  expect(result[0].count).toBe(5);
+  expect(result[0]?.label).toBe('All Projects');
+  expect(result[0]?.projects).toHaveLength(5);
+  expect(result[0]?.count).toBe(5);
 });
 
 test('groupProjects - group by type', () => {
@@ -134,6 +134,9 @@ test('groupProjects - groups are sorted with "No X" groups at the end', () => {
 
   // Check that "No Priority" group is last
   const lastGroup = result[result.length - 1];
+  if (!lastGroup) {
+    throw new Error('Expected at least one group in result');
+  }
   expect(lastGroup.label).toBe('No Priority');
 });
 
@@ -181,27 +184,36 @@ test('groupProjects - archived projects are included in groups', () => {
   // Find the regular group which should contain both active and archived projects
   const regularGroup = result.find((group) => group.label === 'Regular');
   expect(regularGroup).toBeDefined();
-  expect(regularGroup!.projects).toHaveLength(4); // Project A, C, D, and Archived Project
-  expect(regularGroup!.count).toBe(4);
+  if (!regularGroup) {
+    throw new Error('Expected Regular group to be found');
+  }
+  expect(regularGroup.projects).toHaveLength(4); // Project A, C, D, and Archived Project
+  expect(regularGroup.count).toBe(4);
 
   // Check that archived project is included
-  const archivedProject = regularGroup!.projects.find((p) => p.archived);
+  const archivedProject = regularGroup.projects.find((p) => p.archived);
   expect(archivedProject).toBeDefined();
-  expect(archivedProject!.name).toBe('Archived Project');
+  if (!archivedProject) {
+    throw new Error('Expected archived project to be found');
+  }
+  expect(archivedProject.name).toBe('Archived Project');
 });
 
 test('groupProjects - archived projects work with all grouping options', () => {
-  const archivedProject: Project = mockProjects[4]; // Archived Project
+  const archivedProject = mockProjects[4]; // Archived Project
+  if (!archivedProject) {
+    throw new Error('Expected archived project at index 4');
+  }
 
   // Test grouping by priority with archived project
   const byPriority = groupProjects(mockProjects, 'priority');
   const highPriorityGroup = byPriority.find((group) => group.label === 'High Priority');
-  expect(highPriorityGroup!.projects.some((p) => p.id === archivedProject.id)).toBe(true);
+  expect(highPriorityGroup?.projects.some((p) => p.id === archivedProject.id)).toBe(true);
 
   // Test grouping by team with archived project
   const byTeam = groupProjects(mockProjects, 'team');
   const team1Group = byTeam.find((group) => group.label === 'team-1');
-  expect(team1Group!.projects.some((p) => p.id === archivedProject.id)).toBe(true);
+  expect(team1Group?.projects.some((p) => p.id === archivedProject.id)).toBe(true);
 });
 
 test('groupProjects - sorting within groups works correctly', () => {
@@ -210,7 +222,10 @@ test('groupProjects - sorting within groups works correctly', () => {
   // Check that projects within the Regular group are sorted by name
   const regularGroup = result.find((group) => group.label === 'Regular');
   expect(regularGroup).toBeDefined();
-  const projectNames = regularGroup!.projects.map((p) => p.name);
+  if (!regularGroup) {
+    throw new Error('Expected Regular group to be found');
+  }
+  const projectNames = regularGroup.projects.map((p) => p.name);
   expect(projectNames).toEqual(['Archived Project', 'Project A', 'Project C', 'Project D']);
 });
 
@@ -218,6 +233,9 @@ test('groupProjects - sorting with no grouping works correctly', () => {
   const result = groupProjects(mockProjects, 'none', 'name', 'desc');
 
   expect(result).toHaveLength(1);
+  if (!result[0]) {
+    throw new Error('Expected at least one group in result');
+  }
   const projectNames = result[0].projects.map((p) => p.name);
   expect(projectNames).toEqual(['Project D', 'Project C', 'Project B', 'Project A', 'Archived Project']);
 });
@@ -227,8 +245,11 @@ test('groupProjects - sorting by priority within groups', () => {
 
   const regularGroup = result.find((group) => group.label === 'Regular');
   expect(regularGroup).toBeDefined();
+  if (!regularGroup) {
+    throw new Error('Expected Regular group to be found');
+  }
 
-  const priorities = regularGroup!.projects.map((p) => p.priority);
+  const priorities = regularGroup.projects.map((p) => p.priority);
   // Should be: high, high, low, undefined (from Project A, Archived Project, Project D, Project C)
   expect(priorities).toEqual(['high', 'high', 'low', undefined]);
 });

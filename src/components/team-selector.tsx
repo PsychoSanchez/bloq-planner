@@ -43,10 +43,8 @@ export function TeamSelector({
   const teamsByDepartment = useMemo(() => {
     return teams.reduce(
       (acc, team) => {
-        if (!acc[team.department]) {
-          acc[team.department] = [];
-        }
-        acc[team.department].push(team);
+        acc[team.department] ??= [];
+        acc[team.department]!.push(team);
         return acc;
       },
       {} as Record<string, TeamOption[]>,

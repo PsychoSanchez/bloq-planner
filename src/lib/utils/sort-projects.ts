@@ -61,7 +61,7 @@ function compareQuarter(a?: string, b?: string): number {
   // Parse quarter format like "2025Q1"
   const parseQuarter = (quarter: string) => {
     const match = quarter.match(/^(\d{4})Q([1-4])$/);
-    if (match) {
+    if (match && match[1] && match[2]) {
       return { year: parseInt(match[1]), quarter: parseInt(match[2]) };
     }
     return { year: 0, quarter: 0 };

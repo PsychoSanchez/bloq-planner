@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,8 +34,31 @@ export function NewProjectDialog() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teams, setTeams] = useState<TeamOption[]>([]);
-  const [teamsLoading, setTeamsLoading] = useState(false);
+
+  // Use tRPC to fetch team members
+  const {
+    data: teamMembers,
+    isLoading: teamsLoading,
+    error: teamMembersError,
+  } = trpc.team.getTeamMembers.useQuery({}, { enabled: open });
+
+  // Convert team members to team options format
+  const teams: TeamOption[] =
+    teamMembers
+      ?.filter((member) => member.type === 'team' || member.type === 'person')
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        department: member.department || '', // Ensure department is always a string
+        type: member.type as 'person' | 'team' | 'dependency' | 'event',
+      })) || [];
+
+  // Show error toast if team members fetch fails
+  useEffect(() => {
+    if (teamMembersError) {
+      console.error('Error fetching teams:', teamMembersError);
+    }
+  }, [teamMembersError]);
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -75,36 +99,6 @@ export function NewProjectDialog() {
       {} as Record<string, number>,
     ),
   });
-
-  // Fetch teams when dialog opens
-  useEffect(() => {
-    const fetchTeams = async () => {
-      if (!open) return;
-
-      setTeamsLoading(true);
-      try {
-        const response = await fetch('/api/team-members');
-        if (response.ok) {
-          const data = await response.json();
-          const teamOptions: TeamOption[] = data
-            .filter((member: TeamOption) => member.type === 'team' || member.type === 'person')
-            .map((member: TeamOption) => ({
-              id: member.id,
-              name: member.name,
-              department: member.department,
-              type: member.type,
-            }));
-          setTeams(teamOptions);
-        }
-      } catch (error) {
-        console.error('Error fetching teams:', error);
-      } finally {
-        setTeamsLoading(false);
-      }
-    };
-
-    fetchTeams();
-  }, [open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

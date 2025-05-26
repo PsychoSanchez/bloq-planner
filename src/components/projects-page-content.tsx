@@ -11,6 +11,7 @@ import { SortByOption, SortDirectionOption } from '@/components/project-sort-sel
 import { TeamOption } from '@/components/team-selector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { trpc } from '@/utils/trpc';
 
 const EMPTY_ARRAY = [] as string[];
 
@@ -211,9 +212,28 @@ export function ProjectsPageContent() {
   const [leads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
 
   const [projects, setProjects] = useState<Project[]>([]);
-  const [teams, setTeams] = useState<TeamOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [teamsLoading, setTeamsLoading] = useState(true);
+
+  // Use tRPC to fetch team members
+  const { data: teamMembers, isLoading: teamsLoading, error: teamMembersError } = trpc.team.getTeamMembers.useQuery({});
+
+  // Convert team members to team options format
+  const teams: TeamOption[] =
+    teamMembers
+      ?.filter((member) => member.type === 'team' || member.type === 'person')
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        department: member.department || '',
+        type: member.type as 'person' | 'team' | 'dependency' | 'event',
+      })) || [];
+
+  // Show error if team members fetch fails
+  useEffect(() => {
+    if (teamMembersError) {
+      console.error('Error fetching teams:', teamMembersError);
+    }
+  }, [teamMembersError]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -251,34 +271,6 @@ export function ProjectsPageContent() {
 
     fetchProjects();
   }, [search, type, includeArchived, priorities, quarters, areas, leads]);
-
-  useEffect(() => {
-    const fetchTeams = async () => {
-      setTeamsLoading(true);
-      try {
-        const response = await fetch('/api/team-members');
-        if (response.ok) {
-          const data = await response.json();
-          // Convert team members to team options, focusing on teams and departments
-          const teamOptions: TeamOption[] = data
-            .filter((member: TeamOption) => member.type === 'team' || member.type === 'person')
-            .map((member: TeamOption) => ({
-              id: member.id,
-              name: member.name,
-              department: member.department,
-              type: member.type,
-            }));
-          setTeams(teamOptions);
-        }
-      } catch (error) {
-        console.error('Error fetching teams:', error);
-      } finally {
-        setTeamsLoading(false);
-      }
-    };
-
-    fetchTeams();
-  }, []);
 
   const handleUpdateProject = async (projectId: string, updates: Partial<Project>) => {
     try {

@@ -52,6 +52,11 @@ describe('generateQuarterOptions', () => {
       const prev = options[i - 1];
       const curr = options[i];
 
+      // Add null checks for array access
+      if (!prev || !curr) {
+        throw new Error('Unexpected undefined option in array');
+      }
+
       // Previous option should be chronologically before current
       if (prev.year === curr.year) {
         expect(prev.quarter).toBeLessThan(curr.quarter);

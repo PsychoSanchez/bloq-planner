@@ -131,8 +131,9 @@ function formatQuarter(quarter: string): string {
 
   // Parse quarter format like "2025Q1" to "Q1 2025"
   const match = quarter.match(/^(\d{4})Q([1-4])$/);
-  if (match) {
-    const [, year, q] = match;
+  if (match && match[1] && match[2]) {
+    const year = match[1];
+    const q = match[2];
     return `Q${q} ${year}`;
   }
 
@@ -147,7 +148,7 @@ function sortQuarters(quarterA: string, quarterB: string): number {
   // Parse quarter format like "2025Q1"
   const parseQuarter = (quarter: string) => {
     const match = quarter.match(/^(\d{4})Q([1-4])$/);
-    if (match) {
+    if (match && match[1] && match[2]) {
       return { year: parseInt(match[1]), quarter: parseInt(match[2]) };
     }
     return { year: 0, quarter: 0 };

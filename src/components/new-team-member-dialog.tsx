@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,12 +16,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RoleSelector } from '@/components/role-selector';
+import { useToast } from '@/components/ui/use-toast';
 import { PlusIcon } from 'lucide-react';
 
 export function NewTeamMemberDialog() {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,6 +31,38 @@ export function NewTeamMemberDialog() {
     department: '',
     title: '',
     type: 'person' as const,
+  });
+
+  // Get the team members query to refetch after creation
+  const utils = trpc.useUtils();
+
+  // tRPC mutation for creating team members
+  const createTeamMember = trpc.team.createTeamMember.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Team member created successfully',
+      });
+      setOpen(false);
+      setFormData({
+        name: '',
+        email: '',
+        role: '',
+        department: '',
+        title: '',
+        type: 'person',
+      });
+      // Invalidate and refetch team members
+      utils.team.getTeamMembers.invalidate();
+      router.refresh();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,27 +76,7 @@ export function NewTeamMemberDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/team-members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create team member');
-      }
-
-      // Close the dialog and refresh the page
-      setOpen(false);
-      router.refresh();
-    } catch (error) {
-      console.error('Error creating team member:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createTeamMember.mutate(formData);
   };
 
   return (
@@ -132,14 +147,14 @@ export function NewTeamMemberDialog() {
               <Label htmlFor="role" className="text-right">
                 Role
               </Label>
-              <Input
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="col-span-3"
-                required
-              />
+              <div className="col-span-3">
+                <RoleSelector
+                  value={formData.role}
+                  onSelect={(value) => handleSelectChange('role', value)}
+                  placeholder="Select role"
+                  type="dropdown"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="title" className="text-right">
@@ -172,8 +187,8 @@ export function NewTeamMemberDialog() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+            <Button type="submit" disabled={createTeamMember.isPending}>
+              {createTeamMember.isPending ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

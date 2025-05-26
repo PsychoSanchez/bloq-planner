@@ -138,6 +138,9 @@ test('sortProjects - handles missing/undefined values correctly', () => {
   const result = sortProjects(projectsWithMissingValues, 'priority', 'asc');
 
   // Projects without priority should come first (value 0), then others
+  if (!result[0] || !result[1]) {
+    throw new Error('Expected at least 2 projects in result');
+  }
   expect(result[0].id).toBe('1'); // No priority
   expect(result[1].id).toBe('2'); // High priority
 });
