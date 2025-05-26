@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckIcon, ChevronDownIcon, SearchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -58,20 +58,22 @@ export const MultiSelector = ({
     }
   }, [open, value]);
 
-  // Apply changes when popover closes
-  useEffect(() => {
-    if (!open && localSelectedValues !== value) {
-      // Only call onSelect if the values have actually changed
-      const hasChanged =
-        localSelectedValues.length !== value.length ||
-        localSelectedValues.some((v) => !value.includes(v)) ||
-        value.some((v) => !localSelectedValues.includes(v));
+  const handleOnOpenChange = useCallback(
+    (open: boolean) => {
+      setOpen(open);
+      if (!open) {
+        const hasChanged =
+          localSelectedValues.length !== value.length ||
+          localSelectedValues.some((v) => !value.includes(v)) ||
+          value.some((v) => !localSelectedValues.includes(v));
 
-      if (hasChanged) {
-        onSelect(localSelectedValues);
+        if (hasChanged) {
+          onSelect(localSelectedValues);
+        }
       }
-    }
-  }, [open, localSelectedValues, value, onSelect]);
+    },
+    [localSelectedValues, value, onSelect],
+  );
 
   // Filter options based on search query
   const filteredOptions = searchQuery
@@ -166,7 +168,7 @@ export const MultiSelector = ({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOnOpenChange}>
       <PopoverTrigger asChild>
         <button type="button" className={triggerClasses}>
           {isIconEnabled && icon}

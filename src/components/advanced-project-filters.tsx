@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { XIcon, ChevronDownIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon } from 'lucide-react';
+import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon } from 'lucide-react';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { TeamOption } from '@/components/team-selector';
 
@@ -123,26 +123,21 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         {/* Priority Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2">
-              <SignalIcon className="h-3.5 w-3.5" />
-              Priority
-              {priorities.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
-                  {priorities.length}
-                </Badge>
-              )}
-              <ChevronDownIcon className="h-3.5 w-3.5" />
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+              <SignalIcon className="h-4 w-4" />
+              <span className="text-sm">Priority</span>
+              {priorities.length > 0 && <span className="text-xs text-muted-foreground">({priorities.length})</span>}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Filter by Priority</DropdownMenuLabel>
+          <DropdownMenuContent className="w-32">
+            <DropdownMenuLabel className="text-xs">Filter by Priority</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {PRIORITY_OPTIONS.map((priority) => (
               <DropdownMenuCheckboxItem
                 key={priority.id}
+                className="text-xs flex items-center gap-2"
                 checked={priorities.includes(priority.id)}
                 onCheckedChange={() => togglePriority(priority.id)}
-                className="flex items-center gap-2"
               >
                 <priority.icon className={`h-4 w-4 ${priority.cn}`} />
                 <span className={priority.cn}>{priority.name}</span>
@@ -154,23 +149,19 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         {/* Quarter Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Quarter
-              {quarters.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
-                  {quarters.length}
-                </Badge>
-              )}
-              <ChevronDownIcon className="h-3.5 w-3.5" />
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span className="text-sm">Quarter</span>
+              {quarters.length > 0 && <span className="text-xs text-muted-foreground">({quarters.length})</span>}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel>Filter by Quarter</DropdownMenuLabel>
+          <DropdownMenuContent className="w-32 max-h-80 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs">Filter by Quarter</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {QUARTER_OPTIONS.map((quarter) => (
               <DropdownMenuCheckboxItem
                 key={quarter.id}
+                className="text-xs"
                 checked={quarters.includes(quarter.value)}
                 onCheckedChange={() => toggleQuarter(quarter.value)}
               >
@@ -183,26 +174,21 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         {/* Area Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2">
-              <MapPinIcon className="h-3.5 w-3.5" />
-              Area
-              {areas.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
-                  {areas.length}
-                </Badge>
-              )}
-              <ChevronDownIcon className="h-3.5 w-3.5" />
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+              <MapPinIcon className="h-4 w-4" />
+              <span className="text-sm">Area</span>
+              {areas.length > 0 && <span className="text-xs text-muted-foreground">({areas.length})</span>}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Filter by Area</DropdownMenuLabel>
+          <DropdownMenuContent className="w-48">
+            <DropdownMenuLabel className="text-xs">Filter by Area</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {PROJECT_AREAS.map((area) => (
               <DropdownMenuCheckboxItem
                 key={area.id}
+                className="text-xs flex items-center gap-2"
                 checked={areas.includes(area.id)}
                 onCheckedChange={() => toggleArea(area.id)}
-                className="flex items-center gap-2"
               >
                 <area.icon className="h-4 w-4" />
                 {area.name}
@@ -214,28 +200,24 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         {/* Lead Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2" disabled={teamsLoading}>
-              <UserIcon className="h-3.5 w-3.5" />
-              Lead
-              {leads.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
-                  {leads.length}
-                </Badge>
-              )}
-              <ChevronDownIcon className="h-3.5 w-3.5" />
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
+              <UserIcon className="h-4 w-4" />
+              <span className="text-sm">Lead</span>
+              {leads.length > 0 && <span className="text-xs text-muted-foreground">({leads.length})</span>}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel>Filter by Lead</DropdownMenuLabel>
+          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs">Filter by Lead</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {teamsLoading ? (
-              <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
             ) : availableLeads.length === 0 ? (
-              <div className="p-2 text-sm text-muted-foreground">No leads available</div>
+              <div className="p-2 text-xs text-muted-foreground">No leads available</div>
             ) : (
               availableLeads.map((lead) => (
                 <DropdownMenuCheckboxItem
                   key={lead.id}
+                  className="text-xs"
                   checked={leads.includes(lead.id)}
                   onCheckedChange={() => toggleLead(lead.id)}
                 >
@@ -248,9 +230,15 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
 
         {/* Clear All Filters Button */}
         {activeFiltersCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-8 gap-2 text-muted-foreground">
-            <XIcon className="h-3.5 w-3.5" />
-            Clear all ({activeFiltersCount})
+          <Button
+            variant="ghost"
+            size="default"
+            onClick={clearAllFilters}
+            className="h-9 px-3 gap-2 text-muted-foreground"
+          >
+            <XIcon className="h-4 w-4" />
+            <span className="text-sm">Clear all</span>
+            <span className="text-xs text-muted-foreground">({activeFiltersCount})</span>
           </Button>
         )}
       </div>

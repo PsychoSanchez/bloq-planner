@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -45,10 +46,10 @@ export function ColumnToggle({ columns, isColumnVisible, toggleColumn, resetToDe
           </DropdownMenuCheckboxItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem className="text-xs text-muted-foreground" onSelect={resetToDefaults}>
+        <DropdownMenuItem className="text-xs text-muted-foreground" onSelect={resetToDefaults}>
           <RotateCcwIcon className="h-3 w-3 mr-2" />
           Reset to defaults
-        </DropdownMenuCheckboxItem>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
