@@ -10,6 +10,7 @@ import {
 } from './ui/select';
 import { Project } from '@/lib/types';
 import { PROJECT_TYPE_OPTIONS } from '@/lib/constants';
+import { FileIcon } from 'lucide-react';
 
 interface ProjectTypeSelectorProps {
   value: Project['type'];
@@ -29,6 +30,7 @@ export const ProjectTypeSelector = ({
   return (
     <Select value={value} onValueChange={onSelect}>
       <SelectComponent className="px-2" id="project-type">
+        <FileIcon className="w-4 h-4" />
         <SelectValue placeholder={placeholder} />
       </SelectComponent>
       <SelectContent>

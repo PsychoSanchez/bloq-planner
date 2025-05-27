@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { UserIcon } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 import { MultiSelector, MultiSelectorOption } from '@/components/ui/multi-selector';
 
 export interface TeamOption {
@@ -48,7 +48,7 @@ export function TeamMultiSelector({
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-sm">
-        <UserIcon className="w-4 h-4" />
+        <UsersIcon className="w-4 h-4" />
         Loading teams...
       </div>
     );
@@ -61,7 +61,7 @@ export function TeamMultiSelector({
       onSelect={onSelect}
       type={type}
       isIconEnabled={true}
-      icon={<UserIcon className="w-4 h-4" />}
+      icon={<UsersIcon className="w-4 h-4" />}
       placeholder={placeholder}
       searchPlaceholder="Search teams..."
       className={className}

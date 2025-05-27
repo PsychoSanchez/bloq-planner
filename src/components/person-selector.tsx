@@ -53,7 +53,7 @@ export function PersonSelector({
     return (
       <Select disabled>
         <InlineSelectTrigger className={className}>
-          <SelectValue placeholder="Loading persons..." />
+          <SelectValue placeholder="Loading teams..." />
         </InlineSelectTrigger>
       </Select>
     );
