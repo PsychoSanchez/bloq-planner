@@ -2,7 +2,7 @@
 
 import { Assignment, Planner, Project, Role } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangleIcon } from 'lucide-react'; // For warning icon
+import { AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react'; // For warning icon
 import Link from 'next/link';
 
 interface ProjectAllocationPanelProps {
@@ -117,11 +117,15 @@ export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllo
               {ROLES_TO_DISPLAY.map((role) => {
                 const data = projectData.allocations[role];
                 const mismatch = data.estimated !== data.allocated;
+                const isOverallocated = data.allocated > data.estimated;
+                const isUnderallocated = data.allocated < data.estimated;
                 return (
                   <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2">
                     <div className={`flex items-center justify-center gap-1 ${mismatch ? 'text-orange-500' : ''}`}>
                       <span>{`Est: ${data.estimated} / Alloc: ${data.allocated}`}</span>
                       {mismatch && <AlertTriangleIcon className="h-4 w-4" />}
+                      {isOverallocated && <TrendingUpIcon className="h-4 w-4" />}
+                      {isUnderallocated && <TrendingDownIcon className="h-4 w-4" />}
                     </div>
                   </TableCell>
                 );
