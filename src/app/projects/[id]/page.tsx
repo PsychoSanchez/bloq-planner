@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { connectToDatabase } from '@/lib/mongodb';
 import { fromProjectDocument, ProjectModel } from '@/lib/models/project';
 import { Project } from '@/lib/types';
-import { ProjectView } from '@/components/project-view';
+import { ProjectView } from '@/app/projects/[id]/_components/project-view';
 import { TeamOption } from '@/components/team-selector';
 import { fromTeamMemberDocument, TeamMemberModel } from '@/lib/models/team-member';
 

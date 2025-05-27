@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RoleSelector } from './role-selector';
+import { RoleSelector } from '@/app/team/_components/role-selector';
 
 interface EditableRoleCellProps {
   memberId: string;

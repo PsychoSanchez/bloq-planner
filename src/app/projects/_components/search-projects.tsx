@@ -5,12 +5,12 @@ import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { ArchiveIcon, SearchIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
-import { ProjectGroupSelector } from './project-group-selector';
-import { ProjectSortSelector } from './project-sort-selector';
-import { AdvancedProjectFilters } from './advanced-project-filters';
-import { Button } from './ui/button';
-import { TeamOption } from './team-selector';
-import { ColumnToggle } from './column-toggle';
+import { ProjectGroupSelector } from '@/app/projects/_components/project-group-selector';
+import { ProjectSortSelector } from '@/app/projects/_components/project-sort-selector';
+import { AdvancedProjectFilters } from '@/app/projects/_components/advanced-project-filters';
+import { Button } from '@/components/ui/button';
+import { TeamOption } from '@/components/team-selector';
+import { ColumnToggle } from '@/app/projects/_components/column-toggle';
 import { ColumnDefinition } from '@/hooks/use-column-visibility';
 
 interface SearchProjectsProps {

@@ -10,9 +10,9 @@ import { PersonSelector } from '@/components/person-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
-import { ProjectAreaSelector } from './project-area-selector';
-import { PrioritySelector } from './priroty-selector';
-import { QuarterMultiSelector } from './quarter-multi-selector';
+import { ProjectAreaSelector } from '@/components/project-area-selector';
+import { PrioritySelector } from '@/components/priroty-selector';
+import { QuarterMultiSelector } from '@/components/quarter-multi-selector';
 import { cn } from '@/lib/utils';
 import {
   ContextMenu,
@@ -25,9 +25,9 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
-import { ProjectDetailsSheet } from '@/components/project-details-sheet';
-import { InlineCurrencyEditor } from '@/components/inline-currency-editor';
-import { GroupByOption } from '@/components/project-group-selector';
+import { ProjectDetailsSheet } from '@/app/projects/_components/project-details-sheet';
+import { InlineCurrencyEditor } from '@/app/projects/_components/inline-currency-editor';
+import { GroupByOption } from '@/app/projects/_components/project-group-selector';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
@@ -41,7 +41,7 @@ interface GroupedProjectsTableProps {
 
 function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
   const visibleColumns = [
-    { id: 'name', label: 'Name', className: 'min-w-[200px]' },
+    { id: 'name', label: 'Name', className: 'w-[300px] min-w-[300px]' },
     { id: 'type', label: 'Type', className: 'w-[100px]' },
     { id: 'priority', label: 'Priority', className: 'w-[100px]' },
     { id: 'quarter', label: 'Quarter', className: 'w-[200px]' },

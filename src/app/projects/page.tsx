@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { NewProjectDialog } from '@/components/new-project-dialog';
-import { ProjectsPageContent } from '@/components/projects-page-content';
+import { NewProjectDialog } from '@/app/projects/_components/new-project-dialog';
+import { ProjectsPageContent } from '@/app/projects/_components/projects-page-content';
 
 // Main page component
 export default function ProjectsPage() {

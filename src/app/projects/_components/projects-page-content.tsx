@@ -2,11 +2,11 @@
 
 import { useEffect } from 'react';
 import { parseAsString, parseAsBoolean, parseAsArrayOf, useQueryState } from 'nuqs';
-import { SearchProjects } from '@/components/search-projects';
-import { GroupedProjectsTable } from '@/components/grouped-projects-table';
+import { SearchProjects } from '@/app/projects/_components/search-projects';
+import { GroupedProjectsTable } from '@/app/projects/_components/grouped-projects-table';
 import { groupProjects } from '@/lib/utils/group-projects';
-import { GroupByOption } from '@/components/project-group-selector';
-import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
+import { GroupByOption } from '@/app/projects/_components/project-group-selector';
+import { SortByOption, SortDirectionOption } from '@/app/projects/_components/project-sort-selector';
 import { TeamOption } from '@/components/team-selector';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

@@ -8,7 +8,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from './ui/select';
+} from '../../../components/ui/select';
 
 interface RoleSelectorProps {
   type?: 'inline' | 'dropdown';

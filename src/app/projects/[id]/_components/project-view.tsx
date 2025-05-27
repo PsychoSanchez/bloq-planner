@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { EditProjectForm } from '@/components/edit-project-form';
+import { EditProjectForm } from '@/app/projects/[id]/_components/edit-project-form';
 import { Project } from '@/lib/types';
-import { TeamOption } from './team-selector';
+import { TeamOption } from '@/components/team-selector';
 
 interface ProjectViewProps {
   project: Project;

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { trpc } from '@/utils/trpc';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SearchTeamMembers } from '@/components/search-team-members';
-import { NewTeamMemberDialog } from '@/components/new-team-member-dialog';
-import { EditableRoleCell } from '@/components/editable-role-cell';
+import { SearchTeamMembers } from '@/app/team/_components/search-team-members';
+import { NewTeamMemberDialog } from '@/app/team/_components/new-team-member-dialog';
+import { EditableRoleCell } from '@/app/team/_components/editable-role-cell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryState, parseAsString } from 'nuqs';
 

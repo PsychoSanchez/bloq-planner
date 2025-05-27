@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RoleSelector } from '@/components/role-selector';
+import { RoleSelector } from '@/app/team/_components/role-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { PlusIcon } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { TeamMembersList } from '@/components/team-members-list';
+import { TeamMembersList } from '@/app/team/_components/team-members-list';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Loading component for the suspense fallback

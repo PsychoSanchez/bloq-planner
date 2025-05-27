@@ -1,6 +1,6 @@
 import { Project } from '../types';
-import { GroupByOption } from '@/components/project-group-selector';
-import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
+import { GroupByOption } from '@/app/projects/_components/project-group-selector';
+import { SortByOption, SortDirectionOption } from '@/app/projects/_components/project-sort-selector';
 import { TeamOption } from '@/components/team-selector';
 import { sortProjects } from './sort-projects';
 import { PROJECT_AREAS } from '@/lib/constants';

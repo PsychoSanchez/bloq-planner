@@ -1,5 +1,5 @@
 import { Project } from '../types';
-import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
+import { SortByOption, SortDirectionOption } from '@/app/projects/_components/project-sort-selector';
 
 export function sortProjects(projects: Project[], sortBy: SortByOption, sortDirection: SortDirectionOption): Project[] {
   if (!projects.length) return projects;

@@ -2,14 +2,14 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Assignee, Planner, Assignment } from '@/lib/types';
-import { CalendarNavigation } from './calendar-navigation';
+import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
 import { generateWeeks } from '@/lib/sample-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { WeekBlock } from './week-block';
+import { WeekBlock } from '@/components/week-block';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { AssigneeFilter } from './assignee-filter';
+import { AssigneeFilter } from '@/app/planner/lego/[id]/_components/assignee-filter';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {

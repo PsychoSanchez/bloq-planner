@@ -19,3 +19,4 @@
 - Use `bun` for everything. Don't run `bun dev`!!!
 - Never use as any or as unknown for type conversion. Always write a proper validator and type guard
 - Never install packages without asking.
+- In Next. js 15, if you prefix a folder with an underscore (like `_components`) inside the app directory, it won't be treated as a route.

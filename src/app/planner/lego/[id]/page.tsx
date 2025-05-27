@@ -1,7 +1,7 @@
 'use client';
 
-import { LegoPlanner } from '@/components/lego-planner';
-import { ProjectAllocationPanel } from '@/components/project-allocation-panel';
+import { LegoPlanner } from '@/app/planner/lego/[id]/_components/lego-planner';
+import { ProjectAllocationPanel } from '@/app/planner/lego/[id]/_components/project-allocation-panel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
