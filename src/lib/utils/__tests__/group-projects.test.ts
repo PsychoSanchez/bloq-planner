@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { groupProjects } from '../group-projects';
 import { Project } from '../../types';
+import { PROJECT_AREAS } from '../../constants';
 
 // Sample test data
 const mockProjects: Project[] = [
@@ -104,7 +105,7 @@ test('groupProjects - group by area', () => {
   expect(result).toHaveLength(3);
 
   const areas = result.map((g) => g.label).sort();
-  expect(areas).toEqual(['monetization', 'quality', 'tech']);
+  expect(areas).toEqual(['Monetization', 'Quality', 'Tech']);
 });
 
 test('groupProjects - group by quarter', () => {
@@ -472,4 +473,21 @@ test('groupProjects - fallback to ID when team/lead not found', () => {
   expect(engineeringGroup?.count).toBe(1);
   expect(missingGroup).toBeDefined();
   expect(missingGroup?.count).toBe(1);
+});
+
+test('groupProjects - group by area returns formatted labels for icon lookup', () => {
+  const result = groupProjects(mockProjects, 'area');
+
+  expect(result).toHaveLength(3);
+
+  // Verify that the formatted labels match the PROJECT_AREAS names
+  const areas = result.map((g) => g.label).sort();
+  expect(areas).toEqual(['Monetization', 'Quality', 'Tech']);
+
+  // Verify that each formatted label can be found in PROJECT_AREAS
+  areas.forEach((areaLabel) => {
+    const area = PROJECT_AREAS.find((a) => a.name === areaLabel);
+    expect(area).toBeDefined();
+    expect(area?.icon).toBeDefined();
+  });
 });

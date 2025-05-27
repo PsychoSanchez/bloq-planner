@@ -349,6 +349,7 @@ export function ProjectsPageContent() {
         <GroupedProjectsTable
           groups={groups}
           isGrouped={isGrouped}
+          groupBy={groupBy as GroupByOption}
           onUpdateProject={handleUpdateProject}
           teams={teams}
           teamsLoading={teamsLoading}

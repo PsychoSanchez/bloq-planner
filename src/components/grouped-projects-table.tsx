@@ -26,10 +26,12 @@ import {
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { InlineCurrencyEditor } from '@/components/inline-currency-editor';
+import { GroupByOption } from '@/components/project-group-selector';
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
   isGrouped: boolean;
+  groupBy?: GroupByOption;
   onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
   teams: TeamOption[];
   teamsLoading: boolean;
@@ -91,6 +93,7 @@ function EmptyProjectRow({ isColumnVisible }: { isColumnVisible: (columnId: stri
 export function GroupedProjectsTable({
   groups,
   isGrouped,
+  groupBy,
   onUpdateProject,
   teams,
   teamsLoading,
@@ -104,6 +107,15 @@ export function GroupedProjectsTable({
   const selectedProject = selectedProjectId
     ? groups.flatMap((g) => g.projects).find((p) => p.id === selectedProjectId) || null
     : null;
+
+  // Function to get area icon for group headers
+  const getAreaIcon = (groupLabel: string) => {
+    if (groupBy !== 'area' || groupLabel === 'No Area') return null;
+
+    // Find the area by name (since the label is now formatted)
+    const area = PROJECT_AREAS.find((a) => a.name === groupLabel);
+    return area ? area.icon : null;
+  };
 
   // Ensure new groups are automatically expanded
   useEffect(() => {
@@ -183,6 +195,8 @@ export function GroupedProjectsTable({
       <div className="space-y-4">
         {groups.map((group) => {
           const isExpanded = expandedGroups.has(group.label);
+          const AreaIcon = getAreaIcon(group.label);
+
           return (
             <div key={group.label} className="rounded-sm border">
               <div
@@ -191,6 +205,7 @@ export function GroupedProjectsTable({
               >
                 <div className="flex items-center gap-2">
                   {isExpanded ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                  {AreaIcon && <AreaIcon className="h-4 w-4" />}
                   <h3 className="font-medium text-sm">
                     {group.label}
                     <span className="ml-2 text-xs text-muted-foreground">

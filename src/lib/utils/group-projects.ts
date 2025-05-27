@@ -3,6 +3,7 @@ import { GroupByOption } from '@/components/project-group-selector';
 import { SortByOption, SortDirectionOption } from '@/components/project-sort-selector';
 import { TeamOption } from '@/components/team-selector';
 import { sortProjects } from './sort-projects';
+import { PROJECT_AREAS } from '@/lib/constants';
 
 export interface ProjectGroup {
   label: string;
@@ -150,6 +151,8 @@ function formatGroupLabel(label: string, groupBy: GroupByOption): string {
       return formatPriority(label);
     case 'quarter':
       return formatQuarter(label);
+    case 'area':
+      return formatArea(label);
     default:
       return label;
   }
@@ -218,4 +221,11 @@ function sortQuarters(quarterA: string, quarterB: string): number {
     return a.year - b.year;
   }
   return a.quarter - b.quarter;
+}
+
+function formatArea(areaId: string): string {
+  if (areaId === 'No Area') return areaId;
+
+  const area = PROJECT_AREAS.find((a) => a.id === areaId);
+  return area ? area.name : areaId;
 }
