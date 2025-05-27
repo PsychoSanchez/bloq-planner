@@ -5,9 +5,9 @@ import { ProjectsPageContent } from '@/app/projects/_components/projects-page-co
 // Main page component
 export default function ProjectsPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Projects</h1>
+    <div className="flex flex-col gap-4 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold">Projects</h1>
         <NewProjectDialog />
       </div>
 

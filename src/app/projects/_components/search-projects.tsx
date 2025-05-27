@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { TeamOption } from '@/components/team-selector';
 import { ColumnToggle } from '@/app/projects/_components/column-toggle';
 import { ColumnDefinition } from '@/hooks/use-column-visibility';
+import { ViewToggle, useViewMode } from '@/app/projects/_components/view-toggle';
 
 interface SearchProjectsProps {
   teams: TeamOption[];
@@ -30,6 +31,7 @@ export function SearchProjects({
   toggleColumn,
   resetToDefaults,
 }: SearchProjectsProps) {
+  const viewMode = useViewMode();
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''));
 
   const [includeArchived, setIncludeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
@@ -50,23 +52,29 @@ export function SearchProjects({
 
   return (
     <div className="space-y-4 mb-6">
-      {/* Top row: Search and basic controls */}
-      <div className="flex gap-2 items-center justify-between">
-        <div className="flex gap-2 items-center flex-1">
+      {/* Mobile-first layout: Stack everything vertically on small screens */}
+      <div className="flex flex-col gap-3 sm:gap-4">
+        {/* Search and Archive Toggle Row */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 min-w-0">
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search projects..."
-              className="pl-9"
+              className="pl-9 h-10"
               defaultValue={search}
               onChange={handleSearchChange}
             />
           </div>
 
           {/* Archive Toggle */}
-          <Button variant="outline" size="default" className="h-9 px-3 gap-2" onClick={handleArchivedToggle}>
+          <Button
+            variant="outline"
+            size="default"
+            className="h-10 px-3 gap-2 whitespace-nowrap"
+            onClick={handleArchivedToggle}
+          >
             <ArchiveIcon
               className={`h-4 w-4 ${includeArchived ? 'text-foreground' : 'text-muted-foreground'}`}
               strokeWidth={includeArchived ? 2 : 1}
@@ -75,16 +83,21 @@ export function SearchProjects({
           </Button>
         </div>
 
-        {/* View Controls */}
-        <div className="flex gap-2 items-center">
-          <ColumnToggle
-            columns={columns}
-            isColumnVisible={isColumnVisible}
-            toggleColumn={toggleColumn}
-            resetToDefaults={resetToDefaults}
-          />
-          <ProjectGroupSelector />
-          <ProjectSortSelector />
+        {/* View Controls Row */}
+        <div className="flex flex-wrap gap-2 sm:gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+            <ViewToggle />
+            <ProjectGroupSelector />
+            <ProjectSortSelector />
+          </div>
+          {viewMode === 'table' && (
+            <ColumnToggle
+              columns={columns}
+              isColumnVisible={isColumnVisible}
+              toggleColumn={toggleColumn}
+              resetToDefaults={resetToDefaults}
+            />
+          )}
         </div>
       </div>
 

@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { trpc } from '@/utils/trpc';
 import { useOptimisticProjects } from '@/hooks/use-optimistic-projects';
 import { useColumnVisibility, ColumnDefinition } from '@/hooks/use-column-visibility';
+import { ProjectsGrid } from '@/app/projects/_components/projects-grid';
+import { useViewMode } from '@/app/projects/_components/view-toggle';
 
 const EMPTY_ARRAY = [] as string[];
 
@@ -30,6 +32,110 @@ const PROJECT_COLUMNS: ColumnDefinition[] = [
   { id: 'impact', label: 'Impact', defaultVisible: true },
   { id: 'roi', label: 'ROI', defaultVisible: false },
 ];
+
+// Skeleton component for card loading state
+function ProjectsCardSkeleton({ isGrouped }: { isGrouped: boolean }) {
+  const skeletonCards = Array.from({ length: 8 }, (_, i) => i);
+
+  const renderSkeletonCard = () => (
+    <div className="group relative border rounded-lg bg-card text-card-foreground shadow-sm overflow-hidden h-32">
+      {/* Gradient background placeholder */}
+      <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-muted to-transparent" />
+
+      {/* Content */}
+      <div className="relative h-full p-2 flex flex-col">
+        {/* Header with area icon and title */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <Skeleton className="h-3.5 w-3.5 rounded flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+            <Skeleton className="h-2.5 w-2.5 rounded flex-shrink-0" />
+          </div>
+        </div>
+
+        {/* Project type and priority badges */}
+        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-4 w-12 rounded" />
+          <Skeleton className="h-4 w-14 rounded-full" />
+        </div>
+
+        {/* Bottom section with metadata */}
+        <div className="mt-auto space-y-0.5">
+          {/* Timeline and Area */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-2.5 w-2.5 rounded flex-shrink-0" />
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+
+          {/* Team and Lead */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-2.5 w-2.5 rounded flex-shrink-0" />
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-2.5 w-2.5 rounded flex-shrink-0" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+
+          {/* Business impact */}
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isGrouped) {
+    return (
+      <div className="space-y-6">
+        {/* Group 1 */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-16 ml-auto" />
+          </div>
+          <div className="pl-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {skeletonCards.slice(0, 4).map((index) => (
+                <div key={`group1-${index}`}>{renderSkeletonCard()}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Group 2 */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-14 ml-auto" />
+          </div>
+          <div className="pl-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {skeletonCards.slice(0, 3).map((index) => (
+                <div key={`group2-${index}`}>{renderSkeletonCard()}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-grouped skeleton
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {skeletonCards.map((index) => (
+        <div key={index}>{renderSkeletonCard()}</div>
+      ))}
+    </div>
+  );
+}
 
 // Skeleton component for loading state
 function ProjectsTableSkeleton({
@@ -259,6 +365,9 @@ function ProjectsTableSkeleton({
 }
 
 export function ProjectsPageContent() {
+  // View mode
+  const viewMode = useViewMode();
+
   // Basic filters
   const [search] = useQueryState('search', parseAsString.withDefault(''));
   const [type] = useQueryState('type', parseAsString.withDefault('all'));
@@ -346,7 +455,20 @@ export function ProjectsPageContent() {
         resetToDefaults={resetToDefaults}
       />
       {projectsLoading ? (
-        <ProjectsTableSkeleton isGrouped={isGrouped} isColumnVisible={isColumnVisible} />
+        viewMode === 'cards' ? (
+          <ProjectsCardSkeleton isGrouped={isGrouped} />
+        ) : (
+          <ProjectsTableSkeleton isGrouped={isGrouped} isColumnVisible={isColumnVisible} />
+        )
+      ) : viewMode === 'cards' ? (
+        <ProjectsGrid
+          groups={groups}
+          isGrouped={isGrouped}
+          groupBy={groupBy as GroupByOption}
+          onUpdateProject={handleUpdateProject}
+          teams={teams}
+          teamsLoading={teamsLoading}
+        />
       ) : (
         <GroupedProjectsTable
           groups={groups}
