@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ArchiveRestoreIcon, ExternalLinkIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
-import { TeamSelector, TeamOption } from '@/components/team-selector';
+import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
 import { PersonSelector } from '@/components/person-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
@@ -253,9 +253,9 @@ function ProjectRow({
   onOpenSheet: (project: Project) => void;
   isColumnVisible: (columnId: string) => boolean;
 }) {
-  const handleTeamChange = (teamId: string) => {
+  const handleTeamChange = (teamIds: string[]) => {
     if (onUpdateProject) {
-      onUpdateProject(project.id, { teamIds: teamId ? [teamId] : [] });
+      onUpdateProject(project.id, { teamIds });
     }
   };
 
@@ -286,6 +286,16 @@ function ProjectRow({
   const handleArchiveToggle = () => {
     if (onUpdateProject) {
       onUpdateProject(project.id, { archived: !project.archived });
+    }
+  };
+
+  const handleTeamToggle = (teamId: string) => {
+    if (onUpdateProject) {
+      const currentTeamIds = project.teamIds || [];
+      const newTeamIds = currentTeamIds.includes(teamId)
+        ? currentTeamIds.filter((id) => id !== teamId)
+        : [...currentTeamIds, teamId];
+      onUpdateProject(project.id, { teamIds: newTeamIds });
     }
   };
 
@@ -341,16 +351,29 @@ function ProjectRow({
           {isColumnVisible('team') && (
             <TableCell className="py-1 px-2">
               {onUpdateProject ? (
-                <TeamSelector
+                <TeamMultiSelector
                   type="inline"
-                  value={project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : ''}
+                  value={project.teamIds || []}
                   onSelect={handleTeamChange}
-                  placeholder="Select team"
+                  placeholder="Select teams"
                   teams={teams}
                   loading={teamsLoading}
+                  maxDisplayItems={2}
                 />
               ) : project.teamIds && project.teamIds.length > 0 ? (
-                teams.find((t) => t.id === project.teamIds![0])?.name || project.teamIds[0]
+                <div className="flex flex-wrap gap-1">
+                  {project.teamIds.slice(0, 2).map((teamId) => {
+                    const team = teams.find((t) => t.id === teamId);
+                    return (
+                      <span key={teamId} className="text-xs bg-muted px-1 py-0.5 rounded">
+                        {team?.name || teamId}
+                      </span>
+                    );
+                  })}
+                  {project.teamIds.length > 2 && (
+                    <span className="text-xs text-muted-foreground">+{project.teamIds.length - 2}</span>
+                  )}
+                </div>
               ) : (
                 '--'
               )}
@@ -467,27 +490,43 @@ function ProjectRow({
             </ContextMenuSubContent>
           </ContextMenuSub>
 
-          {/* Team Section */}
+          {/* Teams Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <span className="flex items-center gap-2">
-                Team
+                Teams
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {teams.find((t) => t.id === (project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : ''))
-                    ?.name || 'None'}
+                  {project.teamIds && project.teamIds.length > 0 ? `${project.teamIds.length} selected` : 'None'}
                 </span>
               </span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuItem onClick={() => handleTeamChange('')} className="text-muted-foreground">
-                Remove Team
+              <ContextMenuItem onClick={() => handleTeamChange([])} className="text-muted-foreground">
+                Clear All Teams
               </ContextMenuItem>
               <ContextMenuSeparator />
-              {teams.map((team) => (
-                <ContextMenuItem key={team.id} onClick={() => handleTeamChange(team.id)}>
-                  {team.name}
-                </ContextMenuItem>
-              ))}
+              {teams
+                .filter((team) => team.type === 'team')
+                .map((team) => {
+                  const isSelected = project.teamIds?.includes(team.id) || false;
+                  return (
+                    <ContextMenuItem
+                      key={team.id}
+                      onClick={() => handleTeamToggle(team.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <div
+                        className={cn(
+                          'w-4 h-4 border rounded-sm flex items-center justify-center',
+                          isSelected && 'bg-primary border-primary',
+                        )}
+                      >
+                        {isSelected && <div className="w-2 h-2 bg-primary-foreground rounded-sm" />}
+                      </div>
+                      {team.name}
+                    </ContextMenuItem>
+                  );
+                })}
             </ContextMenuSubContent>
           </ContextMenuSub>
 

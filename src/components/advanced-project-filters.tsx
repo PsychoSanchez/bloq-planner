@@ -32,9 +32,10 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
   const [quarters, setQuarters] = useQueryState('quarters', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [areas, setAreas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads, setLeads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
+  const [teamFilters, setTeamFilters] = useQueryState('teams', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
 
   // Calculate total active filters
-  const activeFiltersCount = priorities.length + quarters.length + areas.length + leads.length;
+  const activeFiltersCount = priorities.length + quarters.length + areas.length + leads.length + teamFilters.length;
 
   // Toggle functions for each filter type
   const togglePriority = useCallback(
@@ -65,13 +66,21 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
     [setLeads],
   );
 
+  const toggleTeam = useCallback(
+    (team: string) => {
+      setTeamFilters((prev) => (prev.includes(team) ? prev.filter((t) => t !== team) : [...prev, team]));
+    },
+    [setTeamFilters],
+  );
+
   // Clear all filters
   const clearAllFilters = useCallback(() => {
     setPriorities([]);
     setQuarters([]);
     setAreas([]);
     setLeads([]);
-  }, [setPriorities, setQuarters, setAreas, setLeads]);
+    setTeamFilters([]);
+  }, [setPriorities, setQuarters, setAreas, setLeads, setTeamFilters]);
 
   // Remove specific filter
   const removeFilter = useCallback(
@@ -89,9 +98,12 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         case 'lead':
           toggleLead(value);
           break;
+        case 'team':
+          toggleTeam(value);
+          break;
       }
     },
-    [togglePriority, toggleQuarter, toggleArea, toggleLead],
+    [togglePriority, toggleQuarter, toggleArea, toggleLead, toggleTeam],
   );
 
   // Get display names for filter values
@@ -106,6 +118,8 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
           return PROJECT_AREAS.find((a) => a.id === value)?.name || value;
         case 'lead':
           return teams.find((t) => t.id === value)?.name || value;
+        case 'team':
+          return teams.find((t) => t.id === value)?.name || value;
         default:
           return value;
       }
@@ -115,6 +129,9 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
 
   // Available leads (filter out non-person types for leads)
   const availableLeads = useMemo(() => teams.filter((team) => team.type === 'person'), [teams]);
+
+  // Available teams (filter out non-team types for team filtering)
+  const availableTeams = useMemo(() => teams.filter((team) => team.type === 'team'), [teams]);
 
   return (
     <div className="space-y-3">
@@ -228,6 +245,37 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Team Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
+              <UserIcon className="h-4 w-4" />
+              <span className="text-sm">Team</span>
+              {teamFilters.length > 0 && <span className="text-xs text-muted-foreground">({teamFilters.length})</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs">Filter by Team</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {teamsLoading ? (
+              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
+            ) : availableTeams.length === 0 ? (
+              <div className="p-2 text-xs text-muted-foreground">No teams available</div>
+            ) : (
+              availableTeams.map((team) => (
+                <DropdownMenuCheckboxItem
+                  key={team.id}
+                  className="text-xs"
+                  checked={teamFilters.includes(team.id)}
+                  onCheckedChange={() => toggleTeam(team.id)}
+                >
+                  {team.name}
+                </DropdownMenuCheckboxItem>
+              ))
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Clear All Filters Button */}
         {activeFiltersCount > 0 && (
           <Button
@@ -289,6 +337,18 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
               Lead: {getDisplayName('lead', lead)}
               <button
                 onClick={() => removeFilter('lead', lead)}
+                className="ml-1 hover:bg-muted-foreground/20 rounded-sm"
+              >
+                <XIcon className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+
+          {teamFilters.map((team) => (
+            <Badge key={`team-${team}`} variant="secondary" className="gap-1">
+              Team: {getDisplayName('team', team)}
+              <button
+                onClick={() => removeFilter('team', team)}
                 className="ml-1 hover:bg-muted-foreground/20 rounded-sm"
               >
                 <XIcon className="h-3 w-3" />

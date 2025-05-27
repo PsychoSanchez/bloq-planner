@@ -11,6 +11,7 @@ interface UseOptimisticProjectsOptions {
   quarters?: string[];
   areas?: string[];
   leads?: string[];
+  teams?: string[];
 }
 
 interface CreateProjectInput {
@@ -49,6 +50,7 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
     quarters: options.quarters && options.quarters.length > 0 ? options.quarters : undefined,
     areas: options.areas && options.areas.length > 0 ? options.areas : undefined,
     leads: options.leads && options.leads.length > 0 ? options.leads : undefined,
+    teams: options.teams && options.teams.length > 0 ? options.teams : undefined,
   });
 
   const serverProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);

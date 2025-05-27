@@ -179,6 +179,61 @@ test('groupProjects - projects with multiple quarters appear in all quarter grou
   expect(noQuarterGroup?.projects[0]?.name).toBe('No Quarter Project');
 });
 
+test('groupProjects - projects with multiple teams appear in all team groups', () => {
+  const projectsWithMultipleTeams: Project[] = [
+    {
+      id: '1',
+      name: 'Multi-Team Project',
+      slug: 'multi-team-project',
+      type: 'regular',
+      teamIds: ['team-1', 'team-2', 'team-3'], // Project assigned to 3 teams
+    },
+    {
+      id: '2',
+      name: 'Single Team Project',
+      slug: 'single-team-project',
+      type: 'regular',
+      teamIds: ['team-2'], // Only assigned to team-2
+    },
+    {
+      id: '3',
+      name: 'No Team Project',
+      slug: 'no-team-project',
+      type: 'regular',
+      // No teams
+    },
+  ];
+
+  const result = groupProjects(projectsWithMultipleTeams, 'team');
+
+  expect(result).toHaveLength(4); // team-1, team-2, team-3, and No Team
+
+  const team1Group = result.find((g) => g.label === 'team-1');
+  const team2Group = result.find((g) => g.label === 'team-2');
+  const team3Group = result.find((g) => g.label === 'team-3');
+  const noTeamGroup = result.find((g) => g.label === 'No Team');
+
+  // team-1 should only have the multi-team project
+  expect(team1Group).toBeDefined();
+  expect(team1Group?.count).toBe(1);
+  expect(team1Group?.projects[0]?.name).toBe('Multi-Team Project');
+
+  // team-2 should have both the multi-team project and single team project
+  expect(team2Group).toBeDefined();
+  expect(team2Group?.count).toBe(2);
+  expect(team2Group?.projects.map((p) => p.name).sort()).toEqual(['Multi-Team Project', 'Single Team Project']);
+
+  // team-3 should only have the multi-team project
+  expect(team3Group).toBeDefined();
+  expect(team3Group?.count).toBe(1);
+  expect(team3Group?.projects[0]?.name).toBe('Multi-Team Project');
+
+  // No Team should have the project with no teams
+  expect(noTeamGroup).toBeDefined();
+  expect(noTeamGroup?.count).toBe(1);
+  expect(noTeamGroup?.projects[0]?.name).toBe('No Team Project');
+});
+
 test('groupProjects - empty array returns empty groups', () => {
   const result = groupProjects([], 'type');
   expect(result).toHaveLength(0);

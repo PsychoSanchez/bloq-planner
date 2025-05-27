@@ -15,7 +15,7 @@ import { ROLES_TO_DISPLAY } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
-import { TeamOption, TeamSelector } from './team-selector';
+import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
 import { PersonSelector } from './person-selector';
 import { QuarterMultiSelector } from './quarter-multi-selector';
 import { ProjectTypeSelector } from './project-type-selector';
@@ -341,12 +341,14 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
               value={formData.quarters}
               onSelect={(value) => handleSelectChange('quarters', value)}
             />
-            <TeamSelector
+            <TeamMultiSelector
               type="inline"
-              value={formData.teamIds.length > 0 ? formData.teamIds[0] : ''}
-              onSelect={(value) => handleSelectChange('teamIds', value ? [value] : [])}
+              value={formData.teamIds}
+              onSelect={(value) => handleSelectChange('teamIds', value)}
               teams={teams}
               loading={teamsLoading}
+              placeholder="Select teams"
+              maxDisplayItems={2}
             />
             <ProjectTypeSelector
               type="inline"

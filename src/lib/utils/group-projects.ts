@@ -54,6 +54,35 @@ export function groupProjects(
       return; // Skip the regular grouping logic for quarters
     }
 
+    // Special handling for team grouping - projects should appear in all their teams
+    if (groupBy === 'team') {
+      if (project.teamIds && project.teamIds.length > 0) {
+        // Add project to each team group it belongs to
+        project.teamIds.forEach((teamId) => {
+          let groupKey: string;
+          if (teams) {
+            const team = teams.find((t) => t.id === teamId && t.type === 'team');
+            groupKey = team ? team.name : teamId || 'Unknown Team';
+          } else {
+            groupKey = teamId || 'Unknown Team';
+          }
+
+          if (!groups.has(groupKey)) {
+            groups.set(groupKey, []);
+          }
+          groups.get(groupKey)!.push(project);
+        });
+      } else {
+        // Project has no teams
+        const noTeamKey = 'No Team';
+        if (!groups.has(noTeamKey)) {
+          groups.set(noTeamKey, []);
+        }
+        groups.get(noTeamKey)!.push(project);
+      }
+      return; // Skip the regular grouping logic for teams
+    }
+
     // Regular grouping logic for all other group types
     let groupKey: string;
 
@@ -63,19 +92,6 @@ export function groupProjects(
         break;
       case 'priority':
         groupKey = project.priority || 'No Priority';
-        break;
-      case 'team':
-        if (project.teamIds && project.teamIds.length > 0) {
-          const teamId = project.teamIds[0] || '';
-          if (teams) {
-            const team = teams.find((t) => t.id === teamId && t.type === 'team');
-            groupKey = team ? team.name : teamId || 'Unknown Team';
-          } else {
-            groupKey = teamId || 'Unknown Team';
-          }
-        } else {
-          groupKey = 'No Team';
-        }
         break;
       case 'lead':
         if (project.leadId) {

@@ -33,13 +33,16 @@ export function TeamMultiSelector({
   maxDisplayItems = 2,
 }: TeamMultiSelectorProps) {
   // Convert teams to MultiSelectorOption format with enhanced search text
+  // Only include team members with type 'team'
   const teamOptions: MultiSelectorOption[] = useMemo(() => {
-    return teams.map((team) => ({
-      id: team.id,
-      value: team.id,
-      name: team.name,
-      searchText: `${team.name} ${team.role} ${team.type}`, // Include role and type for better search
-    }));
+    return teams
+      .filter((team) => team.type === 'team')
+      .map((team) => ({
+        id: team.id,
+        value: team.id,
+        name: team.name,
+        searchText: `${team.name} ${team.role}`, // Include role for better search
+      }));
   }, [teams]);
 
   if (loading) {

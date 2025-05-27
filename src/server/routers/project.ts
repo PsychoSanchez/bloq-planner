@@ -13,6 +13,7 @@ const getProjectsInput = type({
   'quarters?': 'string[]',
   'areas?': 'string[]',
   'leads?': 'string[]',
+  'teams?': 'string[]',
 });
 
 const createProjectInput = type({
@@ -88,6 +89,7 @@ export const projectRouter = router({
       quarters = [],
       areas = [],
       leads = [],
+      teams = [],
     } = input;
 
     const query: Record<string, unknown> = {};
@@ -130,6 +132,11 @@ export const projectRouter = router({
 
     if (leads.length > 0) {
       query.leadId = { $in: leads };
+    }
+
+    if (teams.length > 0) {
+      // Use $in to match projects that have at least one team in the filter
+      query.teamIds = { $in: teams };
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });

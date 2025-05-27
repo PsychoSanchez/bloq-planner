@@ -9,14 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArchiveIcon, ArchiveRestoreIcon, XIcon, CheckIcon, EditIcon } from 'lucide-react';
 import { Project } from '@/lib/types';
-import { TeamOption } from '@/components/team-selector';
+import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { ColorSelector } from '@/components/color-selector';
 import { PrioritySelector } from '@/components/priroty-selector';
 import { ProjectAreaSelector } from '@/components/project-area-selector';
-import { TeamSelector } from '@/components/team-selector';
 import { PersonSelector } from '@/components/person-selector';
-import { QuarterMultiSelector } from './quarter-multi-selector';
+import { QuarterMultiSelector } from '@/components/quarter-multi-selector';
 import { ProjectTypeSelector } from '@/components/project-type-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 
@@ -63,12 +62,12 @@ export function ProjectDetailsSheet({
   const handleSelectChange = (field: string, value: string | string[]) => {
     if (!onUpdateProject || !project) return;
 
-    if (field === 'quarters') {
+    if (field === 'teamIds') {
+      onUpdateProject(project.id, { teamIds: Array.isArray(value) ? value : [value] });
+    } else if (field === 'quarters') {
       onUpdateProject(project.id, { quarters: Array.isArray(value) ? value : [value] });
-    } else if (field === 'teamIds') {
-      onUpdateProject(project.id, { teamIds: typeof value === 'string' ? (value ? [value] : []) : value });
     } else {
-      onUpdateProject(project.id, { [field]: value });
+      onUpdateProject(project.id, { [field]: typeof value === 'string' ? value : value[0] });
     }
   };
 
@@ -258,16 +257,17 @@ export function ProjectDetailsSheet({
                 />
               </div>
 
-              {/* Team */}
+              {/* Teams */}
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team</Label>
-                <TeamSelector
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Teams</Label>
+                <TeamMultiSelector
                   type="inline"
-                  value={(project.teamIds && project.teamIds.length > 0 ? project.teamIds[0] : '') || ''}
+                  value={project.teamIds || []}
                   onSelect={(value) => handleSelectChange('teamIds', value)}
                   teams={teams}
                   loading={teamsLoading}
-                  placeholder="Select team"
+                  placeholder="Select teams"
+                  maxDisplayItems={3}
                 />
               </div>
 

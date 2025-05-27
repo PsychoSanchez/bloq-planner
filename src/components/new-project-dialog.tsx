@@ -21,7 +21,7 @@ import { ProjectAreaSelector } from './project-area-selector';
 import { PrioritySelector } from './priroty-selector';
 import { ProjectTypeSelector } from './project-type-selector';
 import { ColorSelector } from './color-selector';
-import { TeamSelector, TeamOption } from './team-selector';
+import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
 import { PersonSelector } from './person-selector';
 import { QuarterMultiSelector } from './quarter-multi-selector';
 import { Project } from '@/lib/types';
@@ -307,13 +307,13 @@ export function NewProjectDialog() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="team">Team</Label>
-                  <TeamSelector
-                    value={formData.teamIds.length > 0 ? formData.teamIds[0] : ''}
-                    onSelect={(value) => handleSelectChange('teamIds', value ? [value] : [])}
+                  <Label htmlFor="teams">Teams</Label>
+                  <TeamMultiSelector
+                    value={formData.teamIds}
+                    onSelect={(value) => handleSelectChange('teamIds', value)}
                     teams={teams}
                     loading={teamsLoading}
-                    placeholder="Select team"
+                    placeholder="Select teams"
                   />
                 </div>
               </div>
