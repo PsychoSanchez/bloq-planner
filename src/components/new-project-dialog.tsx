@@ -173,6 +173,10 @@ export function NewProjectDialog() {
         dependencies: formData.dependencies
           ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
           : [],
+        estimates: ROLES_TO_DISPLAY.map((role) => ({
+          department: role,
+          value: formData.estimates[role] || 0,
+        })).filter((estimate) => estimate.value > 0), // Only include estimates with values > 0
       });
 
       setOpen(false);

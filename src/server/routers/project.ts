@@ -14,6 +14,7 @@ const getProjectsInput = type({
   'areas?': 'string[]',
   'leads?': 'string[]',
   'teams?': 'string[]',
+  'dependencies?': 'string[]',
 });
 
 const createProjectInput = type({
@@ -27,10 +28,17 @@ const createProjectInput = type({
   'teamId?': 'string < 100',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
-  'dependencies?': 'unknown[]',
+  'dependencies?': type({
+    team: 'string',
+    'status?': "'pending' | 'submitted' | 'approved' | 'rejected'",
+    'description?': 'string',
+  }).array(),
   'cost?': 'number | string',
   'impact?': 'number | string',
-  'estimates?': 'unknown',
+  'estimates?': type({
+    department: 'string',
+    value: 'number',
+  }).array(),
 });
 
 const updateProjectInput = type({
@@ -57,14 +65,22 @@ const patchProjectInput = type({
   'quarter?': 'string < 7',
   'description?': 'string < 2000',
   'priority?': "'low' | 'medium' | 'high' | 'urgent'",
-  'teamId?': 'string < 100',
+  'teamIds?': 'string[]',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
+  'quarters?': 'string[]',
   'archived?': 'boolean',
-  'dependencies?': 'unknown',
-  'estimates?': 'unknown',
+  'dependencies?': type({
+    team: 'string',
+    'status?': "'pending' | 'submitted' | 'approved' | 'rejected'",
+    'description?': 'string',
+  }).array(),
   'cost?': 'number',
   'impact?': 'number',
+  'estimates?': type({
+    department: 'string',
+    value: 'number',
+  }).array(),
 });
 
 const getProjectByIdInput = type({
@@ -90,6 +106,7 @@ export const projectRouter = router({
       areas = [],
       leads = [],
       teams = [],
+      dependencies = [],
     } = input;
 
     const query: Record<string, unknown> = {};
@@ -137,6 +154,11 @@ export const projectRouter = router({
     if (teams.length > 0) {
       // Use $in to match projects that have at least one team in the filter
       query.teamIds = { $in: teams };
+    }
+
+    if (dependencies.length > 0) {
+      // Use $in to match projects that have at least one dependency team in the filter
+      query['dependencies.team'] = { $in: dependencies };
     }
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });

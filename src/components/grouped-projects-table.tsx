@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ArchiveRestoreIcon, Ext
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
+import { DependenciesMultiSelector } from '@/components/dependencies-multi-selector';
 import { PersonSelector } from '@/components/person-selector';
 import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
@@ -293,25 +294,37 @@ function ProjectRow({
   };
 
   const handleLeadChange = (leadId: string) => {
-    if (onUpdateProject) {
-      onUpdateProject(project.id, { leadId });
-    }
+    onUpdateProject?.(project.id, { leadId: leadId || undefined });
+  };
+
+  const handleDependenciesChange = (dependencyIds: string[]) => {
+    // Convert string array to dependencies object format
+    const dependencies = dependencyIds.map((teamId) => ({
+      team: teamId,
+      status: 'pending' as const,
+      description: '',
+    }));
+    onUpdateProject?.(project.id, { dependencies });
   };
 
   const handleArchiveToggle = () => {
-    if (onUpdateProject) {
-      onUpdateProject(project.id, { archived: !project.archived });
-    }
+    onUpdateProject?.(project.id, { archived: !project.archived });
   };
 
   const handleTeamToggle = (teamId: string) => {
-    if (onUpdateProject) {
-      const currentTeamIds = project.teamIds || [];
-      const newTeamIds = currentTeamIds.includes(teamId)
-        ? currentTeamIds.filter((id) => id !== teamId)
-        : [...currentTeamIds, teamId];
-      onUpdateProject(project.id, { teamIds: newTeamIds });
-    }
+    const currentTeams = project.teamIds || [];
+    const newTeams = currentTeams.includes(teamId)
+      ? currentTeams.filter((id) => id !== teamId)
+      : [...currentTeams, teamId];
+    handleTeamChange(newTeams);
+  };
+
+  const handleDependencyToggle = (teamId: string) => {
+    const currentDependencies = project.dependencies?.map((dep) => dep.team) || [];
+    const newDependencies = currentDependencies.includes(teamId)
+      ? currentDependencies.filter((id) => id !== teamId)
+      : [...currentDependencies, teamId];
+    handleDependenciesChange(newDependencies);
   };
 
   return (
@@ -411,7 +424,35 @@ function ProjectRow({
             </TableCell>
           )}
           {isColumnVisible('dependencies') && (
-            <TableCell className="py-1 px-2">{project.dependencies?.length || '--'}</TableCell>
+            <TableCell className="py-1 px-2">
+              {onUpdateProject ? (
+                <DependenciesMultiSelector
+                  type="inline"
+                  value={project.dependencies?.map((dep) => dep.team) || []}
+                  onSelect={handleDependenciesChange}
+                  placeholder="Select dependencies"
+                  dependencies={teams}
+                  loading={teamsLoading}
+                  maxDisplayItems={2}
+                />
+              ) : project.dependencies && project.dependencies.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {project.dependencies.slice(0, 2).map((dep, index) => {
+                    const team = teams.find((t) => t.id === dep.team);
+                    return (
+                      <span key={index} className="text-xs bg-muted px-1 py-0.5 rounded">
+                        {team?.name || dep.team}
+                      </span>
+                    );
+                  })}
+                  {project.dependencies.length > 2 && (
+                    <span className="text-xs text-muted-foreground">+{project.dependencies.length - 2}</span>
+                  )}
+                </div>
+              ) : (
+                '--'
+              )}
+            </TableCell>
           )}
           {isColumnVisible('area') && (
             <TableCell className="py-1 px-2">
@@ -542,6 +583,46 @@ function ProjectRow({
                     </ContextMenuItem>
                   );
                 })}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+
+          {/* Dependencies Section */}
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <span className="flex items-center gap-2">
+                Dependencies
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {project.dependencies && project.dependencies.length > 0
+                    ? `${project.dependencies.length} selected`
+                    : 'None'}
+                </span>
+              </span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              <ContextMenuItem onClick={() => handleDependenciesChange([])} className="text-muted-foreground">
+                Clear All Dependencies
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {teams.map((team) => {
+                const isSelected = project.dependencies?.some((dep) => dep.team === team.id) || false;
+                return (
+                  <ContextMenuItem
+                    key={team.id}
+                    onClick={() => handleDependencyToggle(team.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <div
+                      className={cn(
+                        'w-4 h-4 border rounded-sm flex items-center justify-center',
+                        isSelected && 'bg-primary border-primary',
+                      )}
+                    >
+                      {isSelected && <div className="w-2 h-2 bg-primary-foreground rounded-sm" />}
+                    </div>
+                    {team.name}
+                  </ContextMenuItem>
+                );
+              })}
             </ContextMenuSubContent>
           </ContextMenuSub>
 

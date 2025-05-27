@@ -28,28 +28,6 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'upd
   }>;
 }
 
-// interface EstimatesDocument {
-//   role: string;
-//   value: number;
-// }
-
-// const estimatedSchema = new Schema<EstimatesDocument>({
-//   role: { type: String, required: true },
-//   value: { type: Number, required: true },
-// });
-
-// interface DependenciesDocument {
-//   team: string;
-//   status: 'pending' | 'submitted' | 'approved' | 'rejected';
-//   description: string;
-// }
-
-// const dependenciesSchema = new Schema<DependenciesDocument>({
-//   team: { type: String, required: true },
-//   status: { type: String, required: true, enum: ['pending', 'submitted', 'approved', 'rejected'] },
-//   description: { type: String, required: true },
-// });
-
 const projectSchema = new Schema<ProjectDocument>(
   {
     name: { type: String, required: true },
@@ -83,10 +61,39 @@ const projectSchema = new Schema<ProjectDocument>(
     roi: { type: Number, default: 0 },
     impact: { type: Number, default: 0 },
     cost: { type: Number, default: 0 },
-    // estimates: [{ type: [estimatedSchema], default: [] }],
-    // dependencies: [{ type: [dependenciesSchema], default: [] }],
+    estimates: {
+      type: [
+        {
+          department: { type: String, required: true },
+          value: { type: Number, required: true, min: 0 },
+          _id: false, // Disable _id for subdocuments
+        },
+      ],
+      default: [],
+    },
+    dependencies: {
+      type: [
+        {
+          team: { type: String, required: true },
+          status: {
+            type: String,
+            required: true,
+            enum: ['pending', 'submitted', 'approved', 'rejected'],
+            default: 'pending',
+          },
+          description: { type: String, default: '' },
+          _id: false, // Disable _id for subdocuments
+        },
+      ],
+      default: [],
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    // Add options to prevent circular references
+    toJSON: { virtuals: false },
+    toObject: { virtuals: false },
+  },
 );
 
 // Pre-save middleware to automatically calculate ROI
@@ -101,7 +108,7 @@ projectSchema.pre('save', function (next) {
 });
 
 // Pre-update middleware to automatically calculate ROI for findOneAndUpdate operations
-projectSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], async function (next) {
+projectSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function (next) {
   const update = this.getUpdate() as { $set?: Partial<ProjectDocument> } | null;
 
   // Early return if no update or no $set
@@ -111,42 +118,13 @@ projectSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], async functio
 
   const updateSet = update.$set;
 
-  // Check if we're updating cost or impact
-  if (updateSet.cost !== undefined || updateSet.impact !== undefined) {
-    // We need to get the current document to calculate ROI
-    const cost = updateSet.cost !== undefined ? updateSet.cost : undefined;
-    const impact = updateSet.impact !== undefined ? updateSet.impact : undefined;
-
-    // If we have both values or are updating one and need the other from the existing document
-    if (cost !== undefined && impact !== undefined) {
-      // Both values are being updated
-      if (cost > 0) {
-        updateSet.roi = impact / cost;
-      } else {
-        updateSet.roi = 0;
-      }
+  // Only calculate ROI if both cost and impact are being updated in this operation
+  // This avoids the need for recursive queries that can cause circular references
+  if (updateSet.cost !== undefined && updateSet.impact !== undefined) {
+    if (updateSet.cost > 0) {
+      updateSet.roi = updateSet.impact / updateSet.cost;
     } else {
-      // We need to fetch the current document to get the missing value
-      try {
-        const doc = await this.model.findOne(this.getQuery());
-        if (doc) {
-          const currentCost = cost !== undefined ? cost : doc.cost || 0;
-          const currentImpact = impact !== undefined ? impact : doc.impact || 0;
-
-          if (currentCost > 0) {
-            updateSet.roi = currentImpact / currentCost;
-          } else {
-            updateSet.roi = 0;
-          }
-        } else {
-          // If we can't find the document, set ROI to 0
-          updateSet.roi = 0;
-        }
-      } catch (error) {
-        // If we can't fetch the document, just set ROI to 0
-        console.error('Error calculating ROI in pre-update middleware:', error);
-        updateSet.roi = 0;
-      }
+      updateSet.roi = 0;
     }
   }
 
@@ -163,6 +141,22 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
   } else {
     calculatedRoi = 0;
   }
+
+  // Safely transform estimates and dependencies to prevent circular references
+  const safeEstimates = doc.estimates
+    ? doc.estimates.map((est) => ({
+        department: est.department,
+        value: est.value,
+      }))
+    : undefined;
+
+  const safeDependencies = doc.dependencies
+    ? doc.dependencies.map((dep) => ({
+        team: dep.team,
+        status: dep.status,
+        description: dep.description,
+      }))
+    : undefined;
 
   return {
     id: doc._id.toString(),
@@ -181,8 +175,8 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
     roi: calculatedRoi,
     impact: doc.impact,
     cost: doc.cost,
-    estimates: doc.estimates,
-    dependencies: doc.dependencies,
+    estimates: safeEstimates,
+    dependencies: safeDependencies,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };

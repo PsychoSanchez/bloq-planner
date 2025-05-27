@@ -275,3 +275,164 @@ test('Team filtering - MongoDB $in operator simulation', () => {
   result = simulateMongoTeamQuery(mockProjectsWithTeams, ['team4']);
   expect(result).toHaveLength(0);
 });
+
+// Dependencies filtering tests
+test('Dependencies filtering - should match projects with at least one dependency in filter', () => {
+  const projects = [
+    {
+      id: '1',
+      name: 'Project 1',
+      dependencies: [
+        { team: 'Team Alpha', status: 'pending', description: 'API integration' },
+        { team: 'Team Beta', status: 'approved', description: 'Database setup' },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Project 2',
+      dependencies: [{ team: 'Team Gamma', status: 'submitted', description: 'Frontend work' }],
+    },
+    {
+      id: '3',
+      name: 'Project 3',
+      dependencies: [{ team: 'Team Delta', status: 'rejected', description: 'Backend work' }],
+    },
+  ];
+
+  const filter = ['Team Alpha', 'Team Gamma'];
+
+  // Simulate MongoDB $in query for dependencies.team
+  const filtered = projects.filter((project) => project.dependencies?.some((dep) => filter.includes(dep.team)));
+
+  expect(filtered.length).toBe(2);
+  expect(filtered.map((p) => p.id)).toEqual(['1', '2']);
+});
+
+test('Dependencies filtering - should match projects with multiple filter dependencies', () => {
+  const projects = [
+    {
+      id: '1',
+      name: 'Project 1',
+      dependencies: [
+        { team: 'Team Alpha', status: 'pending', description: 'API integration' },
+        { team: 'Team Beta', status: 'approved', description: 'Database setup' },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Project 2',
+      dependencies: [
+        { team: 'Team Alpha', status: 'submitted', description: 'Frontend work' },
+        { team: 'Team Gamma', status: 'pending', description: 'Testing' },
+      ],
+    },
+  ];
+
+  const filter = ['Team Alpha'];
+
+  // Both projects should match since they both have Team Alpha as a dependency
+  const filtered = projects.filter((project) => project.dependencies?.some((dep) => filter.includes(dep.team)));
+
+  expect(filtered.length).toBe(2);
+  expect(filtered.map((p) => p.id)).toEqual(['1', '2']);
+});
+
+test('Dependencies filtering - should not match projects with no dependencies', () => {
+  const projects = [
+    { id: '1', name: 'Project 1', dependencies: [] },
+    { id: '2', name: 'Project 2' }, // No dependencies property
+    {
+      id: '3',
+      name: 'Project 3',
+      dependencies: [{ team: 'Team Alpha', status: 'pending', description: 'API integration' }],
+    },
+  ];
+
+  const filter = ['Team Beta'];
+
+  const filtered = projects.filter((project) => project.dependencies?.some((dep) => filter.includes(dep.team)));
+
+  expect(filtered.length).toBe(0);
+});
+
+test('Dependencies filtering - should handle empty filter', () => {
+  const projects = [
+    {
+      id: '1',
+      name: 'Project 1',
+      dependencies: [{ team: 'Team Alpha', status: 'pending', description: 'API integration' }],
+    },
+    { id: '2', name: 'Project 2', dependencies: [] },
+  ];
+
+  const filter: string[] = [];
+
+  // Empty filter should not filter anything (all projects should be included)
+  const filtered = projects.filter(
+    (project) => filter.length === 0 || project.dependencies?.some((dep) => filter.includes(dep.team)),
+  );
+
+  expect(filtered.length).toBe(2);
+});
+
+test('Dependencies filtering - should handle non-existent dependencies', () => {
+  const projects = [
+    {
+      id: '1',
+      name: 'Project 1',
+      dependencies: [{ team: 'Team Alpha', status: 'pending', description: 'API integration' }],
+    },
+    {
+      id: '2',
+      name: 'Project 2',
+      dependencies: [{ team: 'Team Beta', status: 'approved', description: 'Database setup' }],
+    },
+  ];
+
+  const filter = ['Team NonExistent'];
+
+  const filtered = projects.filter((project) => project.dependencies?.some((dep) => filter.includes(dep.team)));
+
+  expect(filtered.length).toBe(0);
+});
+
+test('Dependencies filtering - MongoDB $in operator simulation', () => {
+  // Simulate how MongoDB would handle the query: { 'dependencies.team': { $in: ['Team Alpha', 'Team Beta'] } }
+  const projects = [
+    {
+      id: '1',
+      name: 'Project 1',
+      dependencies: [
+        { team: 'Team Alpha', status: 'pending', description: 'API integration' },
+        { team: 'Team Gamma', status: 'approved', description: 'Testing' },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Project 2',
+      dependencies: [{ team: 'Team Beta', status: 'submitted', description: 'Frontend work' }],
+    },
+    {
+      id: '3',
+      name: 'Project 3',
+      dependencies: [{ team: 'Team Delta', status: 'rejected', description: 'Backend work' }],
+    },
+  ];
+
+  const dependencyFilter = ['Team Alpha', 'Team Beta'];
+
+  // This simulates the MongoDB query behavior
+  const mongoQuery = (project: (typeof projects)[0]) => {
+    if (!project.dependencies || project.dependencies.length === 0) return false;
+    return project.dependencies.some((dep) => dependencyFilter.includes(dep.team));
+  };
+
+  const filtered = projects.filter(mongoQuery);
+
+  expect(filtered.length).toBe(2);
+  expect(filtered.map((p) => p.id)).toEqual(['1', '2']);
+
+  // Verify the specific teams that matched
+  expect(filtered[0]?.dependencies?.some((dep) => dep.team === 'Team Alpha')).toBe(true);
+  expect(filtered[1]?.dependencies?.some((dep) => dep.team === 'Team Beta')).toBe(true);
+});

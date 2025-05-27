@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PrioritySelector } from './priroty-selector';
 import { ProjectAreaSelector } from './project-area-selector';
 import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
+import { DependenciesMultiSelector } from '@/components/dependencies-multi-selector';
 import { PersonSelector } from './person-selector';
 import { QuarterMultiSelector } from './quarter-multi-selector';
 import { ProjectTypeSelector } from './project-type-selector';
@@ -71,7 +72,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     teamIds: project.teamIds || [],
     leadId: project.leadId || '',
     quarters: project.quarters || [],
-    dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
+    dependencies: project.dependencies?.map((dep) => dep.team) || [],
     cost: project.cost?.toString() || '',
     impact: project.impact?.toString() || '',
     roi: project.roi?.toString() || '',
@@ -96,7 +97,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       leadId: project.leadId || '',
       area: project.area || '',
       quarters: project.quarters || [],
-      dependencies: project.dependencies?.map((dep) => dep.team).join(', ') || '',
+      dependencies: project.dependencies?.map((dep) => dep.team) || [],
       color: project.color || DEFAULT_PROJECT_COLOR_NAME,
       archived: project.archived || false,
       estimates: ROLES_TO_DISPLAY.reduce(
@@ -129,6 +130,8 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
     const originalTeamIds = JSON.stringify(originalData.teamIds);
     const currentQuarters = JSON.stringify(currentData.quarters);
     const originalQuarters = JSON.stringify(originalData.quarters);
+    const currentDependencies = JSON.stringify(currentData.dependencies);
+    const originalDependencies = JSON.stringify(originalData.dependencies);
 
     return (
       currentData.name !== originalData.name ||
@@ -139,7 +142,7 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
       currentData.leadId !== originalData.leadId ||
       currentData.area !== originalData.area ||
       currentQuarters !== originalQuarters ||
-      currentData.dependencies !== originalData.dependencies ||
+      currentDependencies !== originalDependencies ||
       currentData.color !== originalData.color ||
       currentData.archived !== originalData.archived ||
       currentData.roi !== originalData.roi ||
@@ -223,14 +226,11 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
         ...updateData,
         cost: typeof formData.cost === 'string' ? parseFloat(formData.cost) || undefined : formData.cost,
         impact: typeof formData.impact === 'string' ? parseFloat(formData.impact) || undefined : formData.impact,
-        dependencies: formData.dependencies
-          ? formData.dependencies.split(',').map((dep) => ({ team: dep.trim() }))
-          : [],
-        // TODO: Breaks mongodb and causese maximum call stack size exceeded error
-        // estimates: ROLES_TO_DISPLAY.map((role) => ({
-        //   role,
-        //   value: formData.estimates[role] || 0,
-        // })),
+        dependencies: formData.dependencies ? formData.dependencies.map((dep) => ({ team: dep })) : [],
+        estimates: ROLES_TO_DISPLAY.map((role) => ({
+          department: role,
+          value: formData.estimates[role] || 0,
+        })).filter((estimate) => estimate.value > 0), // Only include estimates with values > 0
       });
 
       router.refresh();
@@ -385,13 +385,12 @@ export function EditProjectForm({ project, onCancel, teams, teamsLoading }: Edit
           <Label htmlFor="dependencies" className="text-xs text-muted-foreground font-medium">
             DEPENDENCIES
           </Label>
-          <Textarea
-            id="dependencies"
-            name="dependencies"
+          <DependenciesMultiSelector
             value={formData.dependencies}
-            onChange={handleChange}
-            className="w-full p-0 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[40px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
-            placeholder="e.g. Team A, Team B"
+            onSelect={(value) => handleSelectChange('dependencies', value)}
+            dependencies={teams}
+            loading={teamsLoading}
+            placeholder="Select dependencies..."
           />
         </div>
 

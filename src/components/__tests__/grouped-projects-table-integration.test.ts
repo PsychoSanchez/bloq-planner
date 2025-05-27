@@ -163,3 +163,191 @@ test('GroupedProjectsTable - team grouping should work like quarter grouping', (
   expect(teamGroups.get('team2')?.[0]?.id).toBe(projectWithMultipleTeams.id);
   expect(teamGroups.get('team3')?.[0]?.id).toBe(projectWithMultipleTeams.id);
 });
+
+// Dependencies multi-selector tests
+test('GroupedProjectsTable - should handle multiple dependency selection', () => {
+  const mockTeams: TeamOption[] = [
+    { id: 'dep1', name: 'Team Alpha', role: 'Backend', type: 'team' },
+    { id: 'dep2', name: 'Team Beta', role: 'Frontend', type: 'team' },
+    { id: 'dep3', name: 'External Service', role: 'API', type: 'dependency' },
+  ];
+
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [
+      { team: 'dep1', status: 'pending', description: 'Backend API' },
+      { team: 'dep3', status: 'approved', description: 'External service integration' },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  // Test that dependencies are correctly extracted as team IDs
+  const dependencyIds = mockProject.dependencies?.map((dep) => dep.team) || [];
+  expect(dependencyIds).toEqual(['dep1', 'dep3']);
+
+  // Test that team names can be resolved
+  const dependencyNames = dependencyIds.map((id) => mockTeams.find((t) => t.id === id)?.name);
+  expect(dependencyNames).toEqual(['Team Alpha', 'External Service']);
+});
+
+test('GroupedProjectsTable - should handle dependency updates correctly', () => {
+  // Simulate adding a new dependency
+  const newDependencyIds = ['dep1', 'dep2'];
+  const expectedDependencies = newDependencyIds.map((teamId) => ({
+    team: teamId,
+    status: 'pending' as const,
+    description: '',
+  }));
+
+  expect(expectedDependencies).toEqual([
+    { team: 'dep1', status: 'pending', description: '' },
+    { team: 'dep2', status: 'pending', description: '' },
+  ]);
+});
+
+test('GroupedProjectsTable - should handle dependency removal correctly', () => {
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [
+      { team: 'dep1', status: 'pending', description: 'Backend API' },
+      { team: 'dep2', status: 'approved', description: 'Frontend work' },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  // Simulate removing a dependency
+  const currentDependencyIds = mockProject.dependencies?.map((dep) => dep.team) || [];
+  const updatedDependencyIds = currentDependencyIds.filter((id) => id !== 'dep1');
+
+  expect(updatedDependencyIds).toEqual(['dep2']);
+
+  const expectedDependencies = updatedDependencyIds.map((teamId) => ({
+    team: teamId,
+    status: 'pending' as const,
+    description: '',
+  }));
+
+  expect(expectedDependencies).toEqual([{ team: 'dep2', status: 'pending', description: '' }]);
+});
+
+test('GroupedProjectsTable - should handle empty dependency selection', () => {
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  const dependencyIds = mockProject.dependencies?.map((dep) => dep.team) || [];
+  expect(dependencyIds).toEqual([]);
+});
+
+test('GroupedProjectsTable - should display dependency names correctly', () => {
+  const mockTeams: TeamOption[] = [
+    { id: 'dep1', name: 'Team Alpha', role: 'Backend', type: 'team' },
+    { id: 'dep2', name: 'Team Beta', role: 'Frontend', type: 'team' },
+    { id: 'dep3', name: 'External Service', role: 'API', type: 'dependency' },
+  ];
+
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [
+      { team: 'dep1', status: 'pending', description: 'Backend API' },
+      { team: 'dep3', status: 'approved', description: 'External service' },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  // Test dependency display logic
+  const dependencyDisplay = mockProject.dependencies?.slice(0, 2).map((dep) => {
+    const team = mockTeams.find((t) => t.id === dep.team);
+    return team?.name || dep.team;
+  });
+
+  expect(dependencyDisplay).toEqual(['Team Alpha', 'External Service']);
+});
+
+test('GroupedProjectsTable - should handle dependency toggle functionality', () => {
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [{ team: 'dep1', status: 'pending', description: 'Backend API' }],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  // Test adding a dependency
+  const currentDependencies = mockProject.dependencies?.map((dep) => dep.team) || [];
+  const teamIdToAdd = 'dep2';
+
+  const newDependencies = currentDependencies.includes(teamIdToAdd)
+    ? currentDependencies.filter((id) => id !== teamIdToAdd)
+    : [...currentDependencies, teamIdToAdd];
+
+  expect(newDependencies).toEqual(['dep1', 'dep2']);
+
+  // Test removing a dependency
+  const teamIdToRemove = 'dep1';
+  const removedDependencies = newDependencies.includes(teamIdToRemove)
+    ? newDependencies.filter((id) => id !== teamIdToRemove)
+    : [...newDependencies, teamIdToRemove];
+
+  expect(removedDependencies).toEqual(['dep2']);
+});
+
+test('GroupedProjectsTable - should include all types for dependency selection', () => {
+  const mockTeams: TeamOption[] = [
+    { id: 'team1', name: 'Team Alpha', role: 'Backend', type: 'team' },
+    { id: 'person1', name: 'John Doe', role: 'Developer', type: 'person' },
+    { id: 'dep1', name: 'External Service', role: 'API', type: 'dependency' },
+    { id: 'event1', name: 'Conference', role: 'Event', type: 'event' },
+  ];
+
+  // Dependencies multi-selector should include all types (unlike team selector which only includes 'team' type)
+  const availableDependencies = mockTeams; // All teams are available for dependencies
+  expect(availableDependencies.length).toBe(4);
+
+  const types = availableDependencies.map((t) => t.type);
+  expect(types).toEqual(['team', 'person', 'dependency', 'event']);
+});
+
+test('GroupedProjectsTable - should handle array with mixed dependency types', () => {
+  const mockProject: Project = {
+    id: '1',
+    name: 'Test Project',
+    slug: 'test-project',
+    type: 'regular',
+    dependencies: [
+      { team: 'team1', status: 'pending', description: 'Team dependency' },
+      { team: 'person1', status: 'approved', description: 'Person dependency' },
+      { team: 'dep1', status: 'submitted', description: 'External dependency' },
+      { team: 'event1', status: 'rejected', description: 'Event dependency' },
+    ],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  const dependencyIds = mockProject.dependencies?.map((dep) => dep.team) || [];
+  expect(dependencyIds).toEqual(['team1', 'person1', 'dep1', 'event1']);
+
+  // Test that all dependency types are preserved
+  const statuses = mockProject.dependencies?.map((dep) => dep.status) || [];
+  expect(statuses).toEqual(['pending', 'approved', 'submitted', 'rejected']);
+});

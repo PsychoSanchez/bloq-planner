@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon } from 'lucide-react';
+import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon, LinkIcon } from 'lucide-react';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { TeamOption } from '@/components/team-selector';
 
@@ -33,9 +33,14 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
   const [areas, setAreas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads, setLeads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [teamFilters, setTeamFilters] = useQueryState('teams', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
+  const [dependencies, setDependencies] = useQueryState(
+    'dependencies',
+    parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY),
+  );
 
   // Calculate total active filters
-  const activeFiltersCount = priorities.length + quarters.length + areas.length + leads.length + teamFilters.length;
+  const activeFiltersCount =
+    priorities.length + quarters.length + areas.length + leads.length + teamFilters.length + dependencies.length;
 
   // Toggle functions for each filter type
   const togglePriority = useCallback(
@@ -73,6 +78,15 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
     [setTeamFilters],
   );
 
+  const toggleDependency = useCallback(
+    (dependency: string) => {
+      setDependencies((prev) =>
+        prev.includes(dependency) ? prev.filter((d) => d !== dependency) : [...prev, dependency],
+      );
+    },
+    [setDependencies],
+  );
+
   // Clear all filters
   const clearAllFilters = useCallback(() => {
     setPriorities([]);
@@ -80,7 +94,8 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
     setAreas([]);
     setLeads([]);
     setTeamFilters([]);
-  }, [setPriorities, setQuarters, setAreas, setLeads, setTeamFilters]);
+    setDependencies([]);
+  }, [setPriorities, setQuarters, setAreas, setLeads, setTeamFilters, setDependencies]);
 
   // Remove specific filter
   const removeFilter = useCallback(
@@ -101,9 +116,12 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
         case 'team':
           toggleTeam(value);
           break;
+        case 'dependency':
+          toggleDependency(value);
+          break;
       }
     },
-    [togglePriority, toggleQuarter, toggleArea, toggleLead, toggleTeam],
+    [togglePriority, toggleQuarter, toggleArea, toggleLead, toggleTeam, toggleDependency],
   );
 
   // Get display names for filter values
@@ -120,6 +138,8 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
           return teams.find((t) => t.id === value)?.name || value;
         case 'team':
           return teams.find((t) => t.id === value)?.name || value;
+        case 'dependency':
+          return teams.find((t) => t.id === value)?.name || value;
         default:
           return value;
       }
@@ -132,6 +152,9 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
 
   // Available teams (filter out non-team types for team filtering)
   const availableTeams = useMemo(() => teams.filter((team) => team.type === 'team'), [teams]);
+
+  // Available dependencies (include all types for dependency filtering)
+  const availableDependencies = useMemo(() => teams, [teams]);
 
   return (
     <div className="space-y-3">
@@ -276,6 +299,39 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Dependency Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
+              <LinkIcon className="h-4 w-4" />
+              <span className="text-sm">Dependency</span>
+              {dependencies.length > 0 && (
+                <span className="text-xs text-muted-foreground">({dependencies.length})</span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs">Filter by Dependency</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {teamsLoading ? (
+              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
+            ) : availableDependencies.length === 0 ? (
+              <div className="p-2 text-xs text-muted-foreground">No dependencies available</div>
+            ) : (
+              availableDependencies.map((team) => (
+                <DropdownMenuCheckboxItem
+                  key={team.id}
+                  className="text-xs"
+                  checked={dependencies.includes(team.id)}
+                  onCheckedChange={() => toggleDependency(team.id)}
+                >
+                  {team.name}
+                </DropdownMenuCheckboxItem>
+              ))
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Clear All Filters Button */}
         {activeFiltersCount > 0 && (
           <Button
@@ -349,6 +405,18 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
               Team: {getDisplayName('team', team)}
               <button
                 onClick={() => removeFilter('team', team)}
+                className="ml-1 hover:bg-muted-foreground/20 rounded-sm"
+              >
+                <XIcon className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+
+          {dependencies.map((dependency) => (
+            <Badge key={`dependency-${dependency}`} variant="secondary" className="gap-1">
+              Dependency: {getDisplayName('dependency', dependency)}
+              <button
+                onClick={() => removeFilter('dependency', dependency)}
                 className="ml-1 hover:bg-muted-foreground/20 rounded-sm"
               >
                 <XIcon className="h-3 w-3" />

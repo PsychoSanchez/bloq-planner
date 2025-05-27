@@ -275,6 +275,7 @@ export function ProjectsPageContent() {
   const [areas] = useQueryState('areas', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [leads] = useQueryState('leads', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
   const [teamFilters] = useQueryState('teams', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
+  const [dependencies] = useQueryState('dependencies', parseAsArrayOf(parseAsString).withDefault(EMPTY_ARRAY));
 
   // Column visibility
   const { isColumnVisible, toggleColumn, resetToDefaults } = useColumnVisibility({
@@ -297,6 +298,7 @@ export function ProjectsPageContent() {
     areas: areas.length > 0 ? areas : undefined,
     leads: leads.length > 0 ? leads : undefined,
     teams: teamFilters.length > 0 ? teamFilters : undefined,
+    dependencies: dependencies.length > 0 ? dependencies : undefined,
   });
 
   // Use tRPC to fetch team members

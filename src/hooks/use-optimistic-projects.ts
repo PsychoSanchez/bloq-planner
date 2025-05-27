@@ -12,6 +12,7 @@ interface UseOptimisticProjectsOptions {
   areas?: string[];
   leads?: string[];
   teams?: string[];
+  dependencies?: string[];
 }
 
 interface CreateProjectInput {
@@ -25,10 +26,17 @@ interface CreateProjectInput {
   teamIds?: string[];
   leadId?: string;
   area?: string;
-  dependencies?: unknown[];
+  dependencies?: Array<{
+    team: string;
+    status?: 'pending' | 'submitted' | 'approved' | 'rejected';
+    description?: string;
+  }>;
   cost?: number | string;
   impact?: number | string;
-  estimates?: unknown;
+  estimates?: Array<{
+    department: string;
+    value: number;
+  }>;
 }
 
 export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}) {
@@ -51,6 +59,7 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
     areas: options.areas && options.areas.length > 0 ? options.areas : undefined,
     leads: options.leads && options.leads.length > 0 ? options.leads : undefined,
     teams: options.teams && options.teams.length > 0 ? options.teams : undefined,
+    dependencies: options.dependencies && options.dependencies.length > 0 ? options.dependencies : undefined,
   });
 
   const serverProjects = useMemo(() => projectsData?.projects || [], [projectsData?.projects]);
