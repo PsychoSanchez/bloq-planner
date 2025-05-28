@@ -88,7 +88,13 @@ export function NewProjectDialog() {
 
       await createProjectMutation.mutateAsync({
         ...projectData,
-        dependencies: formData.dependencies ? formData.dependencies.map((dep) => ({ team: dep })) : [],
+        dependencies: formData.dependencies
+          ? formData.dependencies.map((dep) => ({
+              team: dep,
+              status: 'pending' as const,
+              description: '',
+            }))
+          : [],
         estimates: Object.entries(formData.estimates)
           .filter(([, value]) => value > 0)
           .map(([department, value]) => ({

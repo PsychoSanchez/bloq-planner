@@ -58,7 +58,13 @@ export function EditProjectForm({ project, teams, teamsLoading }: EditProjectFor
         ...updateData,
         cost: typeof formData.cost === 'string' ? parseFloat(formData.cost) || undefined : formData.cost,
         impact: typeof formData.impact === 'string' ? parseFloat(formData.impact) || undefined : formData.impact,
-        dependencies: formData.dependencies ? formData.dependencies.map((dep) => ({ team: dep })) : [],
+        dependencies: formData.dependencies
+          ? formData.dependencies.map((dep) => ({
+              team: dep,
+              status: 'pending' as const,
+              description: '',
+            }))
+          : [],
         estimates: Object.entries(formData.estimates)
           .filter(([, value]) => value > 0)
           .map(([department, value]) => ({
