@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { Assignment } from '@/lib/types';
+import { Assignment, Role } from '@/lib/types';
 import { trpc } from '@/utils/trpc';
 
 const useAssignments = (plannerId: string) => {
@@ -211,6 +211,28 @@ export default function LegoPlannerDetailsPage() {
     id: plannerId,
   });
 
+  // tRPC mutation for updating project estimates
+  const utils = trpc.useUtils();
+  const updateProjectMutation = trpc.project.patchProject.useMutation({
+    onSuccess: (updatedProject) => {
+      // Invalidate planner data to refresh the allocation panel
+      utils.planner.getPlannerById.invalidate({ id: plannerId });
+
+      toast({
+        title: 'Estimate updated',
+        description: `Updated estimate for "${updatedProject.name}"`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating project estimate:', error);
+      toast({
+        title: 'Failed to update estimate',
+        description: error.message || 'There was an error updating the estimate. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const { assignments, getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } =
     useAssignments(plannerId);
 
@@ -230,6 +252,35 @@ export default function LegoPlannerDetailsPage() {
 
   const handleBackClick = () => {
     router.push('/planner/lego');
+  };
+
+  const handleEstimateUpdate = async (projectId: string, role: Role, value: number) => {
+    if (!plannerData) return;
+
+    // Find the project to get current estimates
+    const project = plannerData.projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    // Update the estimates array
+    const currentEstimates = project.estimates || [];
+    const updatedEstimates = currentEstimates.filter((est) => est.department !== role);
+
+    // Only add the estimate if value > 0
+    if (value > 0) {
+      updatedEstimates.push({
+        department: role,
+        value: value,
+      });
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({
+        id: projectId,
+        estimates: updatedEstimates,
+      });
+    } catch (error) {
+      console.error('Error updating estimate:', error);
+    }
   };
 
   if (isLoading) {
@@ -271,7 +322,11 @@ export default function LegoPlannerDetailsPage() {
       />
       {plannerData && (
         <div className="mt-8">
-          <ProjectAllocationPanel plannerData={plannerData} assignments={assignments} />
+          <ProjectAllocationPanel
+            plannerData={plannerData}
+            assignments={assignments}
+            onUpdateEstimate={handleEstimateUpdate}
+          />
         </div>
       )}
     </div>

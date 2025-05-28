@@ -1,13 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { Assignment, Planner, Project, Role } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangleIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react'; // For warning icon
+import { Input } from '@/components/ui/input';
+import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 interface ProjectAllocationPanelProps {
   plannerData: Planner | null;
   assignments: Assignment[];
+  onUpdateEstimate?: (projectId: string, role: Role, value: number) => void;
 }
 
 const ROLES_TO_DISPLAY: Role[] = ['engineering', 'design', 'qa', 'analytics', 'data_science', 'product_management'];
@@ -29,7 +33,78 @@ const formatRoleName = (role: Role): string => {
   return role.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
-export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllocationPanelProps) {
+// Inline number editor component
+interface InlineNumberEditorProps {
+  value: number;
+  onSave: (value: number) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+function InlineNumberEditor({ value, onSave, disabled = false, className }: InlineNumberEditorProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const handleStartEdit = () => {
+    if (disabled) return;
+    setIsEditing(true);
+    setEditValue(value.toString());
+  };
+
+  const handleSave = () => {
+    const numericValue = Math.max(0, parseFloat(editValue) || 0);
+    onSave(numericValue);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditValue('');
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <Input
+        type="number"
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          'w-12 h-6 text-xs border border-input focus:border-ring focus:ring-1 focus:ring-ring/50 px-1 py-0',
+          className,
+        )}
+        placeholder="0"
+        min="0"
+        step="1"
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        'cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 text-xs transition-colors min-w-[12px] inline-block text-center',
+        disabled && 'cursor-default hover:bg-transparent',
+        className,
+      )}
+      onClick={handleStartEdit}
+    >
+      {value}
+    </span>
+  );
+}
+
+export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstimate }: ProjectAllocationPanelProps) {
   if (!plannerData) {
     return null;
   }
@@ -91,15 +166,21 @@ export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllo
     }
   });
 
+  const handleEstimateUpdate = (projectId: string, role: Role, value: number) => {
+    if (onUpdateEstimate) {
+      onUpdateEstimate(projectId, role, value);
+    }
+  };
+
   return (
     <div>
-      <h1>Project Allocation Summary (Weeks)</h1>
+      <h1 className="text-lg font-semibold mb-4">Project Allocation Summary (Weeks)</h1>
       <Table className="min-w-full text-xs">
         <TableHeader>
           <TableRow className="h-8">
             <TableHead className="min-w-[200px] whitespace-nowrap py-1 px-2">Project</TableHead>
             {ROLES_TO_DISPLAY.map((role) => (
-              <TableHead key={role} className="text-center whitespace-nowrap py-1 px-2">
+              <TableHead key={role} className="text-center whitespace-nowrap py-1 px-2 min-w-[120px]">
                 {formatRoleName(role)}
               </TableHead>
             ))}
@@ -108,7 +189,7 @@ export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllo
         <TableBody>
           {projectAllocationsData.map((projectData) => (
             <TableRow key={projectData.id} className="h-8">
-              <TableCell className="font-medium  min-w-[200px] whitespace-nowrap py-1 px-2">
+              <TableCell className="font-medium min-w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
                 <Link href={`/projects/${projectData.id}`} className="hover:underline w-full">
                   {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
                   {projectData.name}
@@ -118,14 +199,40 @@ export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllo
                 const data = projectData.allocations[role];
                 const mismatch = data.estimated !== data.allocated;
                 const isOverallocated = data.allocated > data.estimated;
-                const isUnderallocated = data.allocated < data.estimated;
+                const isUnderallocated = data.allocated < data.estimated && data.estimated > 0;
+
                 return (
-                  <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2">
-                    <div className={`flex items-center justify-center gap-1 ${mismatch ? 'text-orange-500' : ''}`}>
-                      <span>{`Est: ${data.estimated} / Alloc: ${data.allocated}`}</span>
-                      {mismatch && <AlertTriangleIcon className="h-4 w-4" />}
-                      {isOverallocated && <TrendingUpIcon className="h-4 w-4" />}
-                      {isUnderallocated && <TrendingDownIcon className="h-4 w-4" />}
+                  <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 min-w-[120px]">
+                    <div className="flex items-center justify-center gap-1 min-h-[24px]">
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">Est:</span>
+                        <InlineNumberEditor
+                          value={data.estimated}
+                          onSave={(value) => handleEstimateUpdate(projectData.id, role, value)}
+                          disabled={!onUpdateEstimate}
+                          className={cn(
+                            mismatch && isOverallocated && 'text-red-600 dark:text-red-400',
+                            mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400',
+                          )}
+                        />
+                      </div>
+                      <span className="text-muted-foreground">/</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">Alloc:</span>
+                        <span
+                          className={cn(
+                            'text-xs min-w-[12px] text-center',
+                            mismatch && isOverallocated && 'text-red-600 dark:text-red-400 font-medium',
+                            mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400 font-medium',
+                          )}
+                        >
+                          {data.allocated}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-0.5 ml-1">
+                        {isOverallocated && <TrendingUpIcon className="h-3 w-3 text-red-500" />}
+                        {isUnderallocated && <TrendingDownIcon className="h-3 w-3 text-amber-500" />}
+                      </div>
                     </div>
                   </TableCell>
                 );
@@ -134,6 +241,19 @@ export function ProjectAllocationPanel({ plannerData, assignments }: ProjectAllo
           ))}
         </TableBody>
       </Table>
+      <div className="mt-4 text-xs text-muted-foreground space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <TrendingUpIcon className="h-3 w-3 text-red-500" />
+            <span className="text-red-600 dark:text-red-400">Red: Overallocated</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <TrendingDownIcon className="h-3 w-3 text-amber-500" />
+            <span className="text-amber-600 dark:text-amber-400">Amber: Underallocated</span>
+          </div>
+        </div>
+        <p>Click on estimate values to edit them inline.</p>
+      </div>
     </div>
   );
 }
