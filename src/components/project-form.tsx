@@ -11,6 +11,7 @@ import { Project } from '@/lib/types';
 import { ColorSelector } from '@/components/color-selector';
 import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
 import { ROLES_TO_DISPLAY } from '@/lib/constants';
+import { ROLE_OPTIONS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PrioritySelector } from '@/components/priroty-selector';
 import { ProjectAreaSelector } from '@/components/project-area-selector';
@@ -90,6 +91,12 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
     {} as Record<string, number>,
   ),
 });
+
+// Function to get proper role display name
+const getRoleDisplayName = (roleId: string): string => {
+  const roleOption = ROLE_OPTIONS.find((option) => option.id === roleId);
+  return roleOption?.name || roleId.charAt(0).toUpperCase() + roleId.slice(1).replace(/_/g, ' ');
+};
 
 export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(function ProjectForm(
   {
@@ -525,7 +532,7 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
             <TableBody>
               {ROLES_TO_DISPLAY.map((role) => (
                 <TableRow key={role}>
-                  <TableCell className="font-medium py-1 px-2 text-sm capitalize">{role}</TableCell>
+                  <TableCell className="font-medium py-1 px-2 text-sm capitalize">{getRoleDisplayName(role)}</TableCell>
                   <TableCell className="py-1 px-2">
                     <Input
                       type="number"
