@@ -130,9 +130,9 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
       >
         {/* Gradient background */}
         <div
-          className="absolute inset-0 opacity-30 rounded"
+          className="absolute inset-0 opacity-15 dark:opacity-30"
           style={{
-            background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+            background: `linear-gradient(135deg, ${colorHex} 0%, transparent 60%)`,
           }}
         />
         <div className="relative z-10 flex items-center justify-start w-full">

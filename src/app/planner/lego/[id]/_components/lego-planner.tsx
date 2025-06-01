@@ -437,34 +437,27 @@ function SelectionActionPopover({
       <div className="border-t -mx-1" />
       {/* Project assignment section */}
       <div>
-        <div className="rounded-md p-1 max-h-96 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto overflow-x-hidden">
           {/* Regular projects */}
           {regularProjects.length > 0 && (
             <>
               {regularProjects.map((project) => {
-                // Get project color for gradient
+                // Get project color for border
                 const projectColor = getProjectColorByName(project.color) || getDefaultProjectColor();
-                const colorHex = projectColor.hex;
+                // Extract border class from the project color configuration
+                const borderClass = projectColor.borderColor;
 
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground relative overflow-hidden"
+                    className={`flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground relative overflow-hidden border-l-4 ${borderClass}`}
                     onClick={() => onAssignProject(project.id)}
                   >
-                    {/* Gradient background */}
-                    <div
-                      className="absolute inset-0 opacity-20 rounded-sm"
-                      style={{
-                        background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
-                      }}
-                    />
                     <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
                       {getProjectIcon(project.type)}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="truncate font-medium">{project.name}</span>
-                        <span className="truncate text-xs text-muted-foreground">{project.slug}</span>
-                      </div>
+                      <span className="truncate font-medium">
+                        <span className="text-muted-foreground">{project.slug}:</span> {project.name}
+                      </span>
                     </div>
                   </div>
                 );
@@ -475,31 +468,24 @@ function SelectionActionPopover({
           {/* Default projects */}
           {defaultProjects.length > 0 && (
             <>
-              {regularProjects.length > 0 && <div className="border-t my-1 -mx-1" />}
+              {regularProjects.length > 0 && <div className="border-t -mx-1" />}
               {defaultProjects.map((project) => {
-                // Get project color for gradient
+                // Get project color for border
                 const projectColor = getProjectColorByName(project.color) || getDefaultProjectColor();
-                const colorHex = projectColor.hex;
+                // Extract border class from the project color configuration
+                const borderClass = projectColor.borderColor;
 
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground relative overflow-hidden"
+                    className={`flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground relative overflow-hidden border-l-4 ${borderClass}`}
                     onClick={() => onAssignProject(project.id)}
                   >
-                    {/* Gradient background */}
-                    <div
-                      className="absolute inset-0 opacity-20 rounded-sm"
-                      style={{
-                        background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
-                      }}
-                    />
                     <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
                       {getProjectIcon(project.type)}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="truncate text-muted-foreground font-medium">{project.name}</span>
-                        <span className="truncate text-xs text-muted-foreground/70">{project.slug}</span>
-                      </div>
+                      <span className="truncate text-muted-foreground font-medium">
+                        <span className="text-muted-foreground/70">{project.slug}:</span> {project.name}
+                      </span>
                     </div>
                   </div>
                 );

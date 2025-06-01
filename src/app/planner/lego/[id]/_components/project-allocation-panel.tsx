@@ -202,9 +202,9 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
                 <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
                   {/* Gradient background */}
                   <div
-                    className="absolute inset-0 opacity-20 rounded"
+                    className="absolute inset-0 opacity-12 dark:opacity-20 rounded"
                     style={{
-                      background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+                      background: `linear-gradient(135deg, ${colorHex} 0%, transparent 60%)`,
                     }}
                   />
                   <span className="relative z-10 font-medium">{projectData.slug}</span>
