@@ -24,6 +24,7 @@ interface RoleAllocationDetail {
 interface ProjectDisplayData {
   id: string;
   name: string;
+  slug: string;
   icon?: string;
   allocations: Record<Role, RoleAllocationDetail>;
 }
@@ -143,6 +144,7 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
     return {
       id: project.id,
       name: project.name,
+      slug: project.slug,
       icon: project.icon,
       allocations: projectRoleAllocations,
     };
@@ -178,9 +180,10 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
       <Table className="min-w-full text-xs">
         <TableHeader>
           <TableRow className="h-8">
-            <TableHead className="min-w-[200px] whitespace-nowrap py-1 px-2">Project</TableHead>
+            <TableHead className="w-[50px] whitespace-nowrap py-1 px-2">Slug</TableHead>
+            <TableHead className="w-[200px] whitespace-nowrap py-1 px-2">Project</TableHead>
             {ROLES_TO_DISPLAY.map((role) => (
-              <TableHead key={role} className="text-center whitespace-nowrap py-1 px-2 min-w-[120px]">
+              <TableHead key={role} className="text-center whitespace-nowrap py-1 px-2 w-[120px]">
                 {formatRoleName(role)}
               </TableHead>
             ))}
@@ -189,7 +192,10 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
         <TableBody>
           {projectAllocationsData.map((projectData) => (
             <TableRow key={projectData.id} className="h-8">
-              <TableCell className="font-medium min-w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
+              <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs">
+                {projectData.slug}
+              </TableCell>
+              <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
                 <Link href={`/projects/${projectData.id}`} className="hover:underline w-full">
                   {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
                   {projectData.name}
@@ -202,7 +208,7 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
                 const isUnderallocated = data.allocated < data.estimated && data.estimated > 0;
 
                 return (
-                  <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 min-w-[120px]">
+                  <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 w-[120px]">
                     <div className="flex items-center justify-center gap-1 min-h-[24px]">
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground text-xs">Est:</span>
