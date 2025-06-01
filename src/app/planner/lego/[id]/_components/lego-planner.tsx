@@ -455,7 +455,7 @@ function SelectionActionPopover({
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
                       {getProjectIcon(project.type)}
-                      <span className="truncate font-medium">
+                      <span className="truncate font-normal">
                         <span className="text-muted-foreground">{project.slug}:</span> {project.name}
                       </span>
                     </div>
@@ -483,7 +483,7 @@ function SelectionActionPopover({
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
                       {getProjectIcon(project.type)}
-                      <span className="truncate text-muted-foreground font-medium">
+                      <span className="truncate text-muted-foreground font-normal">
                         <span className="text-muted-foreground/70">{project.slug}:</span> {project.name}
                       </span>
                     </div>
