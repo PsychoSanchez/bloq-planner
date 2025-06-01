@@ -18,6 +18,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubContent,
@@ -501,10 +502,12 @@ function ProjectRow({
 
       {onUpdateProject && (
         <ContextMenuContent className="w-64">
+          <ContextMenuLabel className="text-sm font-medium">{project.name}</ContextMenuLabel>
+          <ContextMenuSeparator />
           {/* Priority Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Priority
                 <span className="ml-auto text-xs text-muted-foreground">
                   {PRIORITY_OPTIONS.find((p) => p.id === (project.priority || 'medium'))?.name}
@@ -528,7 +531,7 @@ function ProjectRow({
           {/* Quarter Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Quarter
                 <span className="ml-auto text-xs text-muted-foreground">
                   {QUARTER_OPTIONS.find(
@@ -549,7 +552,7 @@ function ProjectRow({
           {/* Teams Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Teams
                 <span className="ml-auto text-xs text-muted-foreground">
                   {project.teamIds && project.teamIds.length > 0 ? `${project.teamIds.length} selected` : 'None'}
@@ -589,7 +592,7 @@ function ProjectRow({
           {/* Dependencies Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Dependencies
                 <span className="ml-auto text-xs text-muted-foreground">
                   {project.dependencies && project.dependencies.length > 0
@@ -629,7 +632,7 @@ function ProjectRow({
           {/* Area Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Area
                 <span className="ml-auto text-xs text-muted-foreground">
                   {PROJECT_AREAS.find((a) => a.id === project.area)?.name || 'None'}
@@ -657,7 +660,7 @@ function ProjectRow({
           {/* Lead Section */}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
-              <span className="flex items-center gap-2">
+              <span className="flex items-baseline gap-2">
                 Lead
                 <span className="ml-auto text-xs text-muted-foreground">
                   {teams.find((t) => t.id === project.leadId && t.type === 'person')?.name || 'None'}
@@ -684,15 +687,15 @@ function ProjectRow({
           {/* Archive/Unarchive Action */}
           <ContextMenuItem onClick={handleArchiveToggle} className="flex items-center gap-2">
             {project.archived ? (
-              <>
+              <span className="flex items-center gap-2">
                 <ArchiveRestoreIcon className="h-4 w-4" />
                 Unarchive Project
-              </>
+              </span>
             ) : (
-              <>
-                <ArchiveIcon className="h-4 w-4" />
+              <span className="flex items-center gap-2 text-destructive">
+                <ArchiveIcon className="h-4 w-4 text-destructive" />
                 Archive Project
-              </>
+              </span>
             )}
           </ContextMenuItem>
         </ContextMenuContent>

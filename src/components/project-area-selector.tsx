@@ -21,7 +21,7 @@ export const ProjectAreaSelector = ({ value, onSelect, type = 'dropdown' }: Proj
 
   return (
     <Select value={value} onValueChange={onSelect}>
-      <SelectComponent className="px-2" id="area">
+      <SelectComponent id="area">
         <SelectValue placeholder="Select area" />
       </SelectComponent>
       <SelectContent>

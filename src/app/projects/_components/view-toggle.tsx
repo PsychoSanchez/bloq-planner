@@ -1,9 +1,9 @@
 'use client';
 
 import { LayoutGridIcon, TableIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect } from 'react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type ViewMode = 'table' | 'cards';
 
@@ -29,26 +29,22 @@ export function ViewToggle({ className }: ViewToggleProps) {
   };
 
   return (
-    <div className={`flex items-center border rounded-md ${className}`}>
-      <Button
-        variant={currentView === 'table' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleViewChange('table')}
-        className="rounded-r-none border-r"
-      >
+    <ToggleGroup
+      className={className}
+      type="single"
+      variant="outline"
+      value={currentView}
+      onValueChange={handleViewChange}
+    >
+      <ToggleGroupItem value="table" className="text-xs">
         <TableIcon className="h-4 w-4" />
         <span className="ml-2 hidden sm:inline">Table</span>
-      </Button>
-      <Button
-        variant={currentView === 'cards' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleViewChange('cards')}
-        className="rounded-l-none"
-      >
+      </ToggleGroupItem>
+      <ToggleGroupItem value="cards" className="text-xs">
         <LayoutGridIcon className="h-4 w-4" />
         <span className="ml-2 hidden sm:inline">Cards</span>
-      </Button>
-    </div>
+      </ToggleGroupItem>
+    </ToggleGroup>
   );
 }
 

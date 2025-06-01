@@ -34,7 +34,7 @@ export function ColorSelector({ selectedColorName, onColorChange }: ColorSelecto
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="w-auto h-auto p-1 border-none hover:bg-muted/50 rounded-sm shadow-none text-xs bg-primary"
+          className="w-auto h-auto p-1 border-none hover:bg-muted/50 rounded-sm shadow-none text-xs"
           title="Select project color"
         >
           <div

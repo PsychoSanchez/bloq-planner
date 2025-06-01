@@ -1,6 +1,6 @@
 'use client';
 
-import { ColumnsIcon, RotateCcwIcon } from 'lucide-react';
+import { RotateCcwIcon, Settings2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ export function ColumnToggle({ columns, isColumnVisible, toggleColumn, resetToDe
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="default" className="h-9 px-3 gap-2">
-          <ColumnsIcon className="h-4 w-4" />
+          <Settings2Icon className="h-4 w-4" />
           <span className="text-sm">View</span>
           <span className="text-xs text-muted-foreground">({visibleCount})</span>
         </Button>
