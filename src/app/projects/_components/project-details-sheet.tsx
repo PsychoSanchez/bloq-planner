@@ -113,24 +113,22 @@ export function ProjectDetailsSheet({
           </div>
         </SheetHeader>
 
-        <div className="py-6">
-          <ProjectForm
-            mode="edit"
-            initialData={project}
-            teams={teams}
-            teamsLoading={teamsLoading}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSubmit}
-            onCancel={onClose}
-            showBackButton={false}
-            showArchiveButton={false}
-            showCreatedDate={true}
-            showUnsavedChanges={true}
-            showSubmitButton={false}
-            className="space-y-6"
-            ref={setFormRef}
-          />
-        </div>
+        <ProjectForm
+          mode="edit"
+          initialData={project}
+          teams={teams}
+          teamsLoading={teamsLoading}
+          isSubmitting={isSubmitting}
+          onSubmit={handleSubmit}
+          onCancel={onClose}
+          showBackButton={false}
+          showArchiveButton={false}
+          showCreatedDate={true}
+          showUnsavedChanges={true}
+          showSubmitButton={false}
+          className="space-y-6"
+          ref={setFormRef}
+        />
 
         {/* Action Buttons at Bottom */}
         <div className="pt-6 border-t space-y-3">
