@@ -44,7 +44,7 @@ export function CalendarNavigation({
   };
 
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <div className="flex items-center gap-2">
       <Button variant="outline" size="icon" onClick={navigatePrevious} className="h-9 w-9">
         <ChevronLeft className="h-4 w-4" />
       </Button>

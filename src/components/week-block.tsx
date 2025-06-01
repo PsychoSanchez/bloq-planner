@@ -2,7 +2,6 @@
 
 import { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
 import {
   Wrench,
@@ -118,27 +117,10 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
     const { classes, icon } = getProjectStyles(project);
 
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn('flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm', classes)}
-            >
-              {!isCompact && icon}
-              <span className="text-xs font-medium truncate">{project.slug}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent className="p-3">
-            <div className="space-y-1.5">
-              <p className="font-semibold">{project.name}</p>
-              <div className="flex items-center text-xs text-muted-foreground">
-                {icon}
-                <span className="ml-1 capitalize">{project.type.replace('-', ' ')}</span>
-              </div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <div className={cn('flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm', classes)}>
+        {!isCompact && icon}
+        <span className="text-xs font-medium truncate">{project.slug}</span>
+      </div>
     );
   }
 

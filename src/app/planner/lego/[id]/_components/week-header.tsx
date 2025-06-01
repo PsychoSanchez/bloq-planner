@@ -11,23 +11,15 @@ interface WeekHeaderProps {
   columnWidth: number;
   isCurrentWeek: boolean;
   isCurrentDate: boolean;
-  highlightCurrentWeek: boolean;
   markerPosition: number;
 }
 
-export function WeekHeader({
-  week,
-  columnWidth,
-  isCurrentWeek,
-  isCurrentDate,
-  highlightCurrentWeek,
-  markerPosition,
-}: WeekHeaderProps) {
+export function WeekHeader({ week, columnWidth, isCurrentWeek, isCurrentDate, markerPosition }: WeekHeaderProps) {
   return (
     <th
       className={cn(
         'p-0 text-center border-r dark:border-zinc-700 last:border-r-0 relative',
-        highlightCurrentWeek && isCurrentWeek && 'bg-amber-50/30 dark:bg-amber-950/20',
+        isCurrentWeek && 'bg-amber-50/30 dark:bg-amber-950/20',
       )}
       style={{
         minWidth: `${columnWidth}px`,

@@ -10,5 +10,11 @@ describe('Assignment tRPC Router', () => {
     expect(appRouter.assignment.createAssignment).toBeDefined();
     expect(appRouter.assignment.updateAssignment).toBeDefined();
     expect(appRouter.assignment.deleteAssignment).toBeDefined();
+
+    // Verify bulk operations are available
+    expect(appRouter.assignment.bulkCreateAssignments).toBeDefined();
+    expect(appRouter.assignment.bulkUpdateAssignments).toBeDefined();
+    expect(appRouter.assignment.bulkDeleteAssignments).toBeDefined();
+    expect(appRouter.assignment.bulkUpsertAssignments).toBeDefined();
   });
 });

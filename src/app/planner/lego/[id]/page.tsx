@@ -86,6 +86,71 @@ const useAssignments = (plannerId: string) => {
     },
   });
 
+  // Bulk mutations
+  const bulkUpsertAssignmentsMutation = trpc.assignment.bulkUpsertAssignments.useMutation({
+    onSuccess: (result) => {
+      // Update local state with the upserted assignments
+      setAssignments((prev) => {
+        const updatedAssignments = [...prev];
+
+        // Remove old assignments that were updated
+        result.updated.forEach((updated) => {
+          const index = updatedAssignments.findIndex((a) => a.id === updated.id);
+          if (index !== -1) {
+            updatedAssignments[index] = updated;
+          }
+        });
+
+        // Add new assignments that were created
+        result.created.forEach((created) => {
+          // Remove any temporary assignments first
+          const tempIndex = updatedAssignments.findIndex(
+            (a) =>
+              a.id.startsWith('temp-') &&
+              a.assigneeId === created.assigneeId &&
+              a.week === created.week &&
+              a.year === created.year,
+          );
+          if (tempIndex !== -1) {
+            updatedAssignments.splice(tempIndex, 1);
+          }
+          updatedAssignments.push(created);
+        });
+
+        return updatedAssignments;
+      });
+      utils.assignment.getAssignments.invalidate();
+    },
+    onError: (error) => {
+      // Revert optimistic updates by removing temporary assignments
+      setAssignments((prev) => prev.filter((a) => !a.id.startsWith('temp-bulk-')));
+      toast({
+        title: 'Failed to assign projects',
+        description: error.message || 'Failed to assign projects',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const bulkDeleteAssignmentsMutation = trpc.assignment.bulkDeleteAssignments.useMutation({
+    onSuccess: () => {
+      // The optimistic update is already in place, just invalidate cache
+      utils.assignment.getAssignments.invalidate();
+    },
+    onError: (error, variables) => {
+      // Revert the optimistic update by restoring deleted assignments
+      if (assignmentsData) {
+        const deletedAssignments = assignmentsData.filter((a) => variables.ids.includes(a.id));
+        setAssignments((prev) => [...prev, ...deletedAssignments]);
+      }
+      toast({
+        title: 'Failed to delete assignments',
+        description: error.message || 'Failed to delete assignments',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Update local state when tRPC data changes
   useEffect(() => {
     if (assignmentsData) {
@@ -169,6 +234,64 @@ const useAssignments = (plannerId: string) => {
     [deleteAssignmentMutation],
   );
 
+  // Bulk operations
+  const bulkUpsertAssignments = useCallback(
+    async (
+      assignmentData: Array<{
+        assigneeId: string;
+        week: number;
+        projectId: string;
+        plannerId: string;
+        year: number;
+        quarter: number;
+        status?: string;
+      }>,
+    ) => {
+      // Generate temporary assignments for optimistic update
+      const tempAssignments: Assignment[] = assignmentData.map((data, index) => ({
+        id: `temp-bulk-${index}-${Date.now()}`,
+        ...data,
+        status: data.status || 'planned',
+      }));
+
+      // Optimistic update: add temporary assignments
+      setAssignments((prev) => [...prev, ...tempAssignments]);
+
+      try {
+        await bulkUpsertAssignmentsMutation.mutateAsync({
+          assignments: assignmentData.map((data) => ({
+            assigneeId: data.assigneeId,
+            projectId: data.projectId,
+            plannerId: data.plannerId,
+            week: data.week,
+            year: data.year,
+            quarter: data.quarter,
+            status: data.status,
+          })),
+        });
+      } catch (error) {
+        // Error is already handled in the mutation onError callback
+        console.error('Failed to bulk upsert assignments:', error);
+      }
+    },
+    [bulkUpsertAssignmentsMutation],
+  );
+
+  const bulkDeleteAssignments = useCallback(
+    async (assignmentIds: string[]) => {
+      // Optimistic update: remove assignments immediately
+      setAssignments((prev) => prev.filter((a) => !assignmentIds.includes(a.id)));
+
+      try {
+        await bulkDeleteAssignmentsMutation.mutateAsync({ ids: assignmentIds });
+      } catch (error) {
+        // Error is already handled in the mutation onError callback
+        console.error('Failed to bulk delete assignments:', error);
+      }
+    },
+    [bulkDeleteAssignmentsMutation],
+  );
+
   const assignmentsByWeekAndAssignee = useMemo(() => {
     const result = new Map<number, Map<string, Assignment>>();
     for (const assignment of assignments) {
@@ -193,6 +316,8 @@ const useAssignments = (plannerId: string) => {
     createAssignment,
     updateAssignment,
     deleteAssignment,
+    bulkUpsertAssignments,
+    bulkDeleteAssignments,
   };
 };
 
@@ -233,8 +358,15 @@ export default function LegoPlannerDetailsPage() {
     },
   });
 
-  const { assignments, getAssignmentsForWeekAndAssignee, createAssignment, updateAssignment, deleteAssignment } =
-    useAssignments(plannerId);
+  const {
+    assignments,
+    getAssignmentsForWeekAndAssignee,
+    createAssignment,
+    updateAssignment,
+    deleteAssignment,
+    bulkUpsertAssignments,
+    bulkDeleteAssignments,
+  } = useAssignments(plannerId);
 
   // Show error toast and redirect if planner fetch fails
   useEffect(() => {
@@ -316,9 +448,11 @@ export default function LegoPlannerDetailsPage() {
       <LegoPlanner
         initialData={plannerData}
         getAssignmentsForWeekAndAssignee={getAssignmentsForWeekAndAssignee}
-        createAssignment={createAssignment}
-        updateAssignment={updateAssignment}
-        deleteAssignment={deleteAssignment}
+        onCreateAssignment={createAssignment}
+        onUpdateAssignment={updateAssignment}
+        onDeleteAssignment={deleteAssignment}
+        onBulkUpsertAssignments={bulkUpsertAssignments}
+        onBulkDeleteAssignments={bulkDeleteAssignments}
       />
       {plannerData && (
         <div className="mt-8">
