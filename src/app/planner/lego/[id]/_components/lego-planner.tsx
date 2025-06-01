@@ -13,6 +13,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { getAllAvailableProjects, isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 import { ClipboardPasteIcon, CopyIcon, ScissorsIcon, TrashIcon, XIcon } from 'lucide-react';
+import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
 
 // Utility imports
 import {
@@ -436,22 +437,38 @@ function SelectionActionPopover({
       <div className="border-t -mx-1" />
       {/* Project assignment section */}
       <div>
-        <div className="rounded-md p-1 max-h-48 overflow-y-auto">
+        <div className="rounded-md p-1 max-h-96 overflow-y-auto">
           {/* Regular projects */}
           {regularProjects.length > 0 && (
             <>
-              {regularProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => onAssignProject(project.id)}
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {getProjectIcon(project.type)}
-                    <span className="truncate">{project.name}</span>
+              {regularProjects.map((project) => {
+                // Get project color for gradient
+                const projectColor = getProjectColorByName(project.color) || getDefaultProjectColor();
+                const colorHex = projectColor.hex;
+
+                return (
+                  <div
+                    key={project.id}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground relative overflow-hidden"
+                    onClick={() => onAssignProject(project.id)}
+                  >
+                    {/* Gradient background */}
+                    <div
+                      className="absolute inset-0 opacity-20 rounded-sm"
+                      style={{
+                        background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+                      }}
+                    />
+                    <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
+                      {getProjectIcon(project.type)}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="truncate font-medium">{project.name}</span>
+                        <span className="truncate text-xs text-muted-foreground">{project.slug}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
 
@@ -459,18 +476,34 @@ function SelectionActionPopover({
           {defaultProjects.length > 0 && (
             <>
               {regularProjects.length > 0 && <div className="border-t my-1 -mx-1" />}
-              {defaultProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => onAssignProject(project.id)}
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {getProjectIcon(project.type)}
-                    <span className="truncate text-muted-foreground">{project.name}</span>
+              {defaultProjects.map((project) => {
+                // Get project color for gradient
+                const projectColor = getProjectColorByName(project.color) || getDefaultProjectColor();
+                const colorHex = projectColor.hex;
+
+                return (
+                  <div
+                    key={project.id}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm hover:bg-accent hover:text-accent-foreground relative overflow-hidden"
+                    onClick={() => onAssignProject(project.id)}
+                  >
+                    {/* Gradient background */}
+                    <div
+                      className="absolute inset-0 opacity-20 rounded-sm"
+                      style={{
+                        background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+                      }}
+                    />
+                    <div className="flex items-center gap-2 flex-1 min-w-0 relative z-10">
+                      {getProjectIcon(project.type)}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="truncate text-muted-foreground font-medium">{project.name}</span>
+                        <span className="truncate text-xs text-muted-foreground/70">{project.slug}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
         </div>

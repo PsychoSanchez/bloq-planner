@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
 
 interface ProjectAllocationPanelProps {
   plannerData: Planner | null;
@@ -190,61 +191,75 @@ export function ProjectAllocationPanel({ plannerData, assignments, onUpdateEstim
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projectAllocationsData.map((projectData) => (
-            <TableRow key={projectData.id} className="h-8">
-              <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs">
-                {projectData.slug}
-              </TableCell>
-              <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
-                <Link href={`/projects/${projectData.id}`} className="hover:underline w-full">
-                  {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
-                  {projectData.name}
-                </Link>
-              </TableCell>
-              {ROLES_TO_DISPLAY.map((role) => {
-                const data = projectData.allocations[role];
-                const mismatch = data.estimated !== data.allocated;
-                const isOverallocated = data.allocated > data.estimated;
-                const isUnderallocated = data.allocated < data.estimated && data.estimated > 0;
+          {projectAllocationsData.map((projectData) => {
+            // Get project color for gradient
+            const project = projects.find((p) => p.id === projectData.id);
+            const projectColor = getProjectColorByName(project?.color) || getDefaultProjectColor();
+            const colorHex = projectColor.hex;
 
-                return (
-                  <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 w-[120px]">
-                    <div className="flex items-center justify-center gap-1 min-h-[24px]">
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground text-xs">Est:</span>
-                        <InlineNumberEditor
-                          value={data.estimated}
-                          onSave={(value) => handleEstimateUpdate(projectData.id, role, value)}
-                          disabled={!onUpdateEstimate}
-                          className={cn(
-                            mismatch && isOverallocated && 'text-red-600 dark:text-red-400',
-                            mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400',
-                          )}
-                        />
+            return (
+              <TableRow key={projectData.id} className="h-8">
+                <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
+                  {/* Gradient background */}
+                  <div
+                    className="absolute inset-0 opacity-20 rounded"
+                    style={{
+                      background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+                    }}
+                  />
+                  <span className="relative z-10 font-medium">{projectData.slug}</span>
+                </TableCell>
+                <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
+                  <Link href={`/projects/${projectData.id}`} className="hover:underline w-full">
+                    {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
+                    {projectData.name}
+                  </Link>
+                </TableCell>
+                {ROLES_TO_DISPLAY.map((role) => {
+                  const data = projectData.allocations[role];
+                  const mismatch = data.estimated !== data.allocated;
+                  const isOverallocated = data.allocated > data.estimated;
+                  const isUnderallocated = data.allocated < data.estimated && data.estimated > 0;
+
+                  return (
+                    <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 w-[120px]">
+                      <div className="flex items-center justify-center gap-1 min-h-[24px]">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground text-xs">Est:</span>
+                          <InlineNumberEditor
+                            value={data.estimated}
+                            onSave={(value) => handleEstimateUpdate(projectData.id, role, value)}
+                            disabled={!onUpdateEstimate}
+                            className={cn(
+                              mismatch && isOverallocated && 'text-red-600 dark:text-red-400',
+                              mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400',
+                            )}
+                          />
+                        </div>
+                        <span className="text-muted-foreground">/</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground text-xs">Alloc:</span>
+                          <span
+                            className={cn(
+                              'text-xs min-w-[12px] text-center',
+                              mismatch && isOverallocated && 'text-red-600 dark:text-red-400 font-medium',
+                              mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400 font-medium',
+                            )}
+                          >
+                            {data.allocated}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-0.5 ml-1">
+                          {isOverallocated && <TrendingUpIcon className="h-3 w-3 text-red-500" />}
+                          {isUnderallocated && <TrendingDownIcon className="h-3 w-3 text-amber-500" />}
+                        </div>
                       </div>
-                      <span className="text-muted-foreground">/</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground text-xs">Alloc:</span>
-                        <span
-                          className={cn(
-                            'text-xs min-w-[12px] text-center',
-                            mismatch && isOverallocated && 'text-red-600 dark:text-red-400 font-medium',
-                            mismatch && isUnderallocated && 'text-amber-600 dark:text-amber-400 font-medium',
-                          )}
-                        >
-                          {data.allocated}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-0.5 ml-1">
-                        {isOverallocated && <TrendingUpIcon className="h-3 w-3 text-red-500" />}
-                        {isUnderallocated && <TrendingDownIcon className="h-3 w-3 text-amber-500" />}
-                      </div>
-                    </div>
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
       <div className="mt-4 text-xs text-muted-foreground space-y-1">

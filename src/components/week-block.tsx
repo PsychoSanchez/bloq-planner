@@ -116,10 +116,29 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
   if (project) {
     const { classes, icon } = getProjectStyles(project);
 
+    // Get project color for gradient
+    const selectedColorName = project?.color;
+    const colorObj = getProjectColorByName(selectedColorName) || getDefaultProjectColor();
+    const colorHex = colorObj.hex;
+
     return (
-      <div className={cn('flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm', classes)}>
-        {!isCompact && icon}
-        <span className="text-xs font-medium truncate">{project.slug}</span>
+      <div
+        className={cn(
+          'flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm relative overflow-hidden',
+          classes,
+        )}
+      >
+        {/* Gradient background */}
+        <div
+          className="absolute inset-0 opacity-30 rounded"
+          style={{
+            background: `linear-gradient(135deg, ${colorHex} 0%, transparent 70%)`,
+          }}
+        />
+        <div className="relative z-10 flex items-center justify-start w-full">
+          {!isCompact && icon}
+          <span className="text-xs font-medium truncate">{project.slug}</span>
+        </div>
       </div>
     );
   }
