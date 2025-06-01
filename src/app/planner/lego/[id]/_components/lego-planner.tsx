@@ -384,12 +384,12 @@ function SelectionActionPopover({
   // Calculate position to avoid going off-screen
   const offsetX = 10;
   const offsetY = 10;
-  const popoverWidth = 400; // Wider for action bar content
+  const popoverWidth = 300; // Match the actual maxWidth
   const popoverHeight = 200; // Taller for action bar content
 
   const left =
     finalDragPosition.x + offsetX + popoverWidth > window.innerWidth
-      ? finalDragPosition.x - popoverWidth - offsetX
+      ? finalDragPosition.x - popoverWidth + offsetX // Position to the left, but closer to cursor
       : finalDragPosition.x + offsetX;
 
   const top =
