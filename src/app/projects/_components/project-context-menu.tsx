@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react';
+import { ArchiveIcon, ArchiveRestoreIcon, ExternalLinkIcon } from 'lucide-react';
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -18,6 +18,7 @@ import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constant
 import { Project } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface ProjectContextMenuProps {
   project: Project;
@@ -176,7 +177,12 @@ export function ProjectContextMenu({ project, teams, onUpdateProject, children }
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
 
       <ContextMenuContent className="w-64">
-        <ContextMenuLabel className="text-sm font-medium">{project.name}</ContextMenuLabel>
+        <ContextMenuLabel className="text-sm font-medium flex items-center gap-2 text-nowrap justify-between">
+          <span className="truncate">{project.name}</span>
+          <Link href={`/projects/${project.id}`} className="text-xs text-muted-foreground">
+            <ExternalLinkIcon className="h-4 w-4" strokeWidth={2.5} />
+          </Link>
+        </ContextMenuLabel>
         <ContextMenuSeparator />
 
         {/* Priority Section */}
