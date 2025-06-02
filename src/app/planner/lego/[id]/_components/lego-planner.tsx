@@ -25,14 +25,17 @@ import {
 import { getRoleSortPriority } from '@/lib/utils/sorting';
 import { ColumnSizeType } from '@/lib/utils/column-sizing';
 import { getProjectIcon } from '@/lib/utils/icons';
+import { getThemeAwarePaintCursor, getThemeAwareEraseCursor } from '@/lib/utils/cursor';
 
 // Component imports
 import { AssigneeName } from './assignee-name';
 import { WeekHeader } from './week-header';
 import { CurrentTimeMarker } from './current-time-marker';
+import { PlannerToolbar, usePlannerToolbarMode } from './planner-toolbar';
 
 // Hook imports
 import { useColumnSizing } from './hooks/use-column-sizing';
+import { usePaintMode } from './hooks/use-paint-mode';
 import { DragSelectTableCell, DragSelectTableContainer, useDragSelectState } from '@/components/ui/table-drag-select';
 
 interface LegoPlannerProps {
@@ -66,7 +69,7 @@ export function LegoPlanner({
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
 
-  const { selectedSize, setColumnSize, columnWidth, resetColumnSize } = useColumnSizing();
+  const { selectedSize, setColumnSize, columnWidth } = useColumnSizing();
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -120,16 +123,75 @@ export function LegoPlanner({
     [setCurrentQuarter],
   );
 
-  const handleMouseEnterCell = useCallback((projectId?: string) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    if (projectId) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setHoveredProjectId(projectId);
-      }, 1500);
-    }
-  }, []);
+  const [mode] = usePlannerToolbarMode();
+
+  const handleFinishPainting = useCallback(
+    async (cellIds: string[], paintProjectId: string | null) => {
+      if (mode === 'erase') {
+        const assignmentIds = cellIds
+          .map(parseAssigneeKey)
+          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId)?.id)
+          .filter((v) => v !== undefined);
+        await onBulkDeleteAssignments?.(assignmentIds);
+      } else if (mode === 'paint' && paintProjectId) {
+        const assignments = cellIds
+          .map(parseAssigneeKey)
+          .map(
+            ({ assigneeId, weekNumber }) =>
+              getAssignmentsForWeekAndAssignee(weekNumber, assigneeId) ?? {
+                assigneeId,
+                week: weekNumber,
+                plannerId: plannerData.id,
+                year: currentYear,
+                quarter: currentQuarter,
+                status: 'planned',
+                projectId: undefined,
+              },
+          )
+          .filter((assignment) => assignment !== undefined && assignment.projectId !== paintProjectId)
+          .filter((v) => v !== undefined);
+
+        await onBulkUpsertAssignments?.(
+          assignments.map((assignment) => ({
+            ...assignment,
+            projectId: paintProjectId,
+          })),
+        );
+      }
+    },
+    [
+      currentQuarter,
+      currentYear,
+      getAssignmentsForWeekAndAssignee,
+      mode,
+      onBulkDeleteAssignments,
+      onBulkUpsertAssignments,
+      plannerData.id,
+    ],
+  );
+
+  const { paintProjectId, paintedCells, handleProjectSelect, startPainting, paint, stopPainting } = usePaintMode({
+    mode,
+    onPaintingFinished: handleFinishPainting,
+  });
+
+  const handleMouseEnterCell = useCallback(
+    (projectId?: string) => {
+      if (mode !== 'inspect') {
+        return;
+      }
+
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      if (projectId) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setHoveredProjectId(projectId);
+        }, 300);
+      }
+    },
+    [mode],
+  );
 
   const handleMouseLeaveCell = useCallback(() => {
     if (hoverTimeoutRef.current) {
@@ -151,7 +213,33 @@ export function LegoPlanner({
     [setColumnSize],
   );
 
+  // Paint mode handlers
+  const handleCellMouseDown = useCallback(
+    (assigneeId: string, weekNumber: number) => {
+      startPainting();
+      paint(generateAssigneeKey(assigneeId, weekNumber));
+    },
+    [paint, startPainting],
+  );
+
+  const handleCellMouseEnter = useCallback(
+    (assigneeId: string, weekNumber: number) => {
+      paint(generateAssigneeKey(assigneeId, weekNumber));
+    },
+    [paint],
+  );
+
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  // Get cursor style based on mode
+  const cursorStyle = useMemo(() => {
+    if (mode === 'paint' && paintProjectId) {
+      return { cursor: getThemeAwarePaintCursor() };
+    } else if (mode === 'erase') {
+      return { cursor: getThemeAwareEraseCursor() };
+    }
+    return {};
+  }, [mode, paintProjectId]);
 
   return (
     <>
@@ -163,27 +251,30 @@ export function LegoPlanner({
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <PlannerToolbar
+            selectedProjectId={paintProjectId}
+            onProjectSelect={handleProjectSelect}
+            regularProjects={regularProjects}
+            defaultProjects={defaultProjects}
+          />
           <div className="flex items-center gap-1">
             <ToggleGroup
               type="single"
               variant="outline"
+              className="h-8"
               value={selectedSize}
               onValueChange={handleColumnSizeChange}
-              className="h-7"
             >
-              <ToggleGroupItem value="compact" className="text-xs px-2">
+              <ToggleGroupItem value="compact" className="text-xs px-3 h-8">
                 Compact
               </ToggleGroupItem>
-              <ToggleGroupItem value="normal" className="text-xs px-2">
+              <ToggleGroupItem value="normal" className="text-xs px-3 h-8">
                 Normal
               </ToggleGroupItem>
-              <ToggleGroupItem value="wide" className="text-xs px-2">
+              <ToggleGroupItem value="wide" className="text-xs px-3 h-8">
                 Wide
               </ToggleGroupItem>
             </ToggleGroup>
-            <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={resetColumnSize}>
-              Reset
-            </Button>
           </div>
           <CalendarNavigation
             currentYear={currentYear}
@@ -195,169 +286,196 @@ export function LegoPlanner({
       </div>
 
       <DragSelectTableContainer onSelectedItemsChange={setSelectedItems}>
-        <SelectionActionPopover
-          selectedItems={selectedItems}
-          regularProjects={regularProjects}
-          defaultProjects={defaultProjects}
-          onClearSelection={() => setSelectedItems([])}
-          onAssignProject={async (projectId: string) => {
-            if (!onBulkUpsertAssignments) return;
+        {mode === 'pointer' && (
+          <SelectionActionPopover
+            selectedItems={selectedItems}
+            regularProjects={regularProjects}
+            defaultProjects={defaultProjects}
+            onClearSelection={() => setSelectedItems([])}
+            onAssignProject={async (projectId: string) => {
+              if (!onBulkUpsertAssignments) return;
 
-            try {
-              // Clear selection after assignment
-              setSelectedItems([]);
-              // Parse selected items to get assignee and week info
-              const assignmentData: Array<{
-                assigneeId: string;
-                week: number;
-                projectId: string;
-                plannerId: string;
-                year: number;
-                quarter: number;
-                status?: string;
-              }> = [];
+              try {
+                // Clear selection after assignment
+                setSelectedItems([]);
+                // Parse selected items to get assignee and week info
+                const assignmentData: Array<{
+                  assigneeId: string;
+                  week: number;
+                  projectId: string;
+                  plannerId: string;
+                  year: number;
+                  quarter: number;
+                  status?: string;
+                }> = [];
 
-              for (const itemId of selectedItems) {
-                const parts = itemId.split('-');
-                if (parts.length !== 2) continue;
+                for (const itemId of selectedItems) {
+                  const parts = itemId.split('-');
+                  if (parts.length !== 2) continue;
 
-                const assigneeId = parts[0]!;
-                const weekStr = parts[1]!;
-                const week = parseInt(weekStr, 10);
+                  const assigneeId = parts[0]!;
+                  const weekStr = parts[1]!;
+                  const week = parseInt(weekStr, 10);
 
-                if (!assigneeId || !weekStr || isNaN(week)) continue;
+                  if (!assigneeId || !weekStr || isNaN(week)) continue;
 
-                assignmentData.push({
-                  assigneeId,
-                  projectId,
-                  plannerId: plannerData.id,
-                  week,
-                  year: currentYear,
-                  quarter: currentQuarter,
-                  status: 'planned',
-                });
-              }
-
-              if (assignmentData.length > 0) {
-                await onBulkUpsertAssignments(assignmentData);
-              }
-            } catch (error) {
-              console.error('Error assigning project:', error);
-            }
-          }}
-          onDeleteAssignments={async () => {
-            if (!onBulkDeleteAssignments) return;
-
-            try {
-              // Clear selection after assignment
-              setSelectedItems([]);
-              // Parse selected items and collect existing assignment IDs
-              const assignmentIds: string[] = [];
-
-              for (const itemId of selectedItems) {
-                const parts = itemId.split('-');
-                if (parts.length !== 2) continue;
-
-                const assigneeId = parts[0]!;
-                const weekStr = parts[1]!;
-                const week = parseInt(weekStr, 10);
-
-                if (!assigneeId || !weekStr || isNaN(week)) continue;
-
-                const existingAssignment = getAssignmentsForWeekAndAssignee(week, assigneeId);
-                if (existingAssignment) {
-                  assignmentIds.push(existingAssignment.id);
+                  assignmentData.push({
+                    assigneeId,
+                    projectId,
+                    plannerId: plannerData.id,
+                    week,
+                    year: currentYear,
+                    quarter: currentQuarter,
+                    status: 'planned',
+                  });
                 }
-              }
 
-              if (assignmentIds.length > 0) {
-                await onBulkDeleteAssignments(assignmentIds);
+                if (assignmentData.length > 0) {
+                  await onBulkUpsertAssignments(assignmentData);
+                }
+              } catch (error) {
+                console.error('Error assigning project:', error);
               }
-            } catch (error) {
-              console.error('Error deleting assignments:', error);
-            }
-          }}
-        />
-        <table ref={tableRef} className={cn('w-full caption-bottom text-sm table-fixed border-collapse select-none')}>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="p-0 min-w-[200px] w-[200px] border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background dark:bg-zinc-900">
-                <div className="h-7 flex items-center justify-center px-1 text-xs">
-                  <AssigneeFilter
-                    assignees={plannerData.assignees}
-                    selectedAssigneeIds={selectedAssigneeIds}
-                    onAssigneesChange={handleAssigneesChange}
-                  />
-                </div>
-              </TableHead>
-              {weeks.map((week) => {
-                const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
-                const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
-                const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
-                const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
-                const markerPosition = ((dayPosition + timePosition) / 7) * 100;
+            }}
+            onDeleteAssignments={async () => {
+              if (!onBulkDeleteAssignments) return;
 
-                return (
-                  <WeekHeader
-                    key={week.weekNumber}
-                    week={week}
-                    columnWidth={columnWidth}
-                    isCurrentWeek={isCurrentWeekCell}
-                    isCurrentDate={isCurrentDateCell}
-                    markerPosition={markerPosition}
-                  />
-                );
-              })}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedAssignees.map((assignee) => (
-              <TableRow key={assignee.id}>
-                <TableCell className="p-0 font-medium border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background">
-                  <AssigneeName assignee={assignee} />
-                </TableCell>
+              try {
+                // Clear selection after assignment
+                setSelectedItems([]);
+                // Parse selected items and collect existing assignment IDs
+                const assignmentIds: string[] = [];
+
+                for (const itemId of selectedItems) {
+                  const parts = itemId.split('-');
+                  if (parts.length !== 2) continue;
+
+                  const assigneeId = parts[0]!;
+                  const weekStr = parts[1]!;
+                  const week = parseInt(weekStr, 10);
+
+                  if (!assigneeId || !weekStr || isNaN(week)) continue;
+
+                  const existingAssignment = getAssignmentsForWeekAndAssignee(week, assigneeId);
+                  if (existingAssignment) {
+                    assignmentIds.push(existingAssignment.id);
+                  }
+                }
+
+                if (assignmentIds.length > 0) {
+                  await onBulkDeleteAssignments(assignmentIds);
+                }
+              } catch (error) {
+                console.error('Error deleting assignments:', error);
+              }
+            }}
+          />
+        )}
+        <div style={cursorStyle} onMouseUp={stopPainting}>
+          <table ref={tableRef} className={cn('w-full caption-bottom text-sm table-fixed border-collapse select-none')}>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="p-0 min-w-[200px] w-[200px] border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background dark:bg-zinc-900">
+                  <div className="h-7 flex items-center justify-center px-1 text-xs">
+                    <AssigneeFilter
+                      assignees={plannerData.assignees}
+                      selectedAssigneeIds={selectedAssigneeIds}
+                      onAssigneesChange={handleAssigneesChange}
+                    />
+                  </div>
+                </TableHead>
                 {weeks.map((week) => {
-                  const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
-                  const project = assignment
-                    ? allAvailableProjects.find((p) => p.id === assignment.projectId)
-                    : undefined;
-
                   const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
                   const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
                   const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
                   const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
                   const markerPosition = ((dayPosition + timePosition) / 7) * 100;
-                  const dataItemId = `${assignee.id}-${week.weekNumber}`;
 
                   return (
-                    <DragSelectTableCell
+                    <WeekHeader
                       key={week.weekNumber}
-                      id={dataItemId}
-                      className={cn(
-                        'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300 relative',
-                        hoveredProjectId && project && project.id !== hoveredProjectId && 'opacity-30',
-                        isCurrentWeekCell && 'bg-amber-50/20 dark:bg-amber-950/10',
-                      )}
-                      style={{
-                        minWidth: `${columnWidth}px`,
-                        width: `${columnWidth}px`,
-                        transition: 'width 0.2s ease-in-out',
-                      }}
-                      onMouseEnter={() => handleMouseEnterCell(project?.id)}
-                      onMouseLeave={handleMouseLeaveCell}
-                    >
-                      <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
-                      {isCurrentDateCell && <CurrentTimeMarker markerPosition={markerPosition} />}
-                    </DragSelectTableCell>
+                      week={week}
+                      columnWidth={columnWidth}
+                      isCurrentWeek={isCurrentWeekCell}
+                      isCurrentDate={isCurrentDateCell}
+                      markerPosition={markerPosition}
+                    />
                   );
                 })}
               </TableRow>
-            ))}
-          </TableBody>
-        </table>
+            </TableHeader>
+            <TableBody>
+              {sortedAssignees.map((assignee) => (
+                <TableRow key={assignee.id}>
+                  <TableCell className="p-0 font-medium border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background">
+                    <AssigneeName assignee={assignee} />
+                  </TableCell>
+                  {weeks.map((week) => {
+                    const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
+                    const project = assignment
+                      ? allAvailableProjects.find((p) => p.id === assignment.projectId)
+                      : undefined;
+
+                    const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
+                    const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
+                    const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
+                    const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
+                    const markerPosition = ((dayPosition + timePosition) / 7) * 100;
+                    const dataItemId = `${assignee.id}-${week.weekNumber}`;
+
+                    const CellComponent = mode === 'pointer' ? DragSelectTableCell : TableCell;
+                    const cellProps = mode === 'pointer' ? { id: dataItemId } : {};
+                    const isPainting = mode === 'paint' || mode === 'erase';
+
+                    return (
+                      <CellComponent
+                        key={week.weekNumber}
+                        {...cellProps}
+                        className={cn(
+                          'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300 relative',
+                          mode === 'inspect' &&
+                            hoveredProjectId &&
+                            project &&
+                            project.id !== hoveredProjectId &&
+                            'opacity-30',
+                          isCurrentWeekCell && 'bg-amber-50/20 dark:bg-amber-950/10',
+                        )}
+                        onPointerOver={() => handleMouseEnterCell(project?.id)}
+                        onPointerEnter={() => {
+                          handleCellMouseEnter(assignee.id, week.weekNumber);
+                        }}
+                        onPointerLeave={handleMouseLeaveCell}
+                        onPointerDown={() => handleCellMouseDown(assignee.id, week.weekNumber)}
+                      >
+                        {isPainting && paintedCells.has(generateAssigneeKey(assignee.id, week.weekNumber)) ? (
+                          <WeekBlock project={allAvailableProjects.find((project) => project.id === paintProjectId)} />
+                        ) : (
+                          <WeekBlock project={project} isCompact={selectedSize === 'compact'} />
+                        )}
+                        {isCurrentDateCell && <CurrentTimeMarker markerPosition={markerPosition} />}
+                      </CellComponent>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </table>
+        </div>
       </DragSelectTableContainer>
     </>
   );
+}
+
+function generateAssigneeKey(assigneeId: string, weekNumber: number): string {
+  return `${assigneeId}::${weekNumber}`;
+}
+
+function parseAssigneeKey(id: string) {
+  const [assigneeId = 'UNKNOWN', weekNumber] = id.split('::');
+  return {
+    assigneeId,
+    weekNumber: parseInt(weekNumber || '-1'),
+  };
 }
 
 function SelectionActionPopover({

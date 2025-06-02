@@ -20,9 +20,10 @@ import {
 interface WeekBlockProps {
   project?: Project;
   isCompact?: boolean;
+  className?: string;
 }
 
-export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
+export function WeekBlock({ project, isCompact = false, className }: WeekBlockProps) {
   const getProjectStyles = (currentProject?: Project) => {
     let classes = 'bg-muted text-muted-foreground border-l-4 border-transparent';
     const projectType = currentProject?.type;
@@ -126,6 +127,7 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
         className={cn(
           'flex items-center justify-start h-full w-full border-0 min-w-20 px-2 shadow-sm relative overflow-hidden',
           classes,
+          className,
         )}
       >
         {/* Gradient background */}
@@ -144,7 +146,12 @@ export function WeekBlock({ project, isCompact = false }: WeekBlockProps) {
   }
 
   return (
-    <div className="flex items-center justify-center h-full w-full border-0 min-w-20 bg-slate-50 dark:bg-slate-900/20">
+    <div
+      className={cn(
+        'flex items-center justify-center h-full w-full border-0 min-w-20 bg-slate-50 dark:bg-slate-900/20',
+        className,
+      )}
+    >
       <span className="text-xs text-muted-foreground">--</span>
     </div>
   );
