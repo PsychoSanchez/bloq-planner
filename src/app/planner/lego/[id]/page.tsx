@@ -9,6 +9,7 @@ import { ArrowLeft, Loader } from 'lucide-react';
 import { toast, useToast } from '@/components/ui/use-toast';
 import { Assignment, Role } from '@/lib/types';
 import { trpc } from '@/utils/trpc';
+import { parseAsInteger, useQueryState } from 'nuqs';
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -327,6 +328,10 @@ export default function LegoPlannerDetailsPage() {
   const { toast } = useToast();
   const plannerId = params.id as string;
 
+  // Get current year and quarter from URL state (same as LegoPlanner)
+  const [currentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
+  const [currentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
+
   // Use tRPC to fetch planner data
   const {
     data: plannerData,
@@ -459,6 +464,8 @@ export default function LegoPlannerDetailsPage() {
           <ProjectAllocationPanel
             plannerData={plannerData}
             assignments={assignments}
+            currentYear={currentYear}
+            currentQuarter={currentQuarter}
             onUpdateEstimate={handleEstimateUpdate}
           />
         </div>

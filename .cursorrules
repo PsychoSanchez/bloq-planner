@@ -12,7 +12,7 @@
 - Use 'nuqs' for URL search parameter state management.
 - Place both the /app and /components folders under a /src directory. Application logic (in /src/app) and UI components (in /src/components)
 - Private Components: For components used only within specific pages, you can create a \_components folder within the relevant /app subdirectory.
-- Limit 'use client': Favor server components and Next.js SSR.
+- Always memoize everything in the render body of the react component, always use immutable variables, unless performance is concerned. Limit 'use client': Favor server components and Next.js SSR.
 - Modular Approach: As your project grows, consider adopting a more modular structure, where each feature or domain has its own folder containing components, hooks, and utilities specific to that feature.
 - Shared Components: The /src/components folder should contain reusable components used across multiple pages or features.
 - Write tests for pure functions, utilities and helpers. Always run tests before completing request. Use `bun test` it's compatible with jest, import syntax `import { expect, test } from "bun:test";`
