@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 import { parseAsBoolean, useQueryState } from 'nuqs';
+import { getProjectStyles } from '@/lib/utils/project-styling';
+import { ROLE_OPTIONS } from '@/lib/constants';
 
 interface ProjectAllocationPanelProps {
   plannerData: Planner | null;
@@ -22,7 +24,7 @@ interface ProjectAllocationPanelProps {
   onUpdateEstimate?: (projectId: string, role: Role, value: number) => void;
 }
 
-const ROLES_TO_DISPLAY: Role[] = ['engineering', 'design', 'qa', 'analytics', 'data_science', 'product_management'];
+const ROLES_TO_DISPLAY: Role[] = ROLE_OPTIONS.map((role) => role.id);
 
 interface RoleAllocationDetail {
   estimated: number;
@@ -381,7 +383,7 @@ export function ProjectAllocationPanel({
       <Table className="min-w-full text-xs">
         <TableHeader>
           <TableRow className="h-8">
-            <TableHead className="w-[50px] whitespace-nowrap py-1 px-2">Slug</TableHead>
+            <TableHead className="w-[70px] whitespace-nowrap py-1 px-2">Slug</TableHead>
             <TableHead className="w-[200px] whitespace-nowrap py-1 px-2">
               <div className="flex flex-col">
                 <span>Project</span>
@@ -441,22 +443,19 @@ export function ProjectAllocationPanel({
           {filteredRegularProjects.map((projectData) => {
             // Get project color for gradient
             const project = plannerData.projects.find((p) => p.id === projectData.id);
-            const projectColor = getProjectColorByName(project?.color) || getDefaultProjectColor();
-            const colorHex = projectColor.hex;
+            const { classes: projectStyles } = getProjectStyles(project);
 
             // Get the updated project data with allocations
             const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
 
             return (
               <TableRow key={projectData.id} className="h-8">
-                <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
-                  {/* Gradient background */}
-                  <div
-                    className="absolute inset-0 opacity-12 dark:opacity-20 rounded"
-                    style={{
-                      background: `linear-gradient(135deg, ${colorHex} 0%, transparent 60%)`,
-                    }}
-                  />
+                <TableCell
+                  className={cn(
+                    'w-[70px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-xs relative',
+                    projectStyles,
+                  )}
+                >
                   <span className="relative z-10 font-medium">{projectData.slug}</span>
                 </TableCell>
                 <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
@@ -530,16 +529,22 @@ export function ProjectAllocationPanel({
             const project = DEFAULT_PROJECTS.find((p) => p.id === projectData.id);
             const projectColor = getProjectColorByName(project?.color) || getDefaultProjectColor();
             const colorHex = projectColor.hex;
+            const { classes: projectStyles } = getProjectStyles(project);
 
             // Get the updated project data with allocations
             const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
 
             return (
               <TableRow key={projectData.id} className="h-8 bg-muted/20">
-                <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
+                <TableCell
+                  className={cn(
+                    'w-[70px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-xs relative',
+                    projectStyles,
+                  )}
+                >
                   {/* Gradient background */}
                   <div
-                    className="absolute inset-0 opacity-12 dark:opacity-20 rounded"
+                    className="absolute inset-0 opacity-15 dark:opacity-30"
                     style={{
                       background: `linear-gradient(135deg, ${colorHex} 0%, transparent 60%)`,
                     }}
