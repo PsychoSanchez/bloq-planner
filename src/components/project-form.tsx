@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Project } from '@/lib/types';
 import { ColorSelector } from '@/components/color-selector';
-import { DEFAULT_PROJECT_COLOR_NAME } from '@/lib/project-colors';
+import { PROJECT_COLORS } from '@/lib/project-colors';
 import { ROLES_TO_DISPLAY } from '@/lib/constants';
 import { ROLE_OPTIONS } from '@/lib/constants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -73,7 +73,7 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
   area: projectData?.area || '',
   priority: projectData?.priority || 'medium',
   description: projectData?.description || '',
-  color: projectData?.color || DEFAULT_PROJECT_COLOR_NAME,
+  color: projectData?.color || PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]!.name,
   teamIds: projectData?.teamIds || [],
   leadId: projectData?.leadId || '',
   quarters: projectData?.quarters || [],
