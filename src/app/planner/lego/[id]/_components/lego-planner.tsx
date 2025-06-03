@@ -56,6 +56,7 @@ interface LegoPlannerProps {
     }>,
   ) => Promise<void>;
   onBulkDeleteAssignments?: (assignmentIds: string[]) => Promise<void>;
+  onProjectClick?: (project: Project) => void;
 }
 
 export function LegoPlanner({
@@ -63,6 +64,7 @@ export function LegoPlanner({
   getAssignmentsForWeekAndAssignee,
   onBulkUpsertAssignments,
   onBulkDeleteAssignments,
+  onProjectClick,
 }: LegoPlannerProps) {
   const [currentYear, setCurrentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
   const [currentQuarter, setCurrentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
@@ -240,6 +242,15 @@ export function LegoPlanner({
     }
     return {};
   }, [mode, paintProjectId]);
+
+  const handleCellClick = useCallback(
+    (project?: Project) => {
+      if (mode === 'inspect' && project && onProjectClick) {
+        onProjectClick(project);
+      }
+    },
+    [mode, onProjectClick],
+  );
 
   return (
     <>
@@ -439,6 +450,7 @@ export function LegoPlanner({
                             project.id !== hoveredProjectId &&
                             'opacity-30',
                           isCurrentWeekCell && 'bg-amber-50/20 dark:bg-amber-950/10',
+                          mode === 'inspect' && project && 'cursor-pointer',
                         )}
                         onPointerOver={() => handleMouseEnterCell(project?.id)}
                         onPointerEnter={() => {
@@ -446,6 +458,7 @@ export function LegoPlanner({
                         }}
                         onPointerLeave={handleMouseLeaveCell}
                         onPointerDown={() => handleCellMouseDown(assignee.id, week.weekNumber)}
+                        onClick={() => handleCellClick(project)}
                       >
                         {isPainting && paintedCells.has(generateAssigneeKey(assignee.id, week.weekNumber)) ? (
                           <WeekBlock project={allAvailableProjects.find((project) => project.id === paintProjectId)} />

@@ -15,7 +15,7 @@ import { PrioritySelector } from '@/components/priroty-selector';
 import { QuarterMultiSelector } from '@/components/quarter-multi-selector';
 import { cn } from '@/lib/utils';
 import { PROJECT_AREAS } from '@/lib/constants';
-import { ProjectDetailsSheet } from '@/app/projects/_components/project-details-sheet';
+import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { InlineCurrencyEditor } from '@/app/projects/_components/inline-currency-editor';
 import { GroupByOption } from '@/app/projects/_components/project-group-selector';
 import { ProjectContextMenu } from '@/app/projects/_components/project-context-menu';

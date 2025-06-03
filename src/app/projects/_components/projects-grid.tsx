@@ -6,7 +6,7 @@ import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
 import { TeamOption } from '@/components/team-selector';
-import { ProjectDetailsSheet } from '@/app/projects/_components/project-details-sheet';
+import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { GroupByOption } from '@/app/projects/_components/project-group-selector';
 import { PROJECT_AREAS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';

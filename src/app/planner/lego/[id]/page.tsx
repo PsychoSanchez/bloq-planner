@@ -3,12 +3,14 @@
 import { LegoPlanner } from '@/app/planner/lego/[id]/_components/lego-planner';
 import { ProjectAllocationPanel } from '@/app/planner/lego/[id]/_components/project-allocation-panel';
 import { AssignmentStreamStatus } from '@/components/assignment-stream-status';
+import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { Assignment, Role } from '@/lib/types';
+import { Assignment, Role, Project } from '@/lib/types';
+import { TeamOption } from '@/components/team-multi-selector';
 import { trpc } from '@/utils/trpc';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { useAssignmentStream } from '@/hooks/use-assignment-stream';
@@ -349,6 +351,24 @@ export default function LegoPlannerDetailsPage() {
     id: plannerId,
   });
 
+  // Use tRPC to fetch team members for project details sheet
+  const { data: teamMembers, isLoading: teamsLoading } = trpc.team.getTeamMembers.useQuery({});
+
+  // Convert team members to team options format
+  const teams: TeamOption[] =
+    teamMembers
+      ?.filter((member) => member.type === 'team' || member.type === 'person')
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        type: member.type as 'person' | 'team' | 'dependency' | 'event',
+      })) || [];
+
+  // Project details sheet state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isProjectDetailsSheetOpen, setIsProjectDetailsSheetOpen] = useState(false);
+
   // tRPC mutation for updating project estimates
   const utils = trpc.useUtils();
   const updateProjectMutation = trpc.project.patchProject.useMutation({
@@ -428,6 +448,30 @@ export default function LegoPlannerDetailsPage() {
     }
   };
 
+  const handleProjectUpdate = async (projectId: string, updates: Partial<Project>) => {
+    try {
+      await updateProjectMutation.mutateAsync({
+        id: projectId,
+        ...updates,
+      });
+
+      // Close the project details sheet after successful update
+      setIsProjectDetailsSheetOpen(false);
+    } catch (error) {
+      console.error('Error updating project:', error);
+    }
+  };
+
+  const handleProjectDetailsClose = () => {
+    setIsProjectDetailsSheetOpen(false);
+    setSelectedProject(null);
+  };
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project);
+    setIsProjectDetailsSheetOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
@@ -472,6 +516,7 @@ export default function LegoPlannerDetailsPage() {
         onDeleteAssignment={deleteAssignment}
         onBulkUpsertAssignments={bulkUpsertAssignments}
         onBulkDeleteAssignments={bulkDeleteAssignments}
+        onProjectClick={handleProjectClick}
       />
       {plannerData && (
         <div className="mt-8">
@@ -484,6 +529,15 @@ export default function LegoPlannerDetailsPage() {
           />
         </div>
       )}
+
+      <ProjectDetailsSheet
+        project={selectedProject}
+        isOpen={isProjectDetailsSheetOpen}
+        onClose={handleProjectDetailsClose}
+        onUpdateProject={handleProjectUpdate}
+        teams={teams}
+        teamsLoading={teamsLoading}
+      />
     </div>
   );
 }
