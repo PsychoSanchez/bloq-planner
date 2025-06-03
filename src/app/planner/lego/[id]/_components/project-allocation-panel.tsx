@@ -288,8 +288,13 @@ export function ProjectAllocationPanel({
     let updatedCapacityData = { ...roleCapacityData };
     const updatedProjects = { ...projectDataMap };
 
+    // Filter assignments to only include those for the current quarter and year
+    const currentQuarterAssignments = assignments.filter(
+      (assignment) => assignment.quarter === currentQuarter && assignment.year === currentYear,
+    );
+
     // Process assignments to calculate allocated values
-    assignments.forEach((assignment) => {
+    currentQuarterAssignments.forEach((assignment) => {
       const assigneeRole = assigneeRoles[assignment.assigneeId];
       const projectDetail = updatedProjects[assignment.projectId];
 
@@ -337,8 +342,8 @@ export function ProjectAllocationPanel({
       };
     }, updatedCapacityData);
 
-    return finalCapacityData;
-  }, [roleCapacityData, projectDataMap, assignments, assigneeRoles, filteredProjectData]);
+    return { capacityData: finalCapacityData, updatedProjects };
+  }, [roleCapacityData, projectDataMap, assignments, assigneeRoles, filteredProjectData, currentYear, currentQuarter]);
 
   const handleEstimateUpdate = useCallback(
     (projectId: string, role: Role, value: number) => {
@@ -384,7 +389,7 @@ export function ProjectAllocationPanel({
               </div>
             </TableHead>
             {ROLES_TO_DISPLAY.map((role) => {
-              const data = finalRoleCapacityData[role];
+              const data = finalRoleCapacityData.capacityData[role];
               const capacityUtilization = data.capacity > 0 ? (data.totalAllocated / data.capacity) * 100 : 0;
               const isOverCapacity = data.totalAllocated > data.capacity;
               const isUnderUtilized = capacityUtilization < 80 && data.capacity > 0;
@@ -439,6 +444,9 @@ export function ProjectAllocationPanel({
             const projectColor = getProjectColorByName(project?.color) || getDefaultProjectColor();
             const colorHex = projectColor.hex;
 
+            // Get the updated project data with allocations
+            const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
+
             return (
               <TableRow key={projectData.id} className="h-8">
                 <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
@@ -458,7 +466,7 @@ export function ProjectAllocationPanel({
                   </Link>
                 </TableCell>
                 {ROLES_TO_DISPLAY.map((role) => {
-                  const data = projectData.allocations[role];
+                  const data = updatedProjectData.allocations[role];
                   const mismatch = data.estimated !== data.allocated;
                   const isOverallocated = data.allocated > data.estimated;
                   const isUnderallocated = data.allocated < data.estimated && data.estimated > 0;
@@ -523,6 +531,9 @@ export function ProjectAllocationPanel({
             const projectColor = getProjectColorByName(project?.color) || getDefaultProjectColor();
             const colorHex = projectColor.hex;
 
+            // Get the updated project data with allocations
+            const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
+
             return (
               <TableRow key={projectData.id} className="h-8 bg-muted/20">
                 <TableCell className="w-[50px] whitespace-nowrap py-1 px-2 overflow-hidden truncate text-muted-foreground text-xs relative">
@@ -542,7 +553,7 @@ export function ProjectAllocationPanel({
                   </div>
                 </TableCell>
                 {ROLES_TO_DISPLAY.map((role) => {
-                  const data = projectData.allocations[role];
+                  const data = updatedProjectData.allocations[role];
 
                   return (
                     <TableCell key={role} className="text-center whitespace-nowrap py-1 px-2 w-[120px]">

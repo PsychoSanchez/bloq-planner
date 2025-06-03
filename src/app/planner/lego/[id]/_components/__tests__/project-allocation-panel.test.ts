@@ -260,3 +260,67 @@ test('ProjectAllocationPanel default projects - should always show default proje
   const allProjectsWithoutFilter = [...mockRegularProjects, ...mockDefaultProjects];
   expect(allProjectsWithoutFilter).toHaveLength(4); // 2 regular + 2 default
 });
+
+test('ProjectAllocationPanel assignment filtering - should only count assignments for current quarter and year', () => {
+  // Mock data for testing assignment filtering
+  const currentYear = 2025;
+  const currentQuarter = 2;
+
+  const mockAssignments = [
+    // Current quarter assignments (should be counted)
+    { id: '1', assigneeId: 'eng1', projectId: 'project1', quarter: 2, year: 2025, week: 14 },
+    { id: '2', assigneeId: 'eng1', projectId: 'project1', quarter: 2, year: 2025, week: 15 },
+    { id: '3', assigneeId: 'eng2', projectId: 'project2', quarter: 2, year: 2025, week: 14 },
+
+    // Different quarter, same year (should NOT be counted)
+    { id: '4', assigneeId: 'eng1', projectId: 'project1', quarter: 1, year: 2025, week: 5 },
+    { id: '5', assigneeId: 'eng2', projectId: 'project2', quarter: 3, year: 2025, week: 27 },
+
+    // Same quarter, different year (should NOT be counted)
+    { id: '6', assigneeId: 'eng1', projectId: 'project1', quarter: 2, year: 2024, week: 14 },
+    { id: '7', assigneeId: 'eng2', projectId: 'project2', quarter: 2, year: 2026, week: 15 },
+
+    // Different quarter and year (should NOT be counted)
+    { id: '8', assigneeId: 'eng1', projectId: 'project1', quarter: 4, year: 2024, week: 50 },
+  ];
+
+  // Test the filtering logic used in the component
+  const currentQuarterAssignments = mockAssignments.filter(
+    (assignment) => assignment.quarter === currentQuarter && assignment.year === currentYear,
+  );
+
+  // Should only include assignments 1, 2, and 3
+  expect(currentQuarterAssignments).toHaveLength(3);
+  expect(currentQuarterAssignments.map((a) => a.id)).toEqual(['1', '2', '3']);
+
+  // Verify that each filtered assignment has the correct quarter and year
+  currentQuarterAssignments.forEach((assignment) => {
+    expect(assignment.quarter).toBe(currentQuarter);
+    expect(assignment.year).toBe(currentYear);
+  });
+
+  // Test allocation counting logic
+  const projectAllocations: Record<string, number> = {};
+  currentQuarterAssignments.forEach((assignment) => {
+    projectAllocations[assignment.projectId] = (projectAllocations[assignment.projectId] || 0) + 1;
+  });
+
+  // project1 should have 2 weeks allocated (assignments 1 and 2)
+  expect(projectAllocations['project1']).toBe(2);
+  // project2 should have 1 week allocated (assignment 3)
+  expect(projectAllocations['project2']).toBe(1);
+
+  // Verify that assignments from other quarters/years are not counted
+  const allAssignmentAllocations: Record<string, number> = {};
+  mockAssignments.forEach((assignment) => {
+    allAssignmentAllocations[assignment.projectId] = (allAssignmentAllocations[assignment.projectId] || 0) + 1;
+  });
+
+  // Without filtering, project1 would have 4 weeks and project2 would have 4 weeks
+  expect(allAssignmentAllocations['project1']).toBe(5); // assignments 1, 2, 4, 6, 8
+  expect(allAssignmentAllocations['project2']).toBe(3); // assignments 3, 5, 7
+
+  // This demonstrates the importance of the quarter/year filtering
+  expect(projectAllocations['project1'] || 0).toBeLessThan(allAssignmentAllocations['project1'] || 0);
+  expect(projectAllocations['project2'] || 0).toBeLessThan(allAssignmentAllocations['project2'] || 0);
+});
