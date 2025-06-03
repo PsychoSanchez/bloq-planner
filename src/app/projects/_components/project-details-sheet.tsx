@@ -94,7 +94,7 @@ export function ProjectDetailsSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[420px] sm:w-[600px] overflow-y-auto px-4 py-6">
+      <SheetContent className="sm:max-w-[600px] w-full overflow-y-auto px-4 py-6">
         <SheetHeader className="pb-6 px-0 border-b">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
