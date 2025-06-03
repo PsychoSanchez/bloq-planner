@@ -5,14 +5,14 @@ import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon, LinkIcon } from 'lucide-react';
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarCheckboxItem,
+  MenubarTrigger,
+} from '@/components/ui/menubar';
+import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon, LinkIcon, FilterIcon, Users2Icon } from 'lucide-react';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { TeamOption } from '@/components/team-selector';
 
@@ -158,191 +158,152 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
 
   return (
     <div className="space-y-3">
-      {/* Filter Controls */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* Priority Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+      {/* Filter Menu Bar */}
+      <div className="flex items-center gap-3">
+        <Menubar className="pl-2">
+          <FilterIcon className="h-4 w-4 text-muted-foreground" />
+          {/* Priority Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2">
               <SignalIcon className="h-4 w-4" />
               <span className="text-sm">Priority</span>
-              {priorities.length > 0 && <span className="text-xs text-muted-foreground">({priorities.length})</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-32">
-            <DropdownMenuLabel className="text-xs">Filter by Priority</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {PRIORITY_OPTIONS.map((priority) => (
-              <DropdownMenuCheckboxItem
-                key={priority.id}
-                className="text-xs flex items-center gap-2"
-                checked={priorities.includes(priority.id)}
-                onCheckedChange={() => togglePriority(priority.id)}
-              >
-                <priority.icon className={`h-4 w-4 ${priority.cn}`} />
-                <span className={priority.cn}>{priority.name}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarTrigger>
+            <MenubarContent>
+              {PRIORITY_OPTIONS.map((priority) => (
+                <MenubarCheckboxItem
+                  key={priority.id}
+                  className="flex items-center gap-2"
+                  checked={priorities.includes(priority.id)}
+                  onCheckedChange={() => togglePriority(priority.id)}
+                >
+                  <priority.icon className={`h-4 w-4 ${priority.cn}`} />
+                  <span className={priority.cn}>{priority.name}</span>
+                </MenubarCheckboxItem>
+              ))}
+            </MenubarContent>
+          </MenubarMenu>
 
-        {/* Quarter Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+          {/* Quarter Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               <span className="text-sm">Quarter</span>
-              {quarters.length > 0 && <span className="text-xs text-muted-foreground">({quarters.length})</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-32 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel className="text-xs">Filter by Quarter</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {QUARTER_OPTIONS.map((quarter) => (
-              <DropdownMenuCheckboxItem
-                key={quarter.id}
-                className="text-xs"
-                checked={quarters.includes(quarter.value)}
-                onCheckedChange={() => toggleQuarter(quarter.value)}
-              >
-                {quarter.name}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarTrigger>
+            <MenubarContent className="max-h-80 overflow-y-auto">
+              {QUARTER_OPTIONS.map((quarter) => (
+                <MenubarCheckboxItem
+                  key={quarter.id}
+                  checked={quarters.includes(quarter.value)}
+                  onCheckedChange={() => toggleQuarter(quarter.value)}
+                >
+                  {quarter.name}
+                </MenubarCheckboxItem>
+              ))}
+            </MenubarContent>
+          </MenubarMenu>
 
-        {/* Area Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2">
+          {/* Area Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2">
               <MapPinIcon className="h-4 w-4" />
               <span className="text-sm">Area</span>
-              {areas.length > 0 && <span className="text-xs text-muted-foreground">({areas.length})</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48">
-            <DropdownMenuLabel className="text-xs">Filter by Area</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {PROJECT_AREAS.map((area) => (
-              <DropdownMenuCheckboxItem
-                key={area.id}
-                className="text-xs flex items-center gap-2"
-                checked={areas.includes(area.id)}
-                onCheckedChange={() => toggleArea(area.id)}
-              >
-                <area.icon className="h-4 w-4" />
-                {area.name}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarTrigger>
+            <MenubarContent>
+              {PROJECT_AREAS.map((area) => (
+                <MenubarCheckboxItem
+                  key={area.id}
+                  className="flex items-center gap-2"
+                  checked={areas.includes(area.id)}
+                  onCheckedChange={() => toggleArea(area.id)}
+                >
+                  <area.icon className="h-4 w-4" />
+                  {area.name}
+                </MenubarCheckboxItem>
+              ))}
+            </MenubarContent>
+          </MenubarMenu>
 
-        {/* Lead Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
+          {/* Lead Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
               <UserIcon className="h-4 w-4" />
               <span className="text-sm">Lead</span>
-              {leads.length > 0 && <span className="text-xs text-muted-foreground">({leads.length})</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel className="text-xs">Filter by Lead</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {teamsLoading ? (
-              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
-            ) : availableLeads.length === 0 ? (
-              <div className="p-2 text-xs text-muted-foreground">No leads available</div>
-            ) : (
-              availableLeads.map((lead) => (
-                <DropdownMenuCheckboxItem
-                  key={lead.id}
-                  className="text-xs"
-                  checked={leads.includes(lead.id)}
-                  onCheckedChange={() => toggleLead(lead.id)}
-                >
-                  {lead.name}
-                </DropdownMenuCheckboxItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Team Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
-              <UserIcon className="h-4 w-4" />
-              <span className="text-sm">Team</span>
-              {teamFilters.length > 0 && <span className="text-xs text-muted-foreground">({teamFilters.length})</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel className="text-xs">Filter by Team</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {teamsLoading ? (
-              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
-            ) : availableTeams.length === 0 ? (
-              <div className="p-2 text-xs text-muted-foreground">No teams available</div>
-            ) : (
-              availableTeams.map((team) => (
-                <DropdownMenuCheckboxItem
-                  key={team.id}
-                  className="text-xs"
-                  checked={teamFilters.includes(team.id)}
-                  onCheckedChange={() => toggleTeam(team.id)}
-                >
-                  {team.name}
-                </DropdownMenuCheckboxItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Dependency Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="h-9 px-3 gap-2" disabled={teamsLoading}>
-              <LinkIcon className="h-4 w-4" />
-              <span className="text-sm">Dependency</span>
-              {dependencies.length > 0 && (
-                <span className="text-xs text-muted-foreground">({dependencies.length})</span>
+            </MenubarTrigger>
+            <MenubarContent className="max-h-80 overflow-y-auto">
+              {teamsLoading ? (
+                <MenubarItem disabled>Loading...</MenubarItem>
+              ) : availableLeads.length === 0 ? (
+                <MenubarItem disabled>No leads available</MenubarItem>
+              ) : (
+                availableLeads.map((lead) => (
+                  <MenubarCheckboxItem
+                    key={lead.id}
+                    checked={leads.includes(lead.id)}
+                    onCheckedChange={() => toggleLead(lead.id)}
+                  >
+                    {lead.name}
+                  </MenubarCheckboxItem>
+                ))
               )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 max-h-80 overflow-y-auto">
-            <DropdownMenuLabel className="text-xs">Filter by Dependency</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {teamsLoading ? (
-              <div className="p-2 text-xs text-muted-foreground">Loading...</div>
-            ) : availableDependencies.length === 0 ? (
-              <div className="p-2 text-xs text-muted-foreground">No dependencies available</div>
-            ) : (
-              availableDependencies.map((team) => (
-                <DropdownMenuCheckboxItem
-                  key={team.id}
-                  className="text-xs"
-                  checked={dependencies.includes(team.id)}
-                  onCheckedChange={() => toggleDependency(team.id)}
-                >
-                  {team.name}
-                </DropdownMenuCheckboxItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarContent>
+          </MenubarMenu>
+
+          {/* Team Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
+              <Users2Icon className="h-4 w-4" />
+              <span className="text-sm">Team</span>
+            </MenubarTrigger>
+            <MenubarContent className="max-h-80 overflow-y-auto">
+              {teamsLoading ? (
+                <MenubarItem disabled>Loading...</MenubarItem>
+              ) : availableTeams.length === 0 ? (
+                <MenubarItem disabled>No teams available</MenubarItem>
+              ) : (
+                availableTeams.map((team) => (
+                  <MenubarCheckboxItem
+                    key={team.id}
+                    checked={teamFilters.includes(team.id)}
+                    onCheckedChange={() => toggleTeam(team.id)}
+                  >
+                    {team.name}
+                  </MenubarCheckboxItem>
+                ))
+              )}
+            </MenubarContent>
+          </MenubarMenu>
+
+          {/* Dependency Filter */}
+          <MenubarMenu>
+            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
+              <LinkIcon className="h-4 w-4" />
+              <span className="text-sm">Dependencies</span>
+            </MenubarTrigger>
+            <MenubarContent className="max-h-80 overflow-y-auto">
+              {teamsLoading ? (
+                <MenubarItem disabled>Loading...</MenubarItem>
+              ) : availableDependencies.length === 0 ? (
+                <MenubarItem disabled>No dependencies available</MenubarItem>
+              ) : (
+                availableDependencies.map((team) => (
+                  <MenubarCheckboxItem
+                    key={team.id}
+                    checked={dependencies.includes(team.id)}
+                    onCheckedChange={() => toggleDependency(team.id)}
+                  >
+                    {team.name}
+                  </MenubarCheckboxItem>
+                ))
+              )}
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
 
         {/* Clear All Filters Button */}
         {activeFiltersCount > 0 && (
-          <Button
-            variant="ghost"
-            size="default"
-            onClick={clearAllFilters}
-            className="h-9 px-3 gap-2 text-muted-foreground"
-          >
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-9 px-3 gap-2 text-muted-foreground">
             <XIcon className="h-4 w-4" />
             <span className="text-sm">Clear all</span>
-            <span className="text-xs text-muted-foreground">({activeFiltersCount})</span>
           </Button>
         )}
       </div>
