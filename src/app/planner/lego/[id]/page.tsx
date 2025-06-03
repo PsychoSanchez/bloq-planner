@@ -501,7 +501,9 @@ export default function LegoPlannerDetailsPage() {
           <Button variant="ghost" size="icon" onClick={handleBackClick}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-semibold">Lego Planner ({plannerId.substring(0, 8)})</h1>
+          <h1 className="text-xl font-semibold">
+            {plannerData?.name || `Lego Planner (${plannerId.substring(0, 8)})`}
+          </h1>
         </div>
 
         {/* Real-time connection status */}
