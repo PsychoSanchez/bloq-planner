@@ -1,4 +1,4 @@
-import { router, publicProcedure, assignmentEventEmitter } from '../trpc';
+import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
 import { AssignmentModel } from '@/lib/models/planner-assignment';
 import { type } from 'arktype';
@@ -84,23 +84,6 @@ const bulkUpsertAssignmentsInput = type({
 type AssignmentItem = typeof assignmentItemSchema.infer;
 type UpdateAssignmentItem = typeof updateAssignmentItemSchema.infer;
 
-// Event types for streaming
-export interface AssignmentEvent {
-  type: 'CREATE' | 'UPDATE' | 'DELETE' | 'BULK_CREATE' | 'BULK_UPDATE' | 'BULK_DELETE' | 'BULK_UPSERT' | 'connected';
-  plannerId?: string;
-  assignments?: Array<{
-    id: string;
-    assigneeId: string;
-    projectId: string;
-    plannerId: string;
-    week: number;
-    year: number;
-    quarter: number;
-    status: string;
-  }>;
-  deletedIds?: string[];
-}
-
 export const assignmentRouter = router({
   // Get all assignments with optional filtering
   getAssignments: publicProcedure.input(getAssignmentsInput).query(async ({ input }) => {
@@ -179,7 +162,7 @@ export const assignmentRouter = router({
 
     await newAssignment.save();
 
-    const assignment = {
+    return {
       id: newAssignment._id.toString(),
       assigneeId: newAssignment.assigneeId,
       projectId: newAssignment.projectId,
@@ -189,15 +172,6 @@ export const assignmentRouter = router({
       quarter: newAssignment.quarter,
       status: newAssignment.status,
     };
-
-    // Emit event for real-time updates
-    assignmentEventEmitter.emit('assignmentUpdate', {
-      type: 'CREATE',
-      plannerId: assignment.plannerId,
-      assignments: [assignment],
-    });
-
-    return assignment;
   }),
 
   // Update an existing assignment
@@ -220,7 +194,7 @@ export const assignmentRouter = router({
       throw new Error('Assignment not found');
     }
 
-    const assignment = {
+    return {
       id: updatedAssignment._id.toString(),
       assigneeId: updatedAssignment.assigneeId,
       projectId: updatedAssignment.projectId,
@@ -230,15 +204,6 @@ export const assignmentRouter = router({
       quarter: updatedAssignment.quarter,
       status: updatedAssignment.status,
     };
-
-    // Emit event for real-time updates
-    assignmentEventEmitter.emit('assignmentUpdate', {
-      type: 'UPDATE',
-      plannerId: assignment.plannerId,
-      assignments: [assignment],
-    });
-
-    return assignment;
   }),
 
   // Delete an assignment
@@ -254,13 +219,6 @@ export const assignmentRouter = router({
     if (!deletedAssignment) {
       throw new Error('Assignment not found');
     }
-
-    // Emit event for real-time updates
-    assignmentEventEmitter.emit('assignmentUpdate', {
-      type: 'DELETE',
-      plannerId: deletedAssignment.plannerId,
-      deletedIds: [input.id],
-    });
 
     return { success: true };
   }),
@@ -297,26 +255,6 @@ export const assignmentRouter = router({
         status: assignment.status,
       }));
 
-      // Emit event for real-time updates - group by plannerId
-      const assignmentsByPlanner = formattedAssignments.reduce(
-        (acc, assignment) => {
-          if (!acc[assignment.plannerId]) {
-            acc[assignment.plannerId] = [];
-          }
-          acc[assignment.plannerId]!.push(assignment);
-          return acc;
-        },
-        {} as Record<string, typeof formattedAssignments>,
-      );
-
-      Object.entries(assignmentsByPlanner).forEach(([plannerId, assignments]) => {
-        assignmentEventEmitter.emit('assignmentUpdate', {
-          type: 'BULK_CREATE',
-          plannerId,
-          assignments,
-        });
-      });
-
       return { created: formattedAssignments, errors: [] };
     } catch (error: unknown) {
       // Handle partial success in case of duplicate key errors
@@ -344,26 +282,6 @@ export const assignmentRouter = router({
           quarter: assignment.quarter,
           status: assignment.status,
         }));
-
-        // Emit event for partial success
-        const assignmentsByPlanner = formattedAssignments.reduce(
-          (acc, assignment) => {
-            if (!acc[assignment.plannerId]) {
-              acc[assignment.plannerId] = [];
-            }
-            acc[assignment.plannerId]!.push(assignment);
-            return acc;
-          },
-          {} as Record<string, typeof formattedAssignments>,
-        );
-
-        Object.entries(assignmentsByPlanner).forEach(([plannerId, assignments]) => {
-          assignmentEventEmitter.emit('assignmentUpdate', {
-            type: 'BULK_CREATE',
-            plannerId,
-            assignments,
-          });
-        });
 
         return {
           created: formattedAssignments,
@@ -415,26 +333,6 @@ export const assignmentRouter = router({
         status: assignment.status,
       }));
 
-      // Emit event for real-time updates - group by plannerId
-      const assignmentsByPlanner = formattedAssignments.reduce(
-        (acc, assignment) => {
-          if (!acc[assignment.plannerId]) {
-            acc[assignment.plannerId] = [];
-          }
-          acc[assignment.plannerId]!.push(assignment);
-          return acc;
-        },
-        {} as Record<string, typeof formattedAssignments>,
-      );
-
-      Object.entries(assignmentsByPlanner).forEach(([plannerId, assignments]) => {
-        assignmentEventEmitter.emit('assignmentUpdate', {
-          type: 'BULK_UPDATE',
-          plannerId,
-          assignments,
-        });
-      });
-
       return {
         updated: formattedAssignments,
         errors: [],
@@ -462,30 +360,7 @@ export const assignmentRouter = router({
     }
 
     try {
-      // Get assignments before deletion to emit proper events
-      const assignmentsToDelete = await AssignmentModel.find({ _id: { $in: input.ids } }).lean();
-
       const result = await AssignmentModel.deleteMany({ _id: { $in: input.ids } });
-
-      // Emit event for real-time updates - group by plannerId
-      const deletedByPlanner = assignmentsToDelete.reduce(
-        (acc, assignment) => {
-          if (!acc[assignment.plannerId]) {
-            acc[assignment.plannerId] = [];
-          }
-          acc[assignment.plannerId]!.push(assignment._id.toString());
-          return acc;
-        },
-        {} as Record<string, string[]>,
-      );
-
-      Object.entries(deletedByPlanner).forEach(([plannerId, deletedIds]) => {
-        assignmentEventEmitter.emit('assignmentUpdate', {
-          type: 'BULK_DELETE',
-          plannerId,
-          deletedIds,
-        });
-      });
 
       return {
         deletedCount: result.deletedCount,
@@ -548,26 +423,6 @@ export const assignmentRouter = router({
         quarter: assignment.quarter,
         status: assignment.status,
       }));
-
-      // Emit event for real-time updates - group by plannerId
-      const assignmentsByPlanner = formattedAssignments.reduce(
-        (acc, assignment) => {
-          if (!acc[assignment.plannerId]) {
-            acc[assignment.plannerId] = [];
-          }
-          acc[assignment.plannerId]!.push(assignment);
-          return acc;
-        },
-        {} as Record<string, typeof formattedAssignments>,
-      );
-
-      Object.entries(assignmentsByPlanner).forEach(([plannerId, assignments]) => {
-        assignmentEventEmitter.emit('assignmentUpdate', {
-          type: 'BULK_UPSERT',
-          plannerId,
-          assignments,
-        });
-      });
 
       return {
         created: formattedAssignments.filter((_, index) => result.upsertedIds[index]),
