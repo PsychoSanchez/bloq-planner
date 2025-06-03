@@ -2,6 +2,7 @@
 
 import { LegoPlanner } from '@/app/planner/lego/[id]/_components/lego-planner';
 import { ProjectAllocationPanel } from '@/app/planner/lego/[id]/_components/project-allocation-panel';
+import { AssignmentStreamStatus } from '@/components/assignment-stream-status';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { toast, useToast } from '@/components/ui/use-toast';
 import { Assignment, Role } from '@/lib/types';
 import { trpc } from '@/utils/trpc';
 import { parseAsInteger, useQueryState } from 'nuqs';
+import { useAssignmentStream } from '@/hooks/use-assignment-stream';
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -328,6 +330,12 @@ export default function LegoPlannerDetailsPage() {
   const { toast } = useToast();
   const plannerId = params.id as string;
 
+  // Enable real-time assignment updates for this planner
+  useAssignmentStream({
+    plannerId,
+    enabled: true,
+  });
+
   // Get current year and quarter from URL state (same as LegoPlanner)
   const [currentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
   const [currentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
@@ -444,12 +452,18 @@ export default function LegoPlannerDetailsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={handleBackClick}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-xl font-semibold">Lego Planner ({plannerId.substring(0, 8)})</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handleBackClick}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-xl font-semibold">Lego Planner ({plannerId.substring(0, 8)})</h1>
+        </div>
+
+        {/* Real-time connection status */}
+        <AssignmentStreamStatus plannerId={plannerId} />
       </div>
+
       <LegoPlanner
         initialData={plannerData}
         getAssignmentsForWeekAndAssignee={getAssignmentsForWeekAndAssignee}
