@@ -3,6 +3,19 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { AssignmentModel } from '@/lib/models/planner-assignment';
 import { type } from 'arktype';
 import mongoose from 'mongoose';
+import EventEmitter, { on } from 'events';
+import { tracked } from '@trpc/server';
+
+// Create a shared EventEmitter for assignment events
+const assignmentEventEmitter = new EventEmitter();
+
+// Assignment change event types
+type AssignmentChangeEvent = {
+  type: 'created' | 'updated' | 'deleted' | 'bulkCreated' | 'bulkUpdated' | 'bulkDeleted';
+  data: unknown;
+  timestamp: number;
+  id: string;
+};
 
 // Input schemas using ArkType
 const getAssignmentsInput = type({
@@ -80,11 +93,101 @@ const bulkUpsertAssignmentsInput = type({
   assignments: assignmentItemSchema.array(),
 });
 
+// Subscription input schema
+const assignmentSubscriptionInput = type({
+  'plannerId?': 'string',
+  'assigneeId?': 'string',
+  'projectId?': 'string',
+  'lastEventId?': 'string',
+});
+
 // Type definitions for better type safety
 type AssignmentItem = typeof assignmentItemSchema.infer;
 type UpdateAssignmentItem = typeof updateAssignmentItemSchema.infer;
 
+// Helper function to emit assignment events
+const emitAssignmentEvent = (event: AssignmentChangeEvent) => {
+  assignmentEventEmitter.emit('change', event);
+};
+
+// Helper function to format assignment
+const formatAssignment = (assignment: {
+  _id: mongoose.Types.ObjectId;
+  assigneeId: string;
+  projectId: string;
+  plannerId: string;
+  week: number;
+  year: number;
+  quarter: number;
+  status?: string;
+}) => ({
+  id: assignment._id.toString(),
+  assigneeId: assignment.assigneeId,
+  projectId: assignment.projectId,
+  plannerId: assignment.plannerId,
+  week: assignment.week,
+  year: assignment.year,
+  quarter: assignment.quarter,
+  status: assignment.status,
+});
+
 export const assignmentRouter = router({
+  // SSE Subscriptions
+  onAssignmentChange: publicProcedure.input(assignmentSubscriptionInput).subscription(async function* (opts) {
+    try {
+      // Create an async iterable for the EventEmitter
+      const iterable = on(assignmentEventEmitter, 'change', {
+        signal: opts.signal,
+      });
+
+      // If lastEventId is provided, we could fetch missed events here
+      // For now, we'll just start listening for new events
+      if (opts.input.lastEventId) {
+        // You could implement logic here to fetch events that occurred after lastEventId
+        // This would ensure no events are missed during reconnection
+      }
+
+      // Listen for assignment change events
+      for await (const [event] of iterable) {
+        const changeEvent = event as AssignmentChangeEvent;
+
+        // Apply filters if provided - check if data has the expected structure
+        if (
+          opts.input.plannerId &&
+          typeof changeEvent.data === 'object' &&
+          changeEvent.data !== null &&
+          'plannerId' in changeEvent.data &&
+          changeEvent.data.plannerId !== opts.input.plannerId
+        ) {
+          continue;
+        }
+        if (
+          opts.input.assigneeId &&
+          typeof changeEvent.data === 'object' &&
+          changeEvent.data !== null &&
+          'assigneeId' in changeEvent.data &&
+          changeEvent.data.assigneeId !== opts.input.assigneeId
+        ) {
+          continue;
+        }
+        if (
+          opts.input.projectId &&
+          typeof changeEvent.data === 'object' &&
+          changeEvent.data !== null &&
+          'projectId' in changeEvent.data &&
+          changeEvent.data.projectId !== opts.input.projectId
+        ) {
+          continue;
+        }
+
+        // Yield the tracked event with timestamp as ID for automatic reconnection
+        yield tracked(changeEvent.id, changeEvent);
+      }
+    } finally {
+      // Cleanup any resources if needed
+    }
+  }),
+
   // Get all assignments with optional filtering
   getAssignments: publicProcedure.input(getAssignmentsInput).query(async ({ input }) => {
     await connectToDatabase();
@@ -106,16 +209,7 @@ export const assignmentRouter = router({
     const assignments = await AssignmentModel.find(query).lean();
 
     // Transform MongoDB documents to match Assignment interface
-    const formattedAssignments = assignments.map((assignment) => ({
-      id: assignment._id.toString(),
-      assigneeId: assignment.assigneeId,
-      projectId: assignment.projectId,
-      plannerId: assignment.plannerId,
-      week: assignment.week,
-      year: assignment.year,
-      quarter: assignment.quarter,
-      status: assignment.status,
-    }));
+    const formattedAssignments = assignments.map(formatAssignment);
 
     return formattedAssignments;
   }),
@@ -134,16 +228,7 @@ export const assignmentRouter = router({
       throw new Error('Assignment not found');
     }
 
-    return {
-      id: assignment._id.toString(),
-      assigneeId: assignment.assigneeId,
-      projectId: assignment.projectId,
-      plannerId: assignment.plannerId,
-      week: assignment.week,
-      year: assignment.year,
-      quarter: assignment.quarter,
-      status: assignment.status,
-    };
+    return formatAssignment(assignment);
   }),
 
   // Create a new assignment
@@ -162,16 +247,17 @@ export const assignmentRouter = router({
 
     await newAssignment.save();
 
-    return {
-      id: newAssignment._id.toString(),
-      assigneeId: newAssignment.assigneeId,
-      projectId: newAssignment.projectId,
-      plannerId: newAssignment.plannerId,
-      week: newAssignment.week,
-      year: newAssignment.year,
-      quarter: newAssignment.quarter,
-      status: newAssignment.status,
-    };
+    const formattedAssignment = formatAssignment(newAssignment);
+
+    // Emit event for real-time updates
+    emitAssignmentEvent({
+      type: 'created',
+      data: formattedAssignment,
+      timestamp: Date.now(),
+      id: `${Date.now()}-${formattedAssignment.id}`,
+    });
+
+    return formattedAssignment;
   }),
 
   // Update an existing assignment
@@ -194,16 +280,17 @@ export const assignmentRouter = router({
       throw new Error('Assignment not found');
     }
 
-    return {
-      id: updatedAssignment._id.toString(),
-      assigneeId: updatedAssignment.assigneeId,
-      projectId: updatedAssignment.projectId,
-      plannerId: updatedAssignment.plannerId,
-      week: updatedAssignment.week,
-      year: updatedAssignment.year,
-      quarter: updatedAssignment.quarter,
-      status: updatedAssignment.status,
-    };
+    const formattedAssignment = formatAssignment(updatedAssignment);
+
+    // Emit event for real-time updates
+    emitAssignmentEvent({
+      type: 'updated',
+      data: formattedAssignment,
+      timestamp: Date.now(),
+      id: `${Date.now()}-${formattedAssignment.id}`,
+    });
+
+    return formattedAssignment;
   }),
 
   // Delete an assignment
@@ -219,6 +306,14 @@ export const assignmentRouter = router({
     if (!deletedAssignment) {
       throw new Error('Assignment not found');
     }
+
+    // Emit event for real-time updates
+    emitAssignmentEvent({
+      type: 'deleted',
+      data: { id: input.id },
+      timestamp: Date.now(),
+      id: `${Date.now()}-${input.id}`,
+    });
 
     return { success: true };
   }),
@@ -244,16 +339,15 @@ export const assignmentRouter = router({
     try {
       const createdAssignments = await AssignmentModel.insertMany(assignmentsToCreate, { ordered: false });
 
-      const formattedAssignments = createdAssignments.map((assignment) => ({
-        id: assignment._id.toString(),
-        assigneeId: assignment.assigneeId,
-        projectId: assignment.projectId,
-        plannerId: assignment.plannerId,
-        week: assignment.week,
-        year: assignment.year,
-        quarter: assignment.quarter,
-        status: assignment.status,
-      }));
+      const formattedAssignments = createdAssignments.map(formatAssignment);
+
+      // Emit event for real-time updates
+      emitAssignmentEvent({
+        type: 'bulkCreated',
+        data: formattedAssignments,
+        timestamp: Date.now(),
+        id: `${Date.now()}-bulk-create`,
+      });
 
       return { created: formattedAssignments, errors: [] };
     } catch (error: unknown) {
@@ -272,16 +366,15 @@ export const assignmentRouter = router({
           }>;
           writeErrors?: Array<{ errmsg: string }>;
         };
-        const formattedAssignments = mongoError.insertedDocs.map((assignment) => ({
-          id: assignment._id.toString(),
-          assigneeId: assignment.assigneeId,
-          projectId: assignment.projectId,
-          plannerId: assignment.plannerId,
-          week: assignment.week,
-          year: assignment.year,
-          quarter: assignment.quarter,
-          status: assignment.status,
-        }));
+        const formattedAssignments = mongoError.insertedDocs.map(formatAssignment);
+
+        // Emit event for real-time updates
+        emitAssignmentEvent({
+          type: 'bulkCreated',
+          data: formattedAssignments,
+          timestamp: Date.now(),
+          id: `${Date.now()}-bulk-create-partial`,
+        });
 
         return {
           created: formattedAssignments,
@@ -322,16 +415,15 @@ export const assignmentRouter = router({
       const updatedIds = input.assignments.map((a: UpdateAssignmentItem) => a.id);
       const updatedAssignments = await AssignmentModel.find({ _id: { $in: updatedIds } }).lean();
 
-      const formattedAssignments = updatedAssignments.map((assignment) => ({
-        id: assignment._id.toString(),
-        assigneeId: assignment.assigneeId,
-        projectId: assignment.projectId,
-        plannerId: assignment.plannerId,
-        week: assignment.week,
-        year: assignment.year,
-        quarter: assignment.quarter,
-        status: assignment.status,
-      }));
+      const formattedAssignments = updatedAssignments.map(formatAssignment);
+
+      // Emit event for real-time updates
+      emitAssignmentEvent({
+        type: 'bulkUpdated',
+        data: formattedAssignments,
+        timestamp: Date.now(),
+        id: `${Date.now()}-bulk-update`,
+      });
 
       return {
         updated: formattedAssignments,
@@ -361,6 +453,14 @@ export const assignmentRouter = router({
 
     try {
       const result = await AssignmentModel.deleteMany({ _id: { $in: input.ids } });
+
+      // Emit event for real-time updates
+      emitAssignmentEvent({
+        type: 'bulkDeleted',
+        data: { ids: input.ids, deletedCount: result.deletedCount },
+        timestamp: Date.now(),
+        id: `${Date.now()}-bulk-delete`,
+      });
 
       return {
         deletedCount: result.deletedCount,
@@ -413,16 +513,15 @@ export const assignmentRouter = router({
 
       const assignments = await AssignmentModel.find({ $or: filters }).lean();
 
-      const formattedAssignments = assignments.map((assignment) => ({
-        id: assignment._id.toString(),
-        assigneeId: assignment.assigneeId,
-        projectId: assignment.projectId,
-        plannerId: assignment.plannerId,
-        week: assignment.week,
-        year: assignment.year,
-        quarter: assignment.quarter,
-        status: assignment.status,
-      }));
+      const formattedAssignments = assignments.map(formatAssignment);
+
+      // Emit event for real-time updates
+      emitAssignmentEvent({
+        type: 'bulkUpdated', // Using bulkUpdated as upsert can be both create and update
+        data: formattedAssignments,
+        timestamp: Date.now(),
+        id: `${Date.now()}-bulk-upsert`,
+      });
 
       return {
         created: formattedAssignments.filter((_, index) => result.upsertedIds[index]),

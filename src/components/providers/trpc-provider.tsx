@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpBatchLink } from '@trpc/client';
+import { httpBatchLink, httpSubscriptionLink, loggerLink, splitLink } from '@trpc/client';
 import { useState } from 'react';
 import { trpc } from '@/utils/trpc';
 
@@ -17,8 +17,20 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
-        httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`,
+        // adds pretty logs to your console in development and logs errors in production
+        loggerLink({
+          enabled: (opts) =>
+            process.env.NODE_ENV === 'development' || (opts.direction === 'down' && opts.result instanceof Error),
+        }),
+        splitLink({
+          // uses the httpSubscriptionLink for subscriptions
+          condition: (op) => op.type === 'subscription',
+          true: httpSubscriptionLink({
+            url: `${getBaseUrl()}/api/trpc`,
+          }),
+          false: httpBatchLink({
+            url: `${getBaseUrl()}/api/trpc`,
+          }),
         }),
       ],
     }),

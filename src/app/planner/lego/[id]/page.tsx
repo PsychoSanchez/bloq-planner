@@ -8,10 +8,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { toast, useToast } from '@/components/ui/use-toast';
-import { Assignment, Role, Project } from '@/lib/types';
+import { Assignment, Project, Role } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
 import { trpc } from '@/utils/trpc';
 import { parseAsInteger, useQueryState } from 'nuqs';
+import { useAssignmentSubscription } from '@/hooks/use-assignment-subscription';
+import { LiveStatusBadge } from '@/components/live-status-badge';
 
 const useAssignments = (plannerId: string) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -393,6 +395,13 @@ export default function LegoPlannerDetailsPage() {
     bulkDeleteAssignments,
   } = useAssignments(plannerId);
 
+  // Enable real-time assignment updates via SSE
+  const { lastAction, isConnected, toggleConnection } = useAssignmentSubscription({
+    plannerId,
+    enabled: !!plannerId, // Only enable if we have a planner ID
+    // Removed toast notifications - using live badge instead
+  });
+
   // Show error toast and redirect if planner fetch fails
   useEffect(() => {
     if (plannerError) {
@@ -411,66 +420,75 @@ export default function LegoPlannerDetailsPage() {
     router.push('/planner/lego');
   };
 
-  const handleEstimateUpdate = async (projectId: string, role: Role, value: number) => {
-    if (!plannerData) return;
-
-    // Find the project to get current estimates
-    const project = plannerData.projects.find((p) => p.id === projectId);
-    if (!project) return;
-
-    // Update the estimates array
-    const currentEstimates = project.estimates || [];
-    const updatedEstimates = currentEstimates.filter((est) => est.department !== role);
-
-    // Only add the estimate if value > 0
-    if (value > 0) {
-      updatedEstimates.push({
-        department: role,
-        value: value,
-      });
-    }
-
-    try {
-      await updateProjectMutation.mutateAsync({
-        id: projectId,
-        estimates: updatedEstimates,
-      });
-    } catch (error) {
-      console.error('Error updating estimate:', error);
-    }
-  };
-
-  const handleProjectUpdate = async (projectId: string, updates: Partial<Project>) => {
-    try {
-      await updateProjectMutation.mutateAsync({
-        id: projectId,
-        ...updates,
-      });
-
-      // Close the project details sheet after successful update
-      setIsProjectDetailsSheetOpen(false);
-    } catch (error) {
-      console.error('Error updating project:', error);
-    }
-  };
-
-  const handleProjectDetailsClose = () => {
-    setIsProjectDetailsSheetOpen(false);
-    setSelectedProject(null);
-  };
-
-  const handleProjectClick = (project: Project) => {
+  const handleProjectClick = useCallback((project: Project) => {
     setSelectedProject(project);
     setIsProjectDetailsSheetOpen(true);
-  };
+  }, []);
+
+  const handleProjectDetailsClose = useCallback(() => {
+    setIsProjectDetailsSheetOpen(false);
+    setSelectedProject(null);
+  }, []);
+
+  const handleProjectUpdate = useCallback(
+    async (projectId: string, updates: Partial<Project>) => {
+      try {
+        const updatedProject = await updateProjectMutation.mutateAsync({
+          id: projectId,
+          ...updates,
+        });
+
+        // Update the selected project if it's the one being updated
+        if (selectedProject?.id === projectId) {
+          setSelectedProject(updatedProject);
+        }
+
+        return updatedProject;
+      } catch (error) {
+        console.error('Error updating project:', error);
+        throw error;
+      }
+    },
+    [updateProjectMutation, selectedProject],
+  );
+
+  const handleEstimateUpdate = useCallback(
+    async (projectId: string, role: Role, value: number) => {
+      if (!plannerData) return;
+
+      // Find the project to get current estimates
+      const project = plannerData.projects.find((p) => p.id === projectId);
+      if (!project) return;
+
+      // Update the estimates array
+      const currentEstimates = project.estimates || [];
+      const updatedEstimates = currentEstimates.filter((est) => est.department !== role);
+
+      // Only add the estimate if value > 0
+      if (value > 0) {
+        updatedEstimates.push({
+          department: role,
+          value: value,
+        });
+      }
+
+      try {
+        await updateProjectMutation.mutateAsync({
+          id: projectId,
+          estimates: updatedEstimates,
+        });
+      } catch (error) {
+        console.error('Error updating project estimate:', error);
+        // Error is handled in the mutation's onError callback
+      }
+    },
+    [updateProjectMutation, plannerData],
+  );
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading planner data...</p>
-        </div>
+        <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -497,6 +515,9 @@ export default function LegoPlannerDetailsPage() {
             {plannerData?.name || `Lego Planner (${plannerId.substring(0, 8)})`}
           </h1>
         </div>
+
+        {/* Live Status Badge */}
+        <LiveStatusBadge isConnected={isConnected} lastAction={lastAction} onToggleConnection={toggleConnection} />
       </div>
       <LegoPlanner
         initialData={plannerData}
