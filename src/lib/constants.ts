@@ -101,14 +101,24 @@ export const PRIORITY_OPTIONS = [
 
 export const ROLE_OPTIONS = [
   {
+    id: 'engineering' as const,
+    name: 'Engineering',
+    icon: CodeIcon,
+  },
+  {
     id: 'design' as const,
     name: 'Design',
     icon: PaletteIcon,
   },
   {
-    id: 'engineering' as const,
-    name: 'Engineering',
-    icon: CodeIcon,
+    id: 'analytics' as const,
+    name: 'Analytics',
+    icon: BarChartIcon,
+  },
+  {
+    id: 'data_science' as const,
+    name: 'Data Science',
+    icon: DatabaseIcon,
   },
   {
     id: 'qa' as const,
@@ -124,16 +134,6 @@ export const ROLE_OPTIONS = [
     id: 'operations' as const,
     name: 'Operations',
     icon: SettingsIcon,
-  },
-  {
-    id: 'analytics' as const,
-    name: 'Analytics',
-    icon: BarChartIcon,
-  },
-  {
-    id: 'data_science' as const,
-    name: 'Data Science',
-    icon: DatabaseIcon,
   },
 ];
 
