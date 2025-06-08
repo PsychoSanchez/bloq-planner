@@ -295,7 +295,15 @@ export function ProjectAllocationPanel({
       (assignment) => assignment.quarter === currentQuarter && assignment.year === currentYear,
     );
 
-    // Process assignments to calculate allocated values
+    // Separate regular and default project assignments
+    const regularAssignments = currentQuarterAssignments.filter(
+      (assignment) => !isDefaultProject(assignment.projectId),
+    );
+    const defaultProjectAssignments = currentQuarterAssignments.filter((assignment) =>
+      isDefaultProject(assignment.projectId),
+    );
+
+    // Process all assignments to update project allocation displays
     currentQuarterAssignments.forEach((assignment) => {
       const assigneeRole = assigneeRoles[assignment.assigneeId];
       const projectDetail = updatedProjects[assignment.projectId];
@@ -312,13 +320,36 @@ export function ProjectAllocationPanel({
             },
           },
         };
+      }
+    });
 
-        // Update capacity data (immutably)
+    // Process only regular assignments for capacity calculations
+    regularAssignments.forEach((assignment) => {
+      const assigneeRole = assigneeRoles[assignment.assigneeId];
+
+      if (assigneeRole && ROLES_TO_DISPLAY.includes(assigneeRole)) {
+        // Update capacity data with only regular project allocations (immutably)
         updatedCapacityData = {
           ...updatedCapacityData,
           [assigneeRole]: {
             ...updatedCapacityData[assigneeRole],
             totalAllocated: updatedCapacityData[assigneeRole].totalAllocated + 1,
+          },
+        };
+      }
+    });
+
+    // Reduce capacity by default project assignments
+    defaultProjectAssignments.forEach((assignment) => {
+      const assigneeRole = assigneeRoles[assignment.assigneeId];
+
+      if (assigneeRole && ROLES_TO_DISPLAY.includes(assigneeRole)) {
+        // Reduce capacity by default project time (immutably)
+        updatedCapacityData = {
+          ...updatedCapacityData,
+          [assigneeRole]: {
+            ...updatedCapacityData[assigneeRole],
+            capacity: Math.max(0, updatedCapacityData[assigneeRole].capacity - 1),
           },
         };
       }
@@ -593,10 +624,13 @@ export function ProjectAllocationPanel({
           </div>
         </div>
         <p>
-          Click on estimate values to edit them inline. Capacity is calculated as number of assignees × weeks in
-          quarter.
+          Click on estimate values to edit them inline. Capacity is calculated as (number of assignees × weeks in
+          quarter) minus time allocated to default projects.
         </p>
-        <p>Default projects (vacation, duty, etc.) are always visible and don&apos;t have estimates.</p>
+        <p>
+          Default projects (vacation, duty, etc.) reduce available capacity and don&apos;t count toward allocation
+          metrics.
+        </p>
       </div>
     </div>
   );

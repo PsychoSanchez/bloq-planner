@@ -42,6 +42,16 @@ export const DEFAULT_PROJECTS: Project[] = [
     priority: 'medium',
     icon: '🎉',
   },
+  {
+    id: 'default-blocked',
+    name: 'Blocked',
+    slug: 'BLOCKED',
+    type: 'blocked',
+    color: '#EF4444', // Red
+    description: 'Time when work is blocked due to dependencies or external factors',
+    priority: 'high',
+    icon: '🛑',
+  },
 ];
 
 // Helper function to check if a project is a default project
