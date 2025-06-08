@@ -4,15 +4,16 @@ import { useState, useMemo, useCallback } from 'react';
 import { Assignment, Planner, Project, Role } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
+import { TrendingUpIcon, TrendingDownIcon, PaintBucket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
 import { generateWeeks } from '@/lib/sample-data';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
-import { parseAsBoolean, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { getProjectStyles } from '@/lib/utils/project-styling';
 import { ROLE_OPTIONS } from '@/lib/constants';
 
@@ -137,6 +138,15 @@ export function ProjectAllocationPanel({
     'filterByCurrentQuarter',
     parseAsBoolean.withDefault(true),
   );
+
+  // Mode state for painting
+  const [mode, setMode] = useQueryState(
+    'mode',
+    parseAsStringEnum(['pointer', 'paint', 'erase', 'inspect']).withDefault('pointer'),
+  );
+
+  // Selected project for painting
+  const [selectedProjectId, setSelectedProjectId] = useQueryState('paintProject', parseAsString.withDefault(''));
 
   // Create a map of assigneeId to role for quick lookup
   const assigneeRoles = useMemo(() => {
@@ -387,6 +397,15 @@ export function ProjectAllocationPanel({
     [onUpdateEstimate],
   );
 
+  // Handle paint mode activation for a project
+  const handlePaintProject = useCallback(
+    (projectId: string) => {
+      setMode('paint');
+      setSelectedProjectId(projectId);
+    },
+    [setMode, setSelectedProjectId],
+  );
+
   if (!plannerData) {
     return null;
   }
@@ -479,6 +498,9 @@ export function ProjectAllocationPanel({
             // Get the updated project data with allocations
             const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
 
+            // Check if this project is selected for painting
+            const isPaintingProject = mode === 'paint' && selectedProjectId === projectData.id;
+
             return (
               <TableRow key={projectData.id} className="h-8">
                 <TableCell
@@ -490,10 +512,23 @@ export function ProjectAllocationPanel({
                   <span className="relative z-10 font-medium">{projectData.slug}</span>
                 </TableCell>
                 <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
-                  <Link href={`/projects/${projectData.id}`} className="hover:underline w-full">
-                    {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
-                    {projectData.name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={isPaintingProject ? 'default' : 'ghost'}
+                      className={cn('h-6 w-6 p-0 shrink-0', isPaintingProject && 'bg-primary text-primary-foreground')}
+                      onClick={() => handlePaintProject(projectData.id)}
+                      title={isPaintingProject ? 'Painting mode active' : 'Enable painting mode'}
+                    >
+                      <PaintBucket className="h-3 w-3" />
+                    </Button>
+                    <Link href={`/projects/${projectData.id}`} className="hover:underline flex-1 min-w-0">
+                      <div className="flex items-center min-w-0">
+                        {projectData.icon && <span className="mr-2 shrink-0">{projectData.icon}</span>}
+                        <span className="truncate">{projectData.name}</span>
+                      </div>
+                    </Link>
+                  </div>
                 </TableCell>
                 {ROLES_TO_DISPLAY.map((role) => {
                   const data = updatedProjectData.allocations[role];
@@ -565,6 +600,9 @@ export function ProjectAllocationPanel({
             // Get the updated project data with allocations
             const updatedProjectData = finalRoleCapacityData.updatedProjects[projectData.id] || projectData;
 
+            // Check if this project is selected for painting
+            const isPaintingProject = mode === 'paint' && selectedProjectId === projectData.id;
+
             return (
               <TableRow key={projectData.id} className="h-8 bg-muted/20">
                 <TableCell
@@ -583,9 +621,20 @@ export function ProjectAllocationPanel({
                   <span className="relative z-10 font-medium">{projectData.slug}</span>
                 </TableCell>
                 <TableCell className="font-medium w-[200px] whitespace-nowrap py-1 px-2 overflow-hidden truncate">
-                  <div className="flex items-center">
-                    {projectData.icon && <span className="mr-2">{projectData.icon}</span>}
-                    <span className="text-muted-foreground">{projectData.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={isPaintingProject ? 'default' : 'ghost'}
+                      className={cn('h-6 w-6 p-0 shrink-0', isPaintingProject && 'bg-primary text-primary-foreground')}
+                      onClick={() => handlePaintProject(projectData.id)}
+                      title={isPaintingProject ? 'Painting mode active' : 'Enable painting mode'}
+                    >
+                      <PaintBucket className="h-3 w-3" />
+                    </Button>
+                    <div className="flex items-center flex-1 min-w-0">
+                      {projectData.icon && <span className="mr-2 shrink-0">{projectData.icon}</span>}
+                      <span className="text-muted-foreground truncate">{projectData.name}</span>
+                    </div>
                   </div>
                 </TableCell>
                 {ROLES_TO_DISPLAY.map((role) => {
@@ -631,6 +680,7 @@ export function ProjectAllocationPanel({
           Default projects (vacation, duty, etc.) reduce available capacity and don&apos;t count toward allocation
           metrics.
         </p>
+        <p>Click the paint bucket icon next to any project to enable painting mode for that project.</p>
       </div>
     </div>
   );
