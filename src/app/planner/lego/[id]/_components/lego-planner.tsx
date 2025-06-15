@@ -26,6 +26,7 @@ import { getRoleSortPriority } from '@/lib/utils/sorting';
 import { ColumnSizeType } from '@/lib/utils/column-sizing';
 import { getProjectIcon } from '@/lib/utils/icons';
 import { getThemeAwarePaintCursor, getThemeAwareEraseCursor } from '@/lib/utils/cursor';
+import { generateAssigneeKey, parseAssigneeKey } from './utils/assignee';
 
 // Component imports
 import { AssigneeName } from './assignee-name';
@@ -38,6 +39,7 @@ import { useColumnSizing } from './hooks/use-column-sizing';
 import { usePaintMode } from './hooks/use-paint-mode';
 import { DragSelectTableCell, DragSelectTableContainer, useDragSelectState } from '@/components/ui/table-drag-select';
 import { useHistory } from './hooks/use-history';
+import { usePlannerClipboard } from './hooks/use-planner-clipboard';
 import { toast } from '@/components/ui/use-toast';
 import { trpc } from '@/utils/trpc';
 
@@ -188,6 +190,12 @@ export function LegoPlanner({
     });
   }, [redo, assignMutation, plannerData.id]);
 
+  // Clipboard functionality
+  const { copy, cut, paste, canPaste, cutCells } = usePlannerClipboard({
+    getAssignment,
+    onHistoricAssign: handleHistoricAssign,
+  });
+
   const handleFinishPainting = useCallback(
     async (cellIds: string[], paintProjectId: string | null) => {
       const cells = cellIds.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
@@ -299,7 +307,34 @@ export function LegoPlanner({
     [mode, onProjectClick],
   );
 
-  // Keyboard shortcuts for undo/redo
+  // Clipboard operation handlers
+  const handleCopy = useCallback(() => {
+    copy(selectedCells);
+    setSelectedCells([]);
+  }, [copy, selectedCells]);
+
+  const handleCut = useCallback(() => {
+    cut(selectedCells);
+    setSelectedCells([]);
+  }, [cut, selectedCells]);
+
+  const handlePaste = useCallback(async () => {
+    if (selectedCells.length > 0) {
+      try {
+        await paste(selectedCells, currentYear, currentQuarter);
+        setSelectedCells([]);
+      } catch (error) {
+        console.error('Error pasting assignments:', error);
+        toast({
+          title: 'Error pasting assignments',
+          description: 'Please try again',
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [paste, selectedCells, currentYear, currentQuarter]);
+
+  // Keyboard shortcuts for undo/redo and clipboard operations
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore if focus is in an input or textarea
@@ -320,10 +355,25 @@ export function LegoPlanner({
         event.preventDefault();
         handleRedo();
       }
+      // Cmd+C (copy)
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'c' && selectedCells.length > 0) {
+        event.preventDefault();
+        handleCopy();
+      }
+      // Cmd+X (cut)
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'x' && selectedCells.length > 0) {
+        event.preventDefault();
+        handleCut();
+      }
+      // Cmd+V (paste)
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'v' && canPaste && selectedCells.length > 0) {
+        event.preventDefault();
+        handlePaste();
+      }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [handleUndo, handleRedo]);
+  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, selectedCells, canPaste]);
 
   const handleAssignProjectFromSelectionPopover = useCallback(
     async (projectId: string) => {
@@ -410,6 +460,7 @@ export function LegoPlanner({
             onRedo={handleRedo}
             canUndo={canUndo}
             canRedo={canRedo}
+            // TODO: Implement static toolbar methods to work with for cut / copy / paste that should be active based on the selection
           />
         </div>
         <div className="flex items-center gap-1">
@@ -448,6 +499,10 @@ export function LegoPlanner({
             onClearSelection={() => setSelectedCells([])}
             onAssignProject={handleAssignProjectFromSelectionPopover}
             onDeleteAssignments={handleDeleteAssignmentsFromSelectionPopover}
+            onCopy={handleCopy}
+            onCut={handleCut}
+            onPaste={handlePaste}
+            canPaste={canPaste}
           />
         )}
         <div style={cursorStyle} onMouseUp={stopPainting}>
@@ -504,10 +559,13 @@ export function LegoPlanner({
                     const CellComponent = mode === 'pointer' ? DragSelectTableCell : TableCell;
                     const isPainting = mode === 'paint' || mode === 'erase';
 
+                    const cellKey = generateAssigneeKey(assignee.id, weekCol.weekNumber);
+                    const isCutCell = cutCells.includes(cellKey);
+
                     return (
                       <CellComponent
                         key={weekCol.weekNumber}
-                        id={generateAssigneeKey(assignee.id, weekCol.weekNumber)}
+                        id={cellKey}
                         className={cn(
                           'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300 relative',
                           mode === 'inspect' &&
@@ -517,6 +575,7 @@ export function LegoPlanner({
                             'opacity-30',
                           isCurrentWeekCell && 'bg-amber-50/20 dark:bg-amber-950/10',
                           mode === 'inspect' && project && 'cursor-pointer',
+                          isCutCell && 'opacity-50 border-dashed border-2 border-orange-400',
                         )}
                         onPointerOver={() => handleMouseEnterCell(project?.id)}
                         onPointerEnter={() => {
@@ -545,18 +604,6 @@ export function LegoPlanner({
   );
 }
 
-function generateAssigneeKey(assigneeId: string, weekNumber: number): string {
-  return `${assigneeId}::${weekNumber}`;
-}
-
-function parseAssigneeKey(id: string) {
-  const [assigneeId = 'UNKNOWN', weekNumber] = id.split('::');
-  return {
-    assigneeId,
-    weekNumber: parseInt(weekNumber || '-1'),
-  };
-}
-
 function SelectionActionPopover({
   selectedItems,
   regularProjects,
@@ -564,6 +611,10 @@ function SelectionActionPopover({
   onClearSelection,
   onAssignProject,
   onDeleteAssignments,
+  onCopy,
+  onCut,
+  onPaste,
+  canPaste,
 }: {
   selectedItems: string[];
   regularProjects: Project[];
@@ -571,6 +622,10 @@ function SelectionActionPopover({
   onClearSelection: () => void;
   onAssignProject: (projectId: string) => Promise<void>;
   onDeleteAssignments: () => Promise<void>;
+  onCopy: () => void;
+  onCut: () => void;
+  onPaste: () => Promise<void>;
+  canPaste: boolean;
 }) {
   const { finalDragPosition } = useDragSelectState();
 
@@ -609,13 +664,18 @@ function SelectionActionPopover({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center">
-            <Button variant="ghost" className="h-8">
+            <Button variant="ghost" className="h-8" onClick={onCut} disabled={selectedItems.length === 0}>
               <ScissorsIcon className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" className="h-8">
+            <Button variant="ghost" className="h-8" onClick={onCopy} disabled={selectedItems.length === 0}>
               <CopyIcon className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" className="h-8">
+            <Button
+              variant="ghost"
+              className="h-8"
+              onClick={onPaste}
+              disabled={!canPaste || selectedItems.length === 0}
+            >
               <ClipboardPasteIcon className="h-4 w-4" />
             </Button>
             <Button
