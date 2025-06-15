@@ -38,7 +38,7 @@ export interface ProjectFormData {
   impact: string;
   roi: string;
   archived: boolean;
-  estimates: Record<string, number>;
+  estimates: Record<string, number | ''>;
 }
 
 export interface ProjectFormProps {
@@ -85,10 +85,10 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
   estimates: ROLES_TO_DISPLAY.reduce(
     (acc, role) => {
       const estimate = projectData?.estimates?.find((est) => est.department === role);
-      acc[role] = estimate?.value || 0;
+      acc[role] = typeof estimate?.value === 'number' && estimate.value !== 0 ? estimate.value : '';
       return acc;
     },
-    {} as Record<string, number>,
+    {} as Record<string, number | ''>,
   ),
 });
 
@@ -227,12 +227,11 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
   };
 
   const handleEstimateChange = (role: string, value: string) => {
-    const weeks = parseInt(value, 10);
     setFormData((prev) => ({
       ...prev,
       estimates: {
         ...prev.estimates,
-        [role]: isNaN(weeks) ? 0 : weeks,
+        [role]: value === '' ? '' : Math.max(0, parseInt(value, 10) || 0),
       },
     }));
   };
@@ -264,7 +263,11 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
       return; // Don't submit if slug is invalid
     }
 
-    await onSubmit(formData);
+    // Coerce empty string estimates to 0 before submit
+    const cleanedEstimates = Object.fromEntries(
+      Object.entries(formData.estimates).map(([role, value]) => [role, value === '' ? 0 : value]),
+    );
+    await onSubmit({ ...formData, estimates: cleanedEstimates });
   };
 
   const defaultSubmitText = mode === 'create' ? 'Create Project' : 'Save Changes';

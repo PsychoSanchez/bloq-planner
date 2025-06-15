@@ -66,11 +66,11 @@ export function EditProjectForm({ project, teams, teamsLoading }: EditProjectFor
             }))
           : [],
         estimates: Object.entries(formData.estimates)
-          .filter(([, value]) => value > 0)
           .map(([department, value]) => ({
             department,
-            value,
-          })),
+            value: typeof value === 'string' ? parseInt(value, 10) || 0 : value,
+          }))
+          .filter(({ value }) => value > 0),
       });
 
       router.refresh();

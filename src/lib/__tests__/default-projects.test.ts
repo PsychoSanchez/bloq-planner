@@ -4,13 +4,14 @@ import { Project } from '../types';
 
 describe('Default Projects', () => {
   test('should have correct default projects defined', () => {
-    expect(DEFAULT_PROJECTS).toHaveLength(4);
+    expect(DEFAULT_PROJECTS).toHaveLength(5);
 
     const projectNames = DEFAULT_PROJECTS.map((p) => p.name);
     expect(projectNames).toContain('Vacation');
     expect(projectNames).toContain('Duty');
     expect(projectNames).toContain('Sick Leave');
     expect(projectNames).toContain('Team Event');
+    expect(projectNames).toContain('Blocked');
   });
 
   test('should have correct structure for default projects', () => {
@@ -31,6 +32,7 @@ describe('Default Projects', () => {
     expect(isDefaultProject('default-duty')).toBe(true);
     expect(isDefaultProject('default-sick-leave')).toBe(true);
     expect(isDefaultProject('default-team-event')).toBe(true);
+    expect(isDefaultProject('default-blocked')).toBe(true);
 
     expect(isDefaultProject('regular-project-id')).toBe(false);
     expect(isDefaultProject('some-other-id')).toBe(false);
@@ -94,5 +96,8 @@ describe('Default Projects', () => {
 
     const teamEventProject = DEFAULT_PROJECTS.find((p) => p.name === 'Team Event');
     expect(teamEventProject?.type).toBe('team-event');
+
+    const blockedProject = DEFAULT_PROJECTS.find((p) => p.name === 'Blocked');
+    expect(blockedProject?.type).toBe('blocked');
   });
 });
