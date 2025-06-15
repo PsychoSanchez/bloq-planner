@@ -23,74 +23,6 @@ const useAssignments = (plannerId: string) => {
     plannerId: plannerId,
   });
 
-  // tRPC mutations
-  const utils = trpc.useUtils();
-
-  const createAssignmentMutation = trpc.assignment.createAssignment.useMutation({
-    onSuccess: (newAssignment, variables) => {
-      // Replace the optimistic assignment with the real one from the server
-      setAssignments((prev) =>
-        prev.map((a) =>
-          a.id === `temp-${variables.assigneeId}-${variables.week}-${variables.year}` ? newAssignment : a,
-        ),
-      );
-      utils.assignment.getAssignments.invalidate();
-    },
-    onError: (error, variables) => {
-      // Revert the optimistic update
-      setAssignments((prev) =>
-        prev.filter((a) => a.id !== `temp-${variables.assigneeId}-${variables.week}-${variables.year}`),
-      );
-      toast({
-        title: 'Failed to create assignment',
-        description: error.message || 'Failed to create assignment',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateAssignmentMutation = trpc.assignment.updateAssignment.useMutation({
-    onSuccess: () => {
-      // The optimistic update is already in place, just invalidate cache
-      utils.assignment.getAssignments.invalidate();
-    },
-    onError: (error, variables) => {
-      // Revert the optimistic update by refetching from server data
-      if (assignmentsData) {
-        const originalAssignment = assignmentsData.find((a) => a.id === variables.id);
-        if (originalAssignment) {
-          setAssignments((prev) => prev.map((a) => (a.id === variables.id ? originalAssignment : a)));
-        }
-      }
-      toast({
-        title: 'Failed to update assignment',
-        description: error.message || 'Failed to update assignment',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteAssignmentMutation = trpc.assignment.deleteAssignment.useMutation({
-    onSuccess: () => {
-      // The optimistic update is already in place, just invalidate cache
-      utils.assignment.getAssignments.invalidate();
-    },
-    onError: (error, variables) => {
-      // Revert the optimistic update by restoring the deleted assignment
-      if (assignmentsData) {
-        const deletedAssignment = assignmentsData.find((a) => a.id === variables.id);
-        if (deletedAssignment) {
-          setAssignments((prev) => [...prev, deletedAssignment]);
-        }
-      }
-      toast({
-        title: 'Failed to delete assignment',
-        description: error.message || 'Failed to delete assignment',
-        variant: 'destructive',
-      });
-    },
-  });
-
   // Bulk mutations
   const bulkUpsertAssignmentsMutation = trpc.assignment.bulkUpsertAssignments.useMutation({
     onSuccess: (result) => {
@@ -124,7 +56,7 @@ const useAssignments = (plannerId: string) => {
 
         return updatedAssignments;
       });
-      utils.assignment.getAssignments.invalidate();
+      // utils.assignment.getAssignments.invalidate();
     },
     onError: (error) => {
       // Revert optimistic updates by removing temporary assignments
@@ -140,7 +72,7 @@ const useAssignments = (plannerId: string) => {
   const bulkDeleteAssignmentsMutation = trpc.assignment.bulkDeleteAssignments.useMutation({
     onSuccess: () => {
       // The optimistic update is already in place, just invalidate cache
-      utils.assignment.getAssignments.invalidate();
+      // utils.assignment.getAssignments.invalidate();
     },
     onError: (error, variables) => {
       // Revert the optimistic update by restoring deleted assignments
@@ -173,71 +105,6 @@ const useAssignments = (plannerId: string) => {
       });
     }
   }, [assignmentsError]);
-
-  const createAssignment = useCallback(
-    async (assignment: Omit<Assignment, 'id'>) => {
-      // Generate a temporary ID for optimistic update
-      const tempId = `temp-${assignment.assigneeId}-${assignment.week}-${assignment.year}`;
-      const optimisticAssignment: Assignment = {
-        ...assignment,
-        id: tempId,
-      };
-
-      // Optimistic update: add the assignment immediately
-      setAssignments((prev) => [...prev, optimisticAssignment]);
-
-      try {
-        await createAssignmentMutation.mutateAsync(assignment);
-      } catch (error) {
-        // Error is already handled in the mutation onError callback
-        console.error('Failed to create assignment:', error);
-      }
-    },
-    [createAssignmentMutation],
-  );
-
-  const updateAssignment = useCallback(
-    async (assignment: Partial<Assignment>) => {
-      if (!assignment.id) {
-        throw new Error('Assignment ID is required for update');
-      }
-
-      // Optimistic update: update the assignment immediately
-      setAssignments((prev) => prev.map((a) => (a.id === assignment.id ? { ...a, ...assignment } : a)));
-
-      try {
-        await updateAssignmentMutation.mutateAsync({
-          id: assignment.id,
-          assigneeId: assignment.assigneeId!,
-          projectId: assignment.projectId!,
-          plannerId: assignment.plannerId!,
-          week: assignment.week!,
-          year: assignment.year!,
-          quarter: assignment.quarter,
-          status: assignment.status,
-        });
-      } catch (error) {
-        // Error is already handled in the mutation onError callback
-        console.error('Failed to update assignment:', error);
-      }
-    },
-    [updateAssignmentMutation],
-  );
-
-  const deleteAssignment = useCallback(
-    async (assignmentId: string) => {
-      // Optimistic update: remove the assignment immediately
-      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
-
-      try {
-        await deleteAssignmentMutation.mutateAsync({ id: assignmentId });
-      } catch (error) {
-        // Error is already handled in the mutation onError callback
-        console.error('Failed to delete assignment:', error);
-      }
-    },
-    [deleteAssignmentMutation],
-  );
 
   // Bulk operations
   const bulkUpsertAssignments = useCallback(
@@ -318,9 +185,6 @@ const useAssignments = (plannerId: string) => {
   return {
     assignments,
     getAssignmentsForWeekAndAssignee,
-    createAssignment,
-    updateAssignment,
-    deleteAssignment,
     bulkUpsertAssignments,
     bulkDeleteAssignments,
   };
@@ -385,15 +249,8 @@ export default function LegoPlannerDetailsPage() {
     },
   });
 
-  const {
-    assignments,
-    getAssignmentsForWeekAndAssignee,
-    createAssignment,
-    updateAssignment,
-    deleteAssignment,
-    bulkUpsertAssignments,
-    bulkDeleteAssignments,
-  } = useAssignments(plannerId);
+  const { assignments, getAssignmentsForWeekAndAssignee, bulkUpsertAssignments, bulkDeleteAssignments } =
+    useAssignments(plannerId);
 
   // Enable real-time assignment updates via SSE
   const { lastAction, isConnected, toggleConnection } = useAssignmentSubscription({
@@ -522,9 +379,6 @@ export default function LegoPlannerDetailsPage() {
       <LegoPlanner
         initialData={plannerData}
         getAssignmentsForWeekAndAssignee={getAssignmentsForWeekAndAssignee}
-        onCreateAssignment={createAssignment}
-        onUpdateAssignment={updateAssignment}
-        onDeleteAssignment={deleteAssignment}
         onBulkUpsertAssignments={bulkUpsertAssignments}
         onBulkDeleteAssignments={bulkDeleteAssignments}
         onProjectClick={handleProjectClick}

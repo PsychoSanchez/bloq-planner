@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Planner, Assignment, Project } from '@/lib/types';
 import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
 import { generateWeeks } from '@/lib/sample-data';
@@ -37,6 +37,8 @@ import { PlannerToolbar, usePlannerToolbarMode } from './planner-toolbar';
 import { useColumnSizing } from './hooks/use-column-sizing';
 import { usePaintMode } from './hooks/use-paint-mode';
 import { DragSelectTableCell, DragSelectTableContainer, useDragSelectState } from '@/components/ui/table-drag-select';
+import { useHistory } from './hooks/use-history';
+import { toast } from '@/components/ui/use-toast';
 
 interface LegoPlannerProps {
   initialData: Planner;
@@ -77,7 +79,7 @@ export function LegoPlanner({
   const tableRef = useRef<HTMLTableElement>(null);
 
   // Memoized computed values
-  const weeks = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
+  const weekColumns = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
 
   const allAvailableProjects = useMemo(() => {
     return getAllAvailableProjects(plannerData.projects);
@@ -127,16 +129,98 @@ export function LegoPlanner({
 
   const [mode] = usePlannerToolbarMode();
 
+  // History buffer for undo/redo
+  const { canUndo, canRedo, addAction, undo, redo } = useHistory(10);
+
+  // Wrap assignment actions to buffer them
+  const handleHistoricBulkUpsertAssignments = useCallback(
+    async (oldAssignments: Assignment[], newAssignments: Omit<Assignment, 'id'>[]) => {
+      // Save action to history
+      addAction({
+        type: 'insert',
+        payload: {
+          deleted: oldAssignments,
+          inserted: newAssignments,
+        },
+      });
+      await onBulkUpsertAssignments?.(newAssignments);
+    },
+    [addAction, onBulkUpsertAssignments],
+  );
+
+  const handleHistoricBulkDeleteAssignments = useCallback(
+    async (deletedAssignments: Assignment[]) => {
+      addAction({
+        type: 'delete',
+        payload: {
+          deleted: deletedAssignments,
+        },
+      });
+      await onBulkDeleteAssignments?.(deletedAssignments.map((a) => a.id));
+    },
+    [addAction, onBulkDeleteAssignments],
+  );
+
+  // Undo/redo logic (to be wired to toolbar and shortcuts)
+  const handleUndo = useCallback(async () => {
+    const lastAction = undo();
+    if (!lastAction) return;
+
+    if (lastAction.type === 'insert') {
+      // Delete all items that were inserted
+      await onBulkDeleteAssignments?.(
+        lastAction.payload.inserted
+          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
+          .filter((v) => v !== undefined)
+          .map((a) => a.id),
+      );
+      // Restore all items that were deleted
+      await onBulkUpsertAssignments?.(lastAction.payload.inserted);
+    } else if (lastAction.type === 'delete') {
+      // Restore all items that were deleted
+      await onBulkUpsertAssignments?.(lastAction.payload.deleted);
+    }
+  }, [undo, onBulkDeleteAssignments, onBulkUpsertAssignments, getAssignmentsForWeekAndAssignee]);
+
+  const handleRedo = useCallback(async () => {
+    const nextAction = redo();
+    if (!nextAction) return;
+    if (nextAction.type === 'insert') {
+      // Delete all items that were deleted
+      await onBulkDeleteAssignments?.(
+        nextAction.payload.deleted
+          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
+          .filter((v) => v !== undefined)
+          .map((a) => a.id),
+      );
+      // Restore all items that were deleted
+      await onBulkUpsertAssignments?.(nextAction.payload.inserted);
+    } else if (nextAction.type === 'delete') {
+      // Delete all items that were inserted
+      await onBulkDeleteAssignments?.(
+        nextAction.payload.deleted
+          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
+          .filter((v) => v !== undefined)
+          .map((a) => a.id),
+      );
+    }
+  }, [redo, onBulkDeleteAssignments, onBulkUpsertAssignments, getAssignmentsForWeekAndAssignee]);
+
   const handleFinishPainting = useCallback(
     async (cellIds: string[], paintProjectId: string | null) => {
       if (mode === 'erase') {
-        const assignmentIds = cellIds
-          .map(parseAssigneeKey)
-          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId)?.id)
-          .filter((v) => v !== undefined);
-        await onBulkDeleteAssignments?.(assignmentIds);
-      } else if (mode === 'paint' && paintProjectId) {
         const assignments = cellIds
+          .map(parseAssigneeKey)
+          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
+          .filter((v) => v !== undefined);
+        await handleHistoricBulkDeleteAssignments(assignments);
+      } else if (mode === 'paint' && paintProjectId) {
+        const oldAssignments = cellIds
+          .map(parseAssigneeKey)
+          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
+          .filter((v) => v !== undefined);
+
+        const newAssignments = cellIds
           .map(parseAssigneeKey)
           .map(
             ({ assigneeId, weekNumber }) =>
@@ -151,14 +235,13 @@ export function LegoPlanner({
               },
           )
           .filter((assignment) => assignment !== undefined && assignment.projectId !== paintProjectId)
-          .filter((v) => v !== undefined);
-
-        await onBulkUpsertAssignments?.(
-          assignments.map((assignment) => ({
+          .filter((v) => v !== undefined)
+          .map((assignment) => ({
             ...assignment,
             projectId: paintProjectId,
-          })),
-        );
+          }));
+
+        await handleHistoricBulkUpsertAssignments(oldAssignments, newAssignments);
       }
     },
     [
@@ -166,8 +249,8 @@ export function LegoPlanner({
       currentYear,
       getAssignmentsForWeekAndAssignee,
       mode,
-      onBulkDeleteAssignments,
-      onBulkUpsertAssignments,
+      handleHistoricBulkDeleteAssignments,
+      handleHistoricBulkUpsertAssignments,
       plannerData.id,
     ],
   );
@@ -231,7 +314,7 @@ export function LegoPlanner({
     [paint],
   );
 
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [selectedCells, setSelectedCells] = useState<string[]>([]);
 
   // Get cursor style based on mode
   const cursorStyle = useMemo(() => {
@@ -252,134 +335,159 @@ export function LegoPlanner({
     [mode, onProjectClick],
   );
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore if focus is in an input or textarea
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+      // Cmd+Z (undo)
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        handleUndo();
+      }
+      // Cmd+Shift+Z (redo)
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [handleUndo, handleRedo]);
+
+  const handleAssignProjectFromSelectionPopover = useCallback(
+    async (projectId: string) => {
+      if (!onBulkUpsertAssignments) return;
+
+      try {
+        // Clear selection after assignment
+        setSelectedCells([]);
+
+        // Parse selected items to get assignee and week info
+        if (selectedCells.length > 0) {
+          const oldAssignments = selectedCells
+            .map(parseAssigneeKey)
+            .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
+            .filter((v) => v !== undefined);
+
+          const newAssignments = selectedCells.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
+            assigneeId,
+            week: weekNumber,
+            projectId,
+            plannerId: plannerData.id,
+            year: currentYear,
+            quarter: currentQuarter,
+            status: 'planned',
+          }));
+
+          await handleHistoricBulkUpsertAssignments(oldAssignments, newAssignments);
+        }
+      } catch (error) {
+        console.error('Error assigning project:', error);
+        toast({
+          title: 'Error assigning project',
+          description: 'Please try again',
+          variant: 'destructive',
+        });
+      }
+    },
+    [
+      onBulkUpsertAssignments,
+      selectedCells,
+      handleHistoricBulkUpsertAssignments,
+      getAssignmentsForWeekAndAssignee,
+      plannerData.id,
+      currentYear,
+      currentQuarter,
+    ],
+  );
+
+  const handleDeleteAssignmentsFromSelectionPopover = useCallback(async () => {
+    if (!onBulkDeleteAssignments) return;
+
+    try {
+      // Clear selection after assignment
+      setSelectedCells([]);
+      // Parse selected items and collect existing assignment IDs
+
+      if (selectedCells.length > 0) {
+        const assignments = selectedCells
+          .map(parseAssigneeKey)
+          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
+          .filter((v) => v !== undefined);
+
+        await handleHistoricBulkDeleteAssignments(assignments);
+      }
+    } catch (error) {
+      console.error('Error deleting assignments:', error);
+      toast({
+        title: 'Error deleting assignments',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    }
+  }, [getAssignmentsForWeekAndAssignee, handleHistoricBulkDeleteAssignments, onBulkDeleteAssignments, selectedCells]);
+
   return (
     <>
+      <p className="text-muted-foreground mt-1 text-xs">
+        Weekly planning board - {weekColumns.length} weeks, {plannerData.assignees.length} assignees
+      </p>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
-        <div>
-          <h1 className="text-lg text-foreground">Lego Planner</h1>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Weekly planning board - {weeks.length} weeks, {plannerData.assignees.length} assignees
-          </p>
-        </div>
         <div className="flex items-center gap-4">
           <PlannerToolbar
             selectedProjectId={paintProjectId}
             onProjectSelect={handleProjectSelect}
             regularProjects={regularProjects}
             defaultProjects={defaultProjects}
-          />
-          <div className="flex items-center gap-1">
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              className="h-8"
-              value={selectedSize}
-              onValueChange={handleColumnSizeChange}
-            >
-              <ToggleGroupItem value="compact" className="text-xs px-3 h-8">
-                Compact
-              </ToggleGroupItem>
-              <ToggleGroupItem value="normal" className="text-xs px-3 h-8">
-                Normal
-              </ToggleGroupItem>
-              <ToggleGroupItem value="wide" className="text-xs px-3 h-8">
-                Wide
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-          <CalendarNavigation
-            currentYear={currentYear}
-            currentQuarter={currentQuarter}
-            onYearChange={handleYearChange}
-            onQuarterChange={handleQuarterChange}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         </div>
+        <div className="flex items-center gap-1">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            className="h-8"
+            value={selectedSize}
+            onValueChange={handleColumnSizeChange}
+          >
+            <ToggleGroupItem value="compact" className="text-xs px-3 h-8">
+              Compact
+            </ToggleGroupItem>
+            <ToggleGroupItem value="normal" className="text-xs px-3 h-8">
+              Normal
+            </ToggleGroupItem>
+            <ToggleGroupItem value="wide" className="text-xs px-3 h-8">
+              Wide
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <CalendarNavigation
+          currentYear={currentYear}
+          currentQuarter={currentQuarter}
+          onYearChange={handleYearChange}
+          onQuarterChange={handleQuarterChange}
+        />
       </div>
 
-      <DragSelectTableContainer onSelectedItemsChange={setSelectedItems}>
+      <DragSelectTableContainer onSelectedItemsChange={setSelectedCells}>
         {mode === 'pointer' && (
           <SelectionActionPopover
-            selectedItems={selectedItems}
+            selectedItems={selectedCells}
             regularProjects={regularProjects}
             defaultProjects={defaultProjects}
-            onClearSelection={() => setSelectedItems([])}
-            onAssignProject={async (projectId: string) => {
-              if (!onBulkUpsertAssignments) return;
-
-              try {
-                // Clear selection after assignment
-                setSelectedItems([]);
-                // Parse selected items to get assignee and week info
-                const assignmentData: Array<{
-                  assigneeId: string;
-                  week: number;
-                  projectId: string;
-                  plannerId: string;
-                  year: number;
-                  quarter: number;
-                  status?: string;
-                }> = [];
-
-                for (const itemId of selectedItems) {
-                  const parts = itemId.split('-');
-                  if (parts.length !== 2) continue;
-
-                  const assigneeId = parts[0]!;
-                  const weekStr = parts[1]!;
-                  const week = parseInt(weekStr, 10);
-
-                  if (!assigneeId || !weekStr || isNaN(week)) continue;
-
-                  assignmentData.push({
-                    assigneeId,
-                    projectId,
-                    plannerId: plannerData.id,
-                    week,
-                    year: currentYear,
-                    quarter: currentQuarter,
-                    status: 'planned',
-                  });
-                }
-
-                if (assignmentData.length > 0) {
-                  await onBulkUpsertAssignments(assignmentData);
-                }
-              } catch (error) {
-                console.error('Error assigning project:', error);
-              }
-            }}
-            onDeleteAssignments={async () => {
-              if (!onBulkDeleteAssignments) return;
-
-              try {
-                // Clear selection after assignment
-                setSelectedItems([]);
-                // Parse selected items and collect existing assignment IDs
-                const assignmentIds: string[] = [];
-
-                for (const itemId of selectedItems) {
-                  const parts = itemId.split('-');
-                  if (parts.length !== 2) continue;
-
-                  const assigneeId = parts[0]!;
-                  const weekStr = parts[1]!;
-                  const week = parseInt(weekStr, 10);
-
-                  if (!assigneeId || !weekStr || isNaN(week)) continue;
-
-                  const existingAssignment = getAssignmentsForWeekAndAssignee(week, assigneeId);
-                  if (existingAssignment) {
-                    assignmentIds.push(existingAssignment.id);
-                  }
-                }
-
-                if (assignmentIds.length > 0) {
-                  await onBulkDeleteAssignments(assignmentIds);
-                }
-              } catch (error) {
-                console.error('Error deleting assignments:', error);
-              }
-            }}
+            onClearSelection={() => setSelectedCells([])}
+            onAssignProject={handleAssignProjectFromSelectionPopover}
+            onDeleteAssignments={handleDeleteAssignmentsFromSelectionPopover}
           />
         )}
         <div style={cursorStyle} onMouseUp={stopPainting}>
@@ -395,7 +503,7 @@ export function LegoPlanner({
                     />
                   </div>
                 </TableHead>
-                {weeks.map((week) => {
+                {weekColumns.map((week) => {
                   const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
                   const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
                   const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
@@ -421,27 +529,25 @@ export function LegoPlanner({
                   <TableCell className="p-0 font-medium border-r dark:border-zinc-700 sticky left-0 top-0 z-30 bg-background">
                     <AssigneeName assignee={assignee} />
                   </TableCell>
-                  {weeks.map((week) => {
-                    const assignment = getAssignmentsForWeekAndAssignee(week.weekNumber, assignee.id);
+                  {weekColumns.map((weekCol) => {
+                    const assignment = getAssignmentsForWeekAndAssignee(weekCol.weekNumber, assignee.id);
                     const project = assignment
                       ? allAvailableProjects.find((p) => p.id === assignment.projectId)
                       : undefined;
 
-                    const isCurrentWeekCell = isCurrentWeek(week.startDate, week.endDate);
-                    const isCurrentDateCell = isCurrentDate(week.startDate, week.endDate);
-                    const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(week.startDate) : 0;
+                    const isCurrentWeekCell = isCurrentWeek(weekCol.startDate, weekCol.endDate);
+                    const isCurrentDateCell = isCurrentDate(weekCol.startDate, weekCol.endDate);
+                    const dayPosition = isCurrentDateCell ? getCurrentDayPositionInWeek(weekCol.startDate) : 0;
                     const timePosition = isCurrentDateCell ? getCurrentTimePositionInDay() : 0;
                     const markerPosition = ((dayPosition + timePosition) / 7) * 100;
-                    const dataItemId = `${assignee.id}-${week.weekNumber}`;
 
                     const CellComponent = mode === 'pointer' ? DragSelectTableCell : TableCell;
-                    const cellProps = mode === 'pointer' ? { id: dataItemId } : {};
                     const isPainting = mode === 'paint' || mode === 'erase';
 
                     return (
                       <CellComponent
-                        key={week.weekNumber}
-                        {...cellProps}
+                        key={weekCol.weekNumber}
+                        id={generateAssigneeKey(assignee.id, weekCol.weekNumber)}
                         className={cn(
                           'p-0 h-8 border-r dark:border-zinc-700 last:border-r-0 transition-opacity duration-300 relative',
                           mode === 'inspect' &&
@@ -454,13 +560,13 @@ export function LegoPlanner({
                         )}
                         onPointerOver={() => handleMouseEnterCell(project?.id)}
                         onPointerEnter={() => {
-                          handleCellMouseEnter(assignee.id, week.weekNumber);
+                          handleCellMouseEnter(assignee.id, weekCol.weekNumber);
                         }}
                         onPointerLeave={handleMouseLeaveCell}
-                        onPointerDown={() => handleCellMouseDown(assignee.id, week.weekNumber)}
+                        onPointerDown={() => handleCellMouseDown(assignee.id, weekCol.weekNumber)}
                         onClick={() => handleCellClick(project)}
                       >
-                        {isPainting && paintedCells.has(generateAssigneeKey(assignee.id, week.weekNumber)) ? (
+                        {isPainting && paintedCells.has(generateAssigneeKey(assignee.id, weekCol.weekNumber)) ? (
                           <WeekBlock project={allAvailableProjects.find((project) => project.id === paintProjectId)} />
                         ) : (
                           <WeekBlock project={project} isCompact={selectedSize === 'compact'} />

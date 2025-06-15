@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MousePointer2, Paintbrush, Eraser, GlassesIcon } from 'lucide-react';
+import { MousePointer2, Paintbrush, Eraser, GlassesIcon, Undo2, Redo2 } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
 import { getProjectIcon } from '@/lib/utils/icons';
 import { cn } from '@/lib/utils';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export type PlannerMode = 'pointer' | 'paint' | 'erase' | 'inspect';
 
@@ -17,6 +19,10 @@ interface PlannerToolbarProps {
   onProjectSelect: (projectId: string) => void;
   regularProjects: Project[];
   defaultProjects: Project[];
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export function usePlannerToolbarMode() {
@@ -33,6 +39,10 @@ export function PlannerToolbar({
   onProjectSelect,
   regularProjects,
   defaultProjects,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: PlannerToolbarProps) {
   const [mode, setMode] = usePlannerToolbarMode();
   const [isProjectSelectorOpen, setIsProjectSelectorOpen] = useState(false);
@@ -150,6 +160,43 @@ export function PlannerToolbar({
 
   return (
     <div className="flex items-center gap-2">
+      {/* Undo/Redo Buttons */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onUndo}
+              disabled={!canUndo}
+              aria-label="Undo (Cmd+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Undo <kbd className="ml-1 px-1 py-0.5 text-xs rounded">⌘Z</kbd>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onRedo}
+              disabled={!canRedo}
+              aria-label="Redo (Cmd+Shift+Z)"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Redo <kbd className="ml-1 px-1 py-0.5 text-xs rounded">⌘⇧Z</kbd>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {/* Mode Selection */}
       <ToggleGroup type="single" variant="outline" value={mode} onValueChange={handleModeChange} className="h-8">
         <ToggleGroupItem value="pointer" className="text-xs px-3 h-8 flex items-center gap-1">
