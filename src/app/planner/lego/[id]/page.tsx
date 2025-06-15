@@ -16,51 +16,15 @@ import { useAssignmentSubscription } from '@/hooks/use-assignment-subscription';
 import { LiveStatusBadge } from '@/components/live-status-badge';
 
 const useAssignments = (plannerId: string) => {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-
   // Use tRPC to fetch assignments
   const { data: assignmentsData, error: assignmentsError } = trpc.assignment.getAssignments.useQuery({
     plannerId: plannerId,
   });
 
   // Bulk mutations
-  const bulkUpsertAssignmentsMutation = trpc.assignment.bulkUpsertAssignments.useMutation({
-    onSuccess: (result) => {
-      // Update local state with the upserted assignments
-      setAssignments((prev) => {
-        const updatedAssignments = [...prev];
-
-        // Remove old assignments that were updated
-        result.updated.forEach((updated) => {
-          const index = updatedAssignments.findIndex((a) => a.id === updated.id);
-          if (index !== -1) {
-            updatedAssignments[index] = updated;
-          }
-        });
-
-        // Add new assignments that were created
-        result.created.forEach((created) => {
-          // Remove any temporary assignments first
-          const tempIndex = updatedAssignments.findIndex(
-            (a) =>
-              a.id.startsWith('temp-') &&
-              a.assigneeId === created.assigneeId &&
-              a.week === created.week &&
-              a.year === created.year,
-          );
-          if (tempIndex !== -1) {
-            updatedAssignments.splice(tempIndex, 1);
-          }
-          updatedAssignments.push(created);
-        });
-
-        return updatedAssignments;
-      });
-      // utils.assignment.getAssignments.invalidate();
-    },
+  const bulkUpsertAssignments = trpc.assignment.assign.useMutation({
+    onSuccess: () => {},
     onError: (error) => {
-      // Revert optimistic updates by removing temporary assignments
-      setAssignments((prev) => prev.filter((a) => !a.id.startsWith('temp-bulk-')));
       toast({
         title: 'Failed to assign projects',
         description: error.message || 'Failed to assign projects',
@@ -68,32 +32,6 @@ const useAssignments = (plannerId: string) => {
       });
     },
   });
-
-  const bulkDeleteAssignmentsMutation = trpc.assignment.bulkDeleteAssignments.useMutation({
-    onSuccess: () => {
-      // The optimistic update is already in place, just invalidate cache
-      // utils.assignment.getAssignments.invalidate();
-    },
-    onError: (error, variables) => {
-      // Revert the optimistic update by restoring deleted assignments
-      if (assignmentsData) {
-        const deletedAssignments = assignmentsData.filter((a) => variables.ids.includes(a.id));
-        setAssignments((prev) => [...prev, ...deletedAssignments]);
-      }
-      toast({
-        title: 'Failed to delete assignments',
-        description: error.message || 'Failed to delete assignments',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Update local state when tRPC data changes
-  useEffect(() => {
-    if (assignmentsData) {
-      setAssignments(assignmentsData);
-    }
-  }, [assignmentsData]);
 
   // Show error toast if assignments fetch fails
   useEffect(() => {
@@ -106,74 +44,16 @@ const useAssignments = (plannerId: string) => {
     }
   }, [assignmentsError]);
 
-  // Bulk operations
-  const bulkUpsertAssignments = useCallback(
-    async (
-      assignmentData: Array<{
-        assigneeId: string;
-        week: number;
-        projectId: string;
-        plannerId: string;
-        year: number;
-        quarter: number;
-        status?: string;
-      }>,
-    ) => {
-      // Generate temporary assignments for optimistic update
-      const tempAssignments: Assignment[] = assignmentData.map((data, index) => ({
-        id: `temp-bulk-${index}-${Date.now()}`,
-        ...data,
-        status: data.status || 'planned',
-      }));
-
-      // Optimistic update: add temporary assignments
-      setAssignments((prev) => [...prev, ...tempAssignments]);
-
-      try {
-        await bulkUpsertAssignmentsMutation.mutateAsync({
-          assignments: assignmentData.map((data) => ({
-            assigneeId: data.assigneeId,
-            projectId: data.projectId,
-            plannerId: data.plannerId,
-            week: data.week,
-            year: data.year,
-            quarter: data.quarter,
-            status: data.status,
-          })),
-        });
-      } catch (error) {
-        // Error is already handled in the mutation onError callback
-        console.error('Failed to bulk upsert assignments:', error);
-      }
-    },
-    [bulkUpsertAssignmentsMutation],
-  );
-
-  const bulkDeleteAssignments = useCallback(
-    async (assignmentIds: string[]) => {
-      // Optimistic update: remove assignments immediately
-      setAssignments((prev) => prev.filter((a) => !assignmentIds.includes(a.id)));
-
-      try {
-        await bulkDeleteAssignmentsMutation.mutateAsync({ ids: assignmentIds });
-      } catch (error) {
-        // Error is already handled in the mutation onError callback
-        console.error('Failed to bulk delete assignments:', error);
-      }
-    },
-    [bulkDeleteAssignmentsMutation],
-  );
-
   const assignmentsByWeekAndAssignee = useMemo(() => {
     const result = new Map<number, Map<string, Assignment>>();
-    for (const assignment of assignments) {
+    for (const assignment of assignmentsData ?? []) {
       if (!result.has(assignment.week)) {
         result.set(assignment.week, new Map<string, Assignment>());
       }
       result.get(assignment.week)?.set(assignment.assigneeId, assignment);
     }
     return result;
-  }, [assignments]);
+  }, [assignmentsData]);
 
   const getAssignmentsForWeekAndAssignee = useCallback(
     (week: number, assigneeId: string) => {
@@ -183,10 +63,9 @@ const useAssignments = (plannerId: string) => {
   );
 
   return {
-    assignments,
+    assignments: assignmentsData ?? [],
     getAssignmentsForWeekAndAssignee,
     bulkUpsertAssignments,
-    bulkDeleteAssignments,
   };
 };
 
@@ -249,8 +128,7 @@ export default function LegoPlannerDetailsPage() {
     },
   });
 
-  const { assignments, getAssignmentsForWeekAndAssignee, bulkUpsertAssignments, bulkDeleteAssignments } =
-    useAssignments(plannerId);
+  const { assignments, getAssignmentsForWeekAndAssignee } = useAssignments(plannerId);
 
   // Enable real-time assignment updates via SSE
   const { lastAction, isConnected, toggleConnection } = useAssignmentSubscription({
@@ -379,8 +257,6 @@ export default function LegoPlannerDetailsPage() {
       <LegoPlanner
         initialData={plannerData}
         getAssignmentsForWeekAndAssignee={getAssignmentsForWeekAndAssignee}
-        onBulkUpsertAssignments={bulkUpsertAssignments}
-        onBulkDeleteAssignments={bulkDeleteAssignments}
         onProjectClick={handleProjectClick}
       />
       {plannerData && (

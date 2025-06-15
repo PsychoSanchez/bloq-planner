@@ -8,21 +8,15 @@ interface UseAssignmentSubscriptionOptions {
   assigneeId?: string;
   projectId?: string;
   enabled?: boolean;
-  onAssignmentChange?: (event: {
-    type: 'created' | 'updated' | 'deleted' | 'bulkCreated' | 'bulkUpdated' | 'bulkDeleted';
-    data?: unknown;
-    timestamp: number;
-    id: string;
-  }) => void;
 }
 
 interface LastAction {
-  type: 'created' | 'updated' | 'deleted' | 'bulkCreated' | 'bulkUpdated' | 'bulkDeleted';
+  type: 'updated';
   timestamp: number;
 }
 
 export function useAssignmentSubscription(options: UseAssignmentSubscriptionOptions = {}) {
-  const { plannerId, assigneeId, projectId, enabled = true, onAssignmentChange } = options;
+  const { plannerId, assigneeId, projectId, enabled = true } = options;
 
   const [lastAction, setLastAction] = useState<LastAction | undefined>();
   const [isConnected, setIsConnected] = useState(enabled);
@@ -34,8 +28,7 @@ export function useAssignmentSubscription(options: UseAssignmentSubscriptionOpti
       id: string;
       data: {
         id: string;
-        type: 'created' | 'updated' | 'deleted' | 'bulkCreated' | 'bulkUpdated' | 'bulkDeleted';
-        timestamp: number;
+        timestamp?: number;
         data?: unknown;
       };
     }) => {
@@ -44,19 +37,14 @@ export function useAssignmentSubscription(options: UseAssignmentSubscriptionOpti
 
       // Update last action
       setLastAction({
-        type: event.type,
-        timestamp: event.timestamp,
+        type: 'updated',
+        timestamp: event.timestamp ?? 0,
       });
 
       // Invalidate relevant queries to refresh data
       utils.assignment.getAssignments.invalidate();
-
-      // Call the custom handler if provided
-      if (onAssignmentChange) {
-        onAssignmentChange(event);
-      }
     },
-    [utils.assignment.getAssignments, onAssignmentChange],
+    [utils.assignment.getAssignments],
   );
 
   // Subscribe to assignment changes

@@ -1,3 +1,5 @@
+import { type } from 'arktype';
+
 export type Role =
   | 'engineering'
   | 'design'
@@ -61,6 +63,17 @@ export interface Project {
     value: number;
   }>;
 }
+
+export const setAssignmentSchema = type({
+  year: '1970 <= number.integer <= 2100',
+  week: '0 <= number.integer <= 52',
+  assigneeId: 'string',
+  quarter: '0 < number <= 5',
+  projectId: 'string | null',
+  'status?': 'string | undefined',
+});
+
+export type SetAssignment = typeof setAssignmentSchema.infer;
 
 export interface Assignment {
   id: string;

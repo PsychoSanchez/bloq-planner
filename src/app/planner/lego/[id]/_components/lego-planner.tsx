@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Planner, Assignment, Project } from '@/lib/types';
+import { Planner, Assignment, Project, SetAssignment } from '@/lib/types';
 import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
 import { generateWeeks } from '@/lib/sample-data';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,35 +39,30 @@ import { usePaintMode } from './hooks/use-paint-mode';
 import { DragSelectTableCell, DragSelectTableContainer, useDragSelectState } from '@/components/ui/table-drag-select';
 import { useHistory } from './hooks/use-history';
 import { toast } from '@/components/ui/use-toast';
+import { trpc } from '@/utils/trpc';
 
 interface LegoPlannerProps {
   initialData: Planner;
   getAssignmentsForWeekAndAssignee: (weekNumber: number, assigneeId: string) => Assignment | undefined;
-  onCreateAssignment?: (assignment: Omit<Assignment, 'id'>) => Promise<void>;
-  onUpdateAssignment?: (assignment: Partial<Assignment>) => Promise<void>;
-  onDeleteAssignment?: (assignmentId: string) => Promise<void>;
-  onBulkUpsertAssignments?: (
-    assignmentData: Array<{
-      assigneeId: string;
-      week: number;
-      projectId: string;
-      plannerId: string;
-      year: number;
-      quarter: number;
-      status?: string;
-    }>,
-  ) => Promise<void>;
-  onBulkDeleteAssignments?: (assignmentIds: string[]) => Promise<void>;
   onProjectClick?: (project: Project) => void;
 }
 
 export function LegoPlanner({
   initialData: plannerData,
   getAssignmentsForWeekAndAssignee,
-  onBulkUpsertAssignments,
-  onBulkDeleteAssignments,
   onProjectClick,
 }: LegoPlannerProps) {
+  const assignMutation = trpc.assignment.assign.useMutation({
+    onSuccess: () => {},
+    onError: (error) => {
+      toast({
+        title: 'Failed to assign projects',
+        description: error.message || 'Failed to assign projects',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const [currentYear, setCurrentYear] = useQueryState('year', parseAsInteger.withDefault(2025));
   const [currentQuarter, setCurrentQuarter] = useQueryState('quarter', parseAsInteger.withDefault(2));
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
@@ -77,6 +72,21 @@ export function LegoPlanner({
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+
+  const getAssignment = useCallback(
+    (weekNumber: number, assigneeId: string) => {
+      return (
+        getAssignmentsForWeekAndAssignee(weekNumber, assigneeId) ?? {
+          assigneeId,
+          week: weekNumber,
+          year: currentYear,
+          quarter: currentQuarter,
+          projectId: null,
+        }
+      );
+    },
+    [getAssignmentsForWeekAndAssignee, currentYear, currentQuarter],
+  );
 
   // Memoized computed values
   const weekColumns = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
@@ -133,32 +143,25 @@ export function LegoPlanner({
   const { canUndo, canRedo, addAction, undo, redo } = useHistory(10);
 
   // Wrap assignment actions to buffer them
-  const handleHistoricBulkUpsertAssignments = useCallback(
-    async (oldAssignments: Assignment[], newAssignments: Omit<Assignment, 'id'>[]) => {
+  const handleHistoricAssign = useCallback(
+    async (newAssignments: SetAssignment[], oldAssignments: SetAssignment[]) => {
       // Save action to history
       addAction({
-        type: 'insert',
         payload: {
-          deleted: oldAssignments,
-          inserted: newAssignments,
+          before: oldAssignments,
+          after: newAssignments,
         },
       });
-      await onBulkUpsertAssignments?.(newAssignments);
-    },
-    [addAction, onBulkUpsertAssignments],
-  );
-
-  const handleHistoricBulkDeleteAssignments = useCallback(
-    async (deletedAssignments: Assignment[]) => {
-      addAction({
-        type: 'delete',
-        payload: {
-          deleted: deletedAssignments,
-        },
+      await assignMutation.mutateAsync({
+        assignments: newAssignments.map((cell) => ({
+          ...cell,
+          projectId: cell.projectId,
+          status: 'planned',
+        })),
+        plannerId: plannerData.id,
       });
-      await onBulkDeleteAssignments?.(deletedAssignments.map((a) => a.id));
     },
-    [addAction, onBulkDeleteAssignments],
+    [addAction, assignMutation, plannerData.id],
   );
 
   // Undo/redo logic (to be wired to toolbar and shortcuts)
@@ -166,93 +169,54 @@ export function LegoPlanner({
     const lastAction = undo();
     if (!lastAction) return;
 
-    if (lastAction.type === 'insert') {
-      // Delete all items that were inserted
-      await onBulkDeleteAssignments?.(
-        lastAction.payload.inserted
-          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
-          .filter((v) => v !== undefined)
-          .map((a) => a.id),
-      );
-      // Restore all items that were deleted
-      await onBulkUpsertAssignments?.(lastAction.payload.inserted);
-    } else if (lastAction.type === 'delete') {
-      // Restore all items that were deleted
-      await onBulkUpsertAssignments?.(lastAction.payload.deleted);
-    }
-  }, [undo, onBulkDeleteAssignments, onBulkUpsertAssignments, getAssignmentsForWeekAndAssignee]);
+    const { before } = lastAction.payload;
+
+    await assignMutation.mutateAsync({
+      assignments: before,
+      plannerId: plannerData.id,
+    });
+  }, [undo, assignMutation, plannerData.id]);
 
   const handleRedo = useCallback(async () => {
     const nextAction = redo();
     if (!nextAction) return;
-    if (nextAction.type === 'insert') {
-      // Delete all items that were deleted
-      await onBulkDeleteAssignments?.(
-        nextAction.payload.deleted
-          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
-          .filter((v) => v !== undefined)
-          .map((a) => a.id),
-      );
-      // Restore all items that were deleted
-      await onBulkUpsertAssignments?.(nextAction.payload.inserted);
-    } else if (nextAction.type === 'delete') {
-      // Delete all items that were inserted
-      await onBulkDeleteAssignments?.(
-        nextAction.payload.deleted
-          .map((a) => getAssignmentsForWeekAndAssignee(a.week, a.assigneeId))
-          .filter((v) => v !== undefined)
-          .map((a) => a.id),
-      );
-    }
-  }, [redo, onBulkDeleteAssignments, onBulkUpsertAssignments, getAssignmentsForWeekAndAssignee]);
+
+    const { after } = nextAction.payload;
+    await assignMutation.mutateAsync({
+      assignments: after,
+      plannerId: plannerData.id,
+    });
+  }, [redo, assignMutation, plannerData.id]);
 
   const handleFinishPainting = useCallback(
     async (cellIds: string[], paintProjectId: string | null) => {
+      const cells = cellIds.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
+        assigneeId,
+        week: weekNumber,
+        year: currentYear,
+        quarter: currentQuarter,
+      }));
+
       if (mode === 'erase') {
-        const assignments = cellIds
+        const oldAssignments = cellIds
           .map(parseAssigneeKey)
-          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
-          .filter((v) => v !== undefined);
-        await handleHistoricBulkDeleteAssignments(assignments);
+          .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
+        await handleHistoricAssign(
+          cells.map((cell) => ({ ...cell, projectId: null })),
+          oldAssignments,
+        );
       } else if (mode === 'paint' && paintProjectId) {
         const oldAssignments = cellIds
           .map(parseAssigneeKey)
-          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
-          .filter((v) => v !== undefined);
+          .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
 
-        const newAssignments = cellIds
-          .map(parseAssigneeKey)
-          .map(
-            ({ assigneeId, weekNumber }) =>
-              getAssignmentsForWeekAndAssignee(weekNumber, assigneeId) ?? {
-                assigneeId,
-                week: weekNumber,
-                plannerId: plannerData.id,
-                year: currentYear,
-                quarter: currentQuarter,
-                status: 'planned',
-                projectId: undefined,
-              },
-          )
-          .filter((assignment) => assignment !== undefined && assignment.projectId !== paintProjectId)
-          .filter((v) => v !== undefined)
-          .map((assignment) => ({
-            ...assignment,
-            projectId: paintProjectId,
-          }));
-
-        await handleHistoricBulkUpsertAssignments(oldAssignments, newAssignments);
+        await handleHistoricAssign(
+          cells.map((cell) => ({ ...cell, projectId: paintProjectId })),
+          oldAssignments,
+        );
       }
     },
-    [
-      currentQuarter,
-      currentYear,
-      getAssignmentsForWeekAndAssignee,
-      mode,
-      handleHistoricBulkDeleteAssignments,
-      handleHistoricBulkUpsertAssignments,
-      plannerData.id,
-    ],
+    [currentQuarter, currentYear, getAssignment, mode, handleHistoricAssign],
   );
 
   const { paintProjectId, paintedCells, handleProjectSelect, startPainting, paint, stopPainting } = usePaintMode({
@@ -363,8 +327,6 @@ export function LegoPlanner({
 
   const handleAssignProjectFromSelectionPopover = useCallback(
     async (projectId: string) => {
-      if (!onBulkUpsertAssignments) return;
-
       try {
         // Clear selection after assignment
         setSelectedCells([]);
@@ -373,20 +335,19 @@ export function LegoPlanner({
         if (selectedCells.length > 0) {
           const oldAssignments = selectedCells
             .map(parseAssigneeKey)
-            .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
-            .filter((v) => v !== undefined);
+            .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
 
-          const newAssignments = selectedCells.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
+          const cells = selectedCells.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
             assigneeId,
             week: weekNumber,
-            projectId,
-            plannerId: plannerData.id,
             year: currentYear,
             quarter: currentQuarter,
-            status: 'planned',
           }));
 
-          await handleHistoricBulkUpsertAssignments(oldAssignments, newAssignments);
+          await handleHistoricAssign(
+            cells.map((cell) => ({ ...cell, projectId })),
+            oldAssignments,
+          );
         }
       } catch (error) {
         console.error('Error assigning project:', error);
@@ -397,32 +358,31 @@ export function LegoPlanner({
         });
       }
     },
-    [
-      onBulkUpsertAssignments,
-      selectedCells,
-      handleHistoricBulkUpsertAssignments,
-      getAssignmentsForWeekAndAssignee,
-      plannerData.id,
-      currentYear,
-      currentQuarter,
-    ],
+    [selectedCells, handleHistoricAssign, getAssignment, currentYear, currentQuarter],
   );
 
   const handleDeleteAssignmentsFromSelectionPopover = useCallback(async () => {
-    if (!onBulkDeleteAssignments) return;
-
     try {
       // Clear selection after assignment
       setSelectedCells([]);
       // Parse selected items and collect existing assignment IDs
 
       if (selectedCells.length > 0) {
-        const assignments = selectedCells
+        const oldAssignments = selectedCells
           .map(parseAssigneeKey)
-          .map(({ assigneeId, weekNumber }) => getAssignmentsForWeekAndAssignee(weekNumber, assigneeId))
-          .filter((v) => v !== undefined);
+          .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
 
-        await handleHistoricBulkDeleteAssignments(assignments);
+        const cells = selectedCells.map(parseAssigneeKey).map(({ assigneeId, weekNumber }) => ({
+          assigneeId,
+          week: weekNumber,
+          year: currentYear,
+          quarter: currentQuarter,
+        }));
+
+        await handleHistoricAssign(
+          cells.map((cell) => ({ ...cell, projectId: null })),
+          oldAssignments,
+        );
       }
     } catch (error) {
       console.error('Error deleting assignments:', error);
@@ -432,7 +392,7 @@ export function LegoPlanner({
         variant: 'destructive',
       });
     }
-  }, [getAssignmentsForWeekAndAssignee, handleHistoricBulkDeleteAssignments, onBulkDeleteAssignments, selectedCells]);
+  }, [getAssignment, handleHistoricAssign, selectedCells, currentYear, currentQuarter]);
 
   return (
     <>

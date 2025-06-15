@@ -1,26 +1,12 @@
-import { Assignment } from '@/lib/types';
+import { SetAssignment } from '@/lib/types';
 import { useCallback, useState } from 'react';
 
-export type AssignmentActionType = 'update' | 'delete';
-
-export type AssignmentInfo = Omit<Assignment, 'id'>;
-
-interface UpdateAssignmentAction {
-  type: 'insert';
+export type AssignmentAction = {
   payload: {
-    deleted: Assignment[];
-    inserted: AssignmentInfo[];
+    before: SetAssignment[];
+    after: SetAssignment[];
   };
-}
-
-interface DeleteAssignmentAction {
-  type: 'delete';
-  payload: {
-    deleted: Assignment[];
-  };
-}
-
-export type AssignmentAction = UpdateAssignmentAction | DeleteAssignmentAction;
+};
 
 interface UseHistoryResult {
   history: AssignmentAction[];
