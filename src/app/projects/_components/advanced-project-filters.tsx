@@ -11,8 +11,19 @@ import {
   MenubarMenu,
   MenubarCheckboxItem,
   MenubarTrigger,
+  MenubarSeparator,
 } from '@/components/ui/menubar';
-import { XIcon, SignalIcon, CalendarIcon, MapPinIcon, UserIcon, LinkIcon, FilterIcon, Users2Icon } from 'lucide-react';
+import {
+  XIcon,
+  SignalIcon,
+  CalendarIcon,
+  MapPinIcon,
+  UserIcon,
+  LinkIcon,
+  FilterIcon,
+  Users2Icon,
+  MinusIcon,
+} from 'lucide-react';
 import { PRIORITY_OPTIONS, QUARTER_OPTIONS, PROJECT_AREAS } from '@/lib/constants';
 import { TeamOption } from '@/components/team-selector';
 
@@ -22,6 +33,7 @@ interface AdvancedProjectFiltersProps {
 }
 
 const EMPTY_ARRAY = [] as string[];
+const UNASSIGNED_VALUE = 'unassigned';
 
 export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectFiltersProps) {
   // URL state for each filter dimension
@@ -127,6 +139,10 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
   // Get display names for filter values
   const getDisplayName = useCallback(
     (type: string, value: string) => {
+      if (value === UNASSIGNED_VALUE) {
+        return 'Unassigned';
+      }
+
       switch (type) {
         case 'priority':
           return PRIORITY_OPTIONS.find((p) => p.id === value)?.name || value;
@@ -169,6 +185,15 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
               <span className="text-sm">Priority</span>
             </MenubarTrigger>
             <MenubarContent>
+              <MenubarCheckboxItem
+                className="flex items-center gap-2"
+                checked={priorities.includes(UNASSIGNED_VALUE)}
+                onCheckedChange={() => togglePriority(UNASSIGNED_VALUE)}
+              >
+                <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Unassigned</span>
+              </MenubarCheckboxItem>
+              <MenubarSeparator />
               {PRIORITY_OPTIONS.map((priority) => (
                 <MenubarCheckboxItem
                   key={priority.id}
@@ -190,6 +215,15 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
               <span className="text-sm">Quarter</span>
             </MenubarTrigger>
             <MenubarContent className="max-h-80 overflow-y-auto">
+              <MenubarCheckboxItem
+                className="flex items-center gap-2"
+                checked={quarters.includes(UNASSIGNED_VALUE)}
+                onCheckedChange={() => toggleQuarter(UNASSIGNED_VALUE)}
+              >
+                <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Unassigned</span>
+              </MenubarCheckboxItem>
+              <MenubarSeparator />
               {QUARTER_OPTIONS.map((quarter) => (
                 <MenubarCheckboxItem
                   key={quarter.id}
@@ -209,6 +243,15 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
               <span className="text-sm">Area</span>
             </MenubarTrigger>
             <MenubarContent>
+              <MenubarCheckboxItem
+                className="flex items-center gap-2"
+                checked={areas.includes(UNASSIGNED_VALUE)}
+                onCheckedChange={() => toggleArea(UNASSIGNED_VALUE)}
+              >
+                <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Unassigned</span>
+              </MenubarCheckboxItem>
+              <MenubarSeparator />
               {PROJECT_AREAS.map((area) => (
                 <MenubarCheckboxItem
                   key={area.id}
@@ -232,18 +275,31 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
             <MenubarContent className="max-h-80 overflow-y-auto">
               {teamsLoading ? (
                 <MenubarItem disabled>Loading...</MenubarItem>
-              ) : availableLeads.length === 0 ? (
-                <MenubarItem disabled>No leads available</MenubarItem>
               ) : (
-                availableLeads.map((lead) => (
+                <>
                   <MenubarCheckboxItem
-                    key={lead.id}
-                    checked={leads.includes(lead.id)}
-                    onCheckedChange={() => toggleLead(lead.id)}
+                    className="flex items-center gap-2"
+                    checked={leads.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => toggleLead(UNASSIGNED_VALUE)}
                   >
-                    {lead.name}
+                    <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                ))
+                  {availableLeads.length > 0 && <MenubarSeparator />}
+                  {availableLeads.length === 0 ? (
+                    <MenubarItem disabled>No leads available</MenubarItem>
+                  ) : (
+                    availableLeads.map((lead) => (
+                      <MenubarCheckboxItem
+                        key={lead.id}
+                        checked={leads.includes(lead.id)}
+                        onCheckedChange={() => toggleLead(lead.id)}
+                      >
+                        {lead.name}
+                      </MenubarCheckboxItem>
+                    ))
+                  )}
+                </>
               )}
             </MenubarContent>
           </MenubarMenu>
@@ -257,18 +313,31 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
             <MenubarContent className="max-h-80 overflow-y-auto">
               {teamsLoading ? (
                 <MenubarItem disabled>Loading...</MenubarItem>
-              ) : availableTeams.length === 0 ? (
-                <MenubarItem disabled>No teams available</MenubarItem>
               ) : (
-                availableTeams.map((team) => (
+                <>
                   <MenubarCheckboxItem
-                    key={team.id}
-                    checked={teamFilters.includes(team.id)}
-                    onCheckedChange={() => toggleTeam(team.id)}
+                    className="flex items-center gap-2"
+                    checked={teamFilters.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => toggleTeam(UNASSIGNED_VALUE)}
                   >
-                    {team.name}
+                    <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                ))
+                  {availableTeams.length > 0 && <MenubarSeparator />}
+                  {availableTeams.length === 0 ? (
+                    <MenubarItem disabled>No teams available</MenubarItem>
+                  ) : (
+                    availableTeams.map((team) => (
+                      <MenubarCheckboxItem
+                        key={team.id}
+                        checked={teamFilters.includes(team.id)}
+                        onCheckedChange={() => toggleTeam(team.id)}
+                      >
+                        {team.name}
+                      </MenubarCheckboxItem>
+                    ))
+                  )}
+                </>
               )}
             </MenubarContent>
           </MenubarMenu>
@@ -282,18 +351,31 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
             <MenubarContent className="max-h-80 overflow-y-auto">
               {teamsLoading ? (
                 <MenubarItem disabled>Loading...</MenubarItem>
-              ) : availableDependencies.length === 0 ? (
-                <MenubarItem disabled>No dependencies available</MenubarItem>
               ) : (
-                availableDependencies.map((team) => (
+                <>
                   <MenubarCheckboxItem
-                    key={team.id}
-                    checked={dependencies.includes(team.id)}
-                    onCheckedChange={() => toggleDependency(team.id)}
+                    className="flex items-center gap-2"
+                    checked={dependencies.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => toggleDependency(UNASSIGNED_VALUE)}
                   >
-                    {team.name}
+                    <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                ))
+                  {availableDependencies.length > 0 && <MenubarSeparator />}
+                  {availableDependencies.length === 0 ? (
+                    <MenubarItem disabled>No dependencies available</MenubarItem>
+                  ) : (
+                    availableDependencies.map((team) => (
+                      <MenubarCheckboxItem
+                        key={team.id}
+                        checked={dependencies.includes(team.id)}
+                        onCheckedChange={() => toggleDependency(team.id)}
+                      >
+                        {team.name}
+                      </MenubarCheckboxItem>
+                    ))
+                  )}
+                </>
               )}
             </MenubarContent>
           </MenubarMenu>

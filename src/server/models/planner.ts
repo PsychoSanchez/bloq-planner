@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { Planner } from '../types';
+import { Planner } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
 import { fromTeamMemberDocument, TeamMemberDocument } from './team-member';
 import { fromProjectDocument, ProjectDocument } from './project';

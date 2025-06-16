@@ -436,3 +436,219 @@ test('Dependencies filtering - MongoDB $in operator simulation', () => {
   expect(filtered[0]?.dependencies?.some((dep) => dep.team === 'Team Alpha')).toBe(true);
   expect(filtered[1]?.dependencies?.some((dep) => dep.team === 'Team Beta')).toBe(true);
 });
+
+// Tests for unassigned filtering functionality
+test('Priority filtering - should match projects with unassigned priority', () => {
+  const mockProjects = [
+    { priority: 'high', id: '1' },
+    { priority: undefined, id: '2' },
+    { priority: null, id: '3' },
+    { id: '4' }, // missing priority field
+  ];
+
+  // Simulate MongoDB query: { $or: [{ priority: { $in: [null, undefined] } }, { priority: { $exists: false } }] }
+  const priorities = ['unassigned'];
+  const hasUnassigned = priorities.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria
+  const matchingProjects = mockProjects.filter(
+    (project) => project.priority === null || project.priority === undefined || !('priority' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(3);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4']);
+});
+
+test('Priority filtering - should match both assigned and unassigned priorities', () => {
+  const mockProjects = [
+    { priority: 'high', id: '1' },
+    { priority: 'low', id: '2' },
+    { priority: undefined, id: '3' },
+    { priority: null, id: '4' },
+    { id: '5' }, // missing priority field
+  ];
+
+  const priorities = ['high', 'unassigned'];
+  const hasUnassigned = priorities.includes('unassigned');
+  const assignedPriorities = priorities.filter((p) => p !== 'unassigned');
+
+  expect(hasUnassigned).toBe(true);
+  expect(assignedPriorities).toEqual(['high']);
+
+  // Filter projects that match either specific priorities or unassigned
+  const matchingProjects = mockProjects.filter(
+    (project) =>
+      (project.priority && assignedPriorities.includes(project.priority)) ||
+      project.priority === null ||
+      project.priority === undefined ||
+      !('priority' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(4);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['1', '3', '4', '5']);
+});
+
+test('Quarter filtering - should match projects with unassigned quarters', () => {
+  const mockProjects = [
+    { quarters: ['2024Q1'], id: '1' },
+    { quarters: [], id: '2' },
+    { quarters: undefined, id: '3' },
+    { quarters: null, id: '4' },
+    { id: '5' }, // missing quarters field
+  ];
+
+  const quarters = ['unassigned'];
+  const hasUnassigned = quarters.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria for quarters (empty array, null, undefined, or missing)
+  const matchingProjects = mockProjects.filter(
+    (project) =>
+      !project.quarters ||
+      project.quarters.length === 0 ||
+      project.quarters === null ||
+      project.quarters === undefined ||
+      !('quarters' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(4);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4', '5']);
+});
+
+test('Team filtering - should match projects with unassigned teams', () => {
+  const mockProjects = [
+    { teamIds: ['team1'], id: '1' },
+    { teamIds: [], id: '2' },
+    { teamIds: undefined, id: '3' },
+    { teamIds: null, id: '4' },
+    { id: '5' }, // missing teamIds field
+  ];
+
+  const teams = ['unassigned'];
+  const hasUnassigned = teams.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria for teams
+  const matchingProjects = mockProjects.filter(
+    (project) =>
+      !project.teamIds ||
+      project.teamIds.length === 0 ||
+      project.teamIds === null ||
+      project.teamIds === undefined ||
+      !('teamIds' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(4);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4', '5']);
+});
+
+test('Lead filtering - should match projects with unassigned leads', () => {
+  const mockProjects = [
+    { leadId: 'lead1', id: '1' },
+    { leadId: undefined, id: '2' },
+    { leadId: null, id: '3' },
+    { id: '4' }, // missing leadId field
+  ];
+
+  const leads = ['unassigned'];
+  const hasUnassigned = leads.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria for leads
+  const matchingProjects = mockProjects.filter(
+    (project) => project.leadId === null || project.leadId === undefined || !('leadId' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(3);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4']);
+});
+
+test('Area filtering - should match projects with unassigned areas', () => {
+  const mockProjects = [
+    { area: 'frontend', id: '1' },
+    { area: undefined, id: '2' },
+    { area: null, id: '3' },
+    { id: '4' }, // missing area field
+  ];
+
+  const areas = ['unassigned'];
+  const hasUnassigned = areas.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria for areas
+  const matchingProjects = mockProjects.filter(
+    (project) => project.area === null || project.area === undefined || !('area' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(3);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4']);
+});
+
+test('Dependencies filtering - should match projects with unassigned dependencies', () => {
+  const mockProjects = [
+    { dependencies: [{ team: 'team1' }], id: '1' },
+    { dependencies: [], id: '2' },
+    { dependencies: undefined, id: '3' },
+    { dependencies: null, id: '4' },
+    { id: '5' }, // missing dependencies field
+  ];
+
+  const dependencies = ['unassigned'];
+  const hasUnassigned = dependencies.includes('unassigned');
+
+  expect(hasUnassigned).toBe(true);
+
+  // Filter projects that match unassigned criteria for dependencies
+  const matchingProjects = mockProjects.filter(
+    (project) =>
+      !project.dependencies ||
+      project.dependencies.length === 0 ||
+      project.dependencies === null ||
+      project.dependencies === undefined ||
+      !('dependencies' in project),
+  );
+
+  expect(matchingProjects).toHaveLength(4);
+  expect(matchingProjects.map((p) => p.id)).toEqual(['2', '3', '4', '5']);
+});
+
+test('Mixed filtering - should handle combination of assigned and unassigned values', () => {
+  const mockProjects = [
+    { priority: 'high', area: 'frontend', id: '1' },
+    { priority: undefined, area: 'backend', id: '2' },
+    { priority: 'low', area: undefined, id: '3' },
+    { priority: undefined, area: undefined, id: '4' },
+  ];
+
+  // Test filtering by both high priority and unassigned area
+  const priorities = ['high'];
+  const areas = ['unassigned'];
+
+  const priorityMatches = mockProjects.filter((project) => project.priority && priorities.includes(project.priority));
+
+  const areaMatches = mockProjects.filter(
+    (project) => project.area === null || project.area === undefined || !('area' in project),
+  );
+
+  expect(priorityMatches.map((p) => p.id)).toEqual(['1']);
+  expect(areaMatches.map((p) => p.id)).toEqual(['3', '4']);
+
+  // Test that areas filter works correctly
+  expect(areas).toEqual(['unassigned']);
+
+  // In MongoDB, this would be an $and operation combining both filters
+  const combinedMatches = mockProjects.filter(
+    (project) =>
+      project.priority &&
+      priorities.includes(project.priority) &&
+      (project.area === null || project.area === undefined || !('area' in project)),
+  );
+
+  expect(combinedMatches).toHaveLength(0); // No project matches both criteria
+});

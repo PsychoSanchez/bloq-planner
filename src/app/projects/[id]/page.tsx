@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
 import { connectToDatabase } from '@/lib/mongodb';
-import { fromProjectDocument, ProjectModel } from '@/lib/models/project';
+import { fromProjectDocument, ProjectModel } from '@/server/models/project';
 import { Project } from '@/lib/types';
 import { ProjectView } from '@/app/projects/[id]/_components/project-view';
 import { TeamOption } from '@/components/team-selector';
-import { fromTeamMemberDocument, TeamMemberModel } from '@/lib/models/team-member';
+import { fromTeamMemberDocument, TeamMemberModel } from '@/server/models/team-member';
 
 // Get project data
 async function getProjectData(id: string): Promise<Project | null> {

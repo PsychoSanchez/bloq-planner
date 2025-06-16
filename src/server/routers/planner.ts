@@ -1,8 +1,8 @@
 import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
-import { PlannerModel } from '@/lib/models/planner';
-import { fromTeamMemberDocument } from '@/lib/models/team-member';
-import { fromProjectDocument } from '@/lib/models/project';
+import { PlannerModel } from '@/server/models/planner';
+import { fromTeamMemberDocument } from '@/server/models/team-member';
+import { fromProjectDocument } from '@/server/models/project';
 import { DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 import { type } from 'arktype';
 import mongoose from 'mongoose';

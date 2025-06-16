@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { Assignment } from '../types';
+import { Assignment } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
 
 // MongoDB-specific fields for Assignment

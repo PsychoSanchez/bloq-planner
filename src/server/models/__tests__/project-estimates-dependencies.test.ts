@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { ProjectDocument } from '@/lib/models/project';
+import { ProjectDocument } from '@/server/models/project';
 
 // Test the estimates and dependencies interfaces
 test('Project estimates schema - should have correct structure', () => {

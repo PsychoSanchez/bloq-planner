@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { fromProjectDocument, ProjectDocument } from '@/lib/models/project';
+import { fromProjectDocument, ProjectDocument } from '@/server/models/project';
 import mongoose from 'mongoose';
 
 // Test that the schema doesn't cause circular reference issues

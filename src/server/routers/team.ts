@@ -1,7 +1,7 @@
 import { type } from 'arktype';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../trpc';
-import { TeamMemberModel } from '@/lib/models/team-member';
+import { TeamMemberModel } from '@/server/models/team-member';
 import { connectToDatabase } from '@/lib/mongodb';
 
 // Define arktype schemas

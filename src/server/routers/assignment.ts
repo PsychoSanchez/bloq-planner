@@ -1,6 +1,6 @@
 import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
-import { AssignmentModel } from '@/lib/models/planner-assignment';
+import { AssignmentModel } from '@/server/models/planner-assignment';
 import { type } from 'arktype';
 import mongoose from 'mongoose';
 import EventEmitter, { on } from 'events';

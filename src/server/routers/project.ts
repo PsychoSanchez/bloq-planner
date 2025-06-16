@@ -1,6 +1,7 @@
 import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ProjectModel, fromProjectDocument } from '@/lib/models/project';
+import { ProjectModel, fromProjectDocument } from '@/server/models/project';
+import { buildFilterConditions, mergeFilterConditions } from '@/server/shared/mongodb-query-builders';
 import { type } from 'arktype';
 
 // Input schemas using ArkType
@@ -130,36 +131,26 @@ export const projectRouter = router({
       query.quarters = { $in: [quarter] };
     }
 
-    // New multidimensional filters using $in operator for OR logic within each dimension
-    if (priorities.length > 0) {
-      query.priority = { $in: priorities };
+    // New multidimensional filters using helper functions
+    const priorityConditions = buildFilterConditions('priority', priorities, 'simple');
+    mergeFilterConditions(query, priorityConditions);
+
+    if (quarters.length > 0 && !quarter) {
+      const quarterConditions = buildFilterConditions('quarters', quarters, 'array');
+      mergeFilterConditions(query, quarterConditions);
     }
 
-    if (quarters.length > 0) {
-      // If both legacy quarter and new quarters are provided, use the new one
-      if (!quarter) {
-        // Use $in to match projects that have at least one quarter in the filter
-        query.quarters = { $in: quarters };
-      }
-    }
+    const areaConditions = buildFilterConditions('area', areas, 'simple');
+    mergeFilterConditions(query, areaConditions);
 
-    if (areas.length > 0) {
-      query.area = { $in: areas };
-    }
+    const leadConditions = buildFilterConditions('leadId', leads, 'simple');
+    mergeFilterConditions(query, leadConditions);
 
-    if (leads.length > 0) {
-      query.leadId = { $in: leads };
-    }
+    const teamConditions = buildFilterConditions('teamIds', teams, 'array');
+    mergeFilterConditions(query, teamConditions);
 
-    if (teams.length > 0) {
-      // Use $in to match projects that have at least one team in the filter
-      query.teamIds = { $in: teams };
-    }
-
-    if (dependencies.length > 0) {
-      // Use $in to match projects that have at least one dependency team in the filter
-      query['dependencies.team'] = { $in: dependencies };
-    }
+    const dependencyConditions = buildFilterConditions('dependencies.team', dependencies, 'nested');
+    mergeFilterConditions(query, dependencyConditions);
 
     const projectDocs = await ProjectModel.find(query).sort({ createdAt: -1 });
     const projects = projectDocs.map(fromProjectDocument);

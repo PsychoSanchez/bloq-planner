@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { Assignee, Role } from '../types';
+import { Assignee, Role } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our TeamMember interface

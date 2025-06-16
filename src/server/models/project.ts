@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { Project } from '../types';
+import { Project } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
 
 // We need to add MongoDB-specific fields to our Project interface
