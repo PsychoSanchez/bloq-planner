@@ -32,6 +32,7 @@ import {
   CompactCardFooter,
 } from '@/components/ui/compact-card';
 import { trpc } from '@/utils/trpc';
+import { isDefaultProject } from '@/lib/constants/default-projects';
 
 // Custom hook for data fetching
 function usePlannerDialogData(open: boolean) {
@@ -154,6 +155,11 @@ function usePlannerForm(mode: 'create' | 'edit', planner?: Planner, yearValue?: 
     [formState.name, formState.selectedAssignees.length],
   );
 
+  const additionalProjectsCount = useMemo(
+    () => formState.selectedProjects.filter((project) => !isDefaultProject(project.id)).length,
+    [formState.selectedProjects],
+  );
+
   return {
     formState,
     updateFormState,
@@ -163,6 +169,7 @@ function usePlannerForm(mode: 'create' | 'edit', planner?: Planner, yearValue?: 
     clearProjects,
     clearAssignees,
     isFormValid,
+    additionalProjectsCount,
   };
 }
 
@@ -302,6 +309,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
     clearProjects,
     clearAssignees,
     isFormValid,
+    additionalProjectsCount,
   } = usePlannerForm(mode, planner, yearValue, quarterValue);
 
   // Reset form when dialog opens in edit mode
@@ -414,8 +422,8 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
           {/* Projects Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Additional Projects ({formState.selectedProjects.length})</Label>
-              {formState.selectedProjects.length > 0 && (
+              <Label className="text-sm font-medium">Additional Projects ({additionalProjectsCount})</Label>
+              {additionalProjectsCount > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
