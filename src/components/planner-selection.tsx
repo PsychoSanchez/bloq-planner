@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { EmptyPlaceholder } from '@/components/ui/empty-placeholder';
@@ -33,6 +33,250 @@ import {
 } from '@/components/ui/compact-card';
 import { trpc } from '@/utils/trpc';
 
+// Custom hook for data fetching
+function usePlannerDialogData(open: boolean) {
+  const { toast } = useToast();
+
+  const teamQuery = trpc.team.getTeamMembers.useQuery(
+    {},
+    {
+      enabled: open,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    },
+  );
+
+  const projectsQuery = trpc.project.getProjects.useQuery(
+    {},
+    {
+      enabled: open,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    },
+  );
+
+  // Handle errors with toast notifications
+  useEffect(() => {
+    if (teamQuery.error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load team members',
+        variant: 'destructive',
+      });
+    }
+  }, [teamQuery.error, toast]);
+
+  useEffect(() => {
+    if (projectsQuery.error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load projects',
+        variant: 'destructive',
+      });
+    }
+  }, [projectsQuery.error, toast]);
+
+  const availableAssignees: Assignee[] = useMemo(
+    () =>
+      teamQuery.data?.map((member) => ({
+        id: member.id,
+        name: member.name,
+        type: (member.type as 'person' | 'team' | 'dependency' | 'event') || 'person',
+      })) || [],
+    [teamQuery.data],
+  );
+
+  const availableProjects = useMemo(() => projectsQuery.data?.projects || [], [projectsQuery.data]);
+
+  return {
+    availableAssignees,
+    availableProjects,
+    isLoadingAssignees: teamQuery.isLoading,
+    isLoadingProjects: projectsQuery.isLoading,
+    hasError: !!teamQuery.error || !!projectsQuery.error,
+  };
+}
+
+// Custom hook for form state management
+function usePlannerForm(mode: 'create' | 'edit', planner?: Planner, yearValue?: number, quarterValue?: number) {
+  const [formState, setFormState] = useState(() => ({
+    name: mode === 'edit' && planner ? planner.name : `Q${quarterValue} ${yearValue} Lego Planner`,
+    selectedProjects: mode === 'edit' && planner ? planner.projects : [],
+    selectedAssignees: mode === 'edit' && planner ? planner.assignees : [],
+    projectSearch: '',
+    assigneeSearch: '',
+  }));
+
+  const updateFormState = useCallback((updates: Partial<typeof formState>) => {
+    setFormState((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    const defaultName = mode === 'create' ? `Q${quarterValue} ${yearValue} Lego Planner` : planner?.name || '';
+
+    setFormState({
+      name: defaultName,
+      selectedProjects: mode === 'edit' && planner ? planner.projects : [],
+      selectedAssignees: mode === 'edit' && planner ? planner.assignees : [],
+      projectSearch: '',
+      assigneeSearch: '',
+    });
+  }, [mode, planner, yearValue, quarterValue]);
+
+  const toggleProject = useCallback((project: Project) => {
+    setFormState((prev) => ({
+      ...prev,
+      selectedProjects: prev.selectedProjects.some((p) => p.id === project.id)
+        ? prev.selectedProjects.filter((p) => p.id !== project.id)
+        : [...prev.selectedProjects, project],
+    }));
+  }, []);
+
+  const toggleAssignee = useCallback((assignee: Assignee) => {
+    setFormState((prev) => ({
+      ...prev,
+      selectedAssignees: prev.selectedAssignees.some((a) => a.id === assignee.id)
+        ? prev.selectedAssignees.filter((a) => a.id !== assignee.id)
+        : [...prev.selectedAssignees, assignee],
+    }));
+  }, []);
+
+  const clearProjects = useCallback(() => {
+    updateFormState({ selectedProjects: [] });
+  }, [updateFormState]);
+
+  const clearAssignees = useCallback(() => {
+    updateFormState({ selectedAssignees: [] });
+  }, [updateFormState]);
+
+  const isFormValid = useMemo(
+    () => formState.name.trim() !== '' && formState.selectedAssignees.length > 0,
+    [formState.name, formState.selectedAssignees.length],
+  );
+
+  return {
+    formState,
+    updateFormState,
+    resetForm,
+    toggleProject,
+    toggleAssignee,
+    clearProjects,
+    clearAssignees,
+    isFormValid,
+  };
+}
+
+// Loading skeleton component
+function LoadingSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center space-x-2 p-2">
+          <div className="h-3 w-3 bg-muted animate-pulse rounded" />
+          <div className="h-4 bg-muted animate-pulse rounded flex-1" />
+          <div className="h-4 w-12 bg-muted animate-pulse rounded" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Selection list component
+interface SelectionListProps<T> {
+  items: T[];
+  selectedItems: T[];
+  onToggle: (item: T) => void;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  searchPlaceholder: string;
+  isLoading: boolean;
+  emptyMessage: string;
+  noResultsMessage: string;
+  getItemId: (item: T) => string;
+  renderItem: (item: T) => React.ReactNode;
+}
+
+function SelectionList<T>({
+  items,
+  selectedItems,
+  onToggle,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder,
+  isLoading,
+  emptyMessage,
+  noResultsMessage,
+  getItemId,
+  renderItem,
+}: SelectionListProps<T>) {
+  const filteredItems = useMemo(() => {
+    if (!searchValue.trim()) return items;
+    return items.filter((item) => JSON.stringify(item).toLowerCase().includes(searchValue.toLowerCase()));
+  }, [items, searchValue]);
+
+  if (isLoading) {
+    return (
+      <div className="border rounded-md p-3">
+        <LoadingSkeleton />
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-6 border rounded-md bg-muted/30">
+        <p className="text-xs text-muted-foreground">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Input
+        placeholder={searchPlaceholder}
+        value={searchValue}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="h-8 text-sm placeholder:text-sm"
+      />
+
+      <div className="border rounded-md max-h-[140px] overflow-y-auto">
+        {filteredItems.length === 0 ? (
+          <div className="p-3 text-center text-xs text-muted-foreground">{noResultsMessage}</div>
+        ) : (
+          <div className="p-1">
+            {filteredItems.map((item) => {
+              const isSelected = selectedItems.some((selected) => getItemId(selected) === getItemId(item));
+              return (
+                <div
+                  key={getItemId(item)}
+                  className={cn(
+                    'flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors',
+                    isSelected ? 'bg-primary/10' : 'hover:bg-muted/50',
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggle(item);
+                  }}
+                >
+                  <div
+                    className={cn(
+                      'flex h-3 w-3 items-center justify-center rounded border transition-colors',
+                      isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40',
+                    )}
+                  >
+                    {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
+                  </div>
+                  {renderItem(item)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface PlannerDialogProps {
   mode: 'create' | 'edit';
   planner?: Planner; // Required for edit mode
@@ -44,108 +288,38 @@ interface PlannerDialogProps {
 
 function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigger }: PlannerDialogProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(
-    mode === 'edit' && planner ? planner.name : `Q${quarterValue} ${yearValue} Lego Planner`,
-  );
-  const [selectedProjects, setSelectedProjects] = useState<Project[]>(
-    mode === 'edit' && planner ? planner.projects : [],
-  );
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>(
-    mode === 'edit' && planner ? planner.assignees : [],
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Search states
-  const [projectSearch, setProjectSearch] = useState('');
-  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const { availableAssignees, availableProjects, isLoadingAssignees, isLoadingProjects, hasError } =
+    usePlannerDialogData(open);
 
-  const { toast } = useToast();
-
-  // Use tRPC to fetch team members
   const {
-    data: teamMembers,
-    isLoading: isLoadingAssignees,
-    error: teamMembersError,
-  } = trpc.team.getTeamMembers.useQuery({}, { enabled: open });
-
-  // Convert team members to assignees format
-  const availableAssignees: Assignee[] =
-    teamMembers?.map((member) => ({
-      id: member.id,
-      name: member.name,
-      type: (member.type as 'person' | 'team' | 'dependency' | 'event') || 'person',
-    })) || [];
-
-  // Show error toast if team members fetch fails
-  useEffect(() => {
-    if (teamMembersError) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load team members',
-        variant: 'destructive',
-      });
-    }
-  }, [teamMembersError, toast]);
-
-  // Use tRPC to fetch projects
-  const {
-    data: projectsData,
-    isLoading: isLoadingProjects,
-    error: projectsError,
-  } = trpc.project.getProjects.useQuery({}, { enabled: open });
-
-  const availableProjects = projectsData?.projects || [];
-
-  // Show error toast if projects fetch fails
-  useEffect(() => {
-    if (projectsError) {
-      console.error('Error fetching projects:', projectsError);
-      toast({
-        title: 'Error',
-        description: 'Failed to load projects',
-        variant: 'destructive',
-      });
-    }
-  }, [projectsError, toast]);
+    formState,
+    updateFormState,
+    resetForm,
+    toggleProject,
+    toggleAssignee,
+    clearProjects,
+    clearAssignees,
+    isFormValid,
+  } = usePlannerForm(mode, planner, yearValue, quarterValue);
 
   // Reset form when dialog opens in edit mode
   useEffect(() => {
     if (mode === 'edit' && planner && open) {
-      setName(planner.name);
-      setSelectedProjects(planner.projects);
-      setSelectedAssignees(planner.assignees);
+      resetForm();
     }
-  }, [mode, open, planner]);
+  }, [mode, open, planner, resetForm]);
 
-  const toggleProject = (project: Project) => {
-    setSelectedProjects((prev) => {
-      const exists = prev.some((p) => p.id === project.id);
-      if (exists) {
-        return prev.filter((p) => p.id !== project.id);
-      } else {
-        return [...prev, project];
-      }
-    });
-  };
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid || isSubmitting) return;
 
-  const toggleAssignee = (assignee: Assignee) => {
-    setSelectedAssignees((prev) => {
-      const exists = prev.some((a) => a.id === assignee.id);
-      if (exists) {
-        return prev.filter((a) => a.id !== assignee.id);
-      } else {
-        return [...prev, assignee];
-      }
-    });
-  };
-
-  const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       await onSubmit({
-        name,
-        projects: selectedProjects,
-        assignees: selectedAssignees,
+        name: formState.name,
+        projects: formState.selectedProjects,
+        assignees: formState.selectedAssignees,
       });
       setOpen(false);
       resetForm();
@@ -154,44 +328,64 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isFormValid, isSubmitting, onSubmit, formState, mode, resetForm]);
 
-  const resetForm = () => {
-    if (mode === 'create') {
-      setName(`Q${quarterValue} ${yearValue} Lego Planner`);
-      setSelectedProjects([]);
-      setSelectedAssignees([]);
-    } else if (mode === 'edit' && planner) {
-      setName(planner.name);
-      setSelectedProjects(planner.projects);
-      setSelectedAssignees(planner.assignees);
-    }
-    setProjectSearch('');
-    setAssigneeSearch('');
-  };
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) resetForm();
+      setOpen(newOpen);
+    },
+    [resetForm],
+  );
 
-  const isFormValid = name.trim() !== '' && selectedAssignees.length > 0;
+  const defaultTrigger = useMemo(
+    () =>
+      mode === 'create' ? (
+        <Button className="gap-2">
+          <PlusCircle className="h-4 w-4" />
+          New Planner
+        </Button>
+      ) : (
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Edit className="h-4 w-4" />
+        </Button>
+      ),
+    [mode],
+  );
 
-  const defaultTrigger =
-    mode === 'create' ? (
-      <Button className="gap-2">
-        <PlusCircle className="h-4 w-4" />
-        New Planner
-      </Button>
-    ) : (
-      <Button variant="ghost" size="icon" className="h-8 w-8">
-        <Edit className="h-4 w-4" />
-      </Button>
-    );
+  const renderProjectItem = useCallback(
+    (project: Project) => (
+      <>
+        <div className="flex-1 min-w-0 flex items-center gap-1">
+          {project.icon && <span className="text-xs">{project.icon}</span>}
+          <p className="text-xs font-medium truncate">{project.name}</p>
+        </div>
+        {project.type && (
+          <Badge variant="outline" className="text-[10px] h-4 px-1">
+            {project.type}
+          </Badge>
+        )}
+      </>
+    ),
+    [],
+  );
+
+  const renderAssigneeItem = useCallback(
+    (assignee: Assignee) => (
+      <>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium">{assignee.name}</p>
+        </div>
+        <Badge variant={assignee.type === 'team' ? 'default' : 'secondary'} className="text-[10px] h-4 px-1">
+          {assignee.type === 'team' ? 'Team' : 'Person'}
+        </Badge>
+      </>
+    ),
+    [],
+  );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(newOpen) => {
-        if (!newOpen) resetForm();
-        setOpen(newOpen);
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-3">
@@ -211,8 +405,8 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
             </Label>
             <Input
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formState.name}
+              onChange={(e) => updateFormState({ name: e.target.value })}
               placeholder="Enter planner name..."
             />
           </div>
@@ -220,12 +414,12 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
           {/* Projects Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Additional Projects ({selectedProjects.length})</Label>
-              {selectedProjects.length > 0 && (
+              <Label className="text-sm font-medium">Additional Projects ({formState.selectedProjects.length})</Label>
+              {formState.selectedProjects.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedProjects([])}
+                  onClick={clearProjects}
                   className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Clear
@@ -236,79 +430,30 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
               Default projects (Vacation, Duty, Sick Leave, Team Event) are always available
             </div>
 
-            {isLoadingProjects ? (
-              <div className="flex items-center justify-center py-6 border rounded-md">
-                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                <span className="ml-2 text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : availableProjects.length === 0 ? (
-              <div className="text-center py-6 border rounded-md bg-muted/30">
-                <p className="text-xs text-muted-foreground">No projects available</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Input
-                  placeholder="Search projects..."
-                  value={projectSearch}
-                  onChange={(e) => setProjectSearch(e.target.value)}
-                  className="h-8 text-sm"
-                />
-
-                <div className="border rounded-md max-h-[140px] overflow-y-auto">
-                  {availableProjects.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-muted-foreground">No projects match your search</div>
-                  ) : (
-                    <div className="p-1">
-                      {availableProjects.map((project) => {
-                        const isSelected = selectedProjects.some((p) => p.id === project.id);
-                        return (
-                          <div
-                            key={project.id}
-                            className={cn(
-                              'flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors',
-                              isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
-                            )}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleProject(project);
-                            }}
-                          >
-                            <div
-                              className={cn(
-                                'flex h-3 w-3 items-center justify-center rounded border transition-colors',
-                                isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40',
-                              )}
-                            >
-                              {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
-                            </div>
-                            <div className="flex-1 min-w-0 flex items-center gap-1">
-                              {project.icon && <span className="text-xs">{project.icon}</span>}
-                              <p className="text-xs font-medium truncate">{project.name}</p>
-                            </div>
-                            {project.type && (
-                              <Badge variant="outline" className="text-[10px] h-4 px-1">
-                                {project.type}
-                              </Badge>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <SelectionList
+              items={availableProjects}
+              selectedItems={formState.selectedProjects}
+              onToggle={toggleProject}
+              searchValue={formState.projectSearch}
+              onSearchChange={(value) => updateFormState({ projectSearch: value })}
+              searchPlaceholder="Search projects..."
+              isLoading={isLoadingProjects}
+              emptyMessage="No projects available"
+              noResultsMessage="No projects match your search"
+              getItemId={(project) => project.id}
+              renderItem={renderProjectItem}
+            />
           </div>
 
           {/* Team Members Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Team Members ({selectedAssignees.length})</Label>
-              {selectedAssignees.length > 0 && (
+              <Label className="text-sm font-medium">Team Members ({formState.selectedAssignees.length})</Label>
+              {formState.selectedAssignees.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedAssignees([])}
+                  onClick={clearAssignees}
                   className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Clear
@@ -316,79 +461,28 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
               )}
             </div>
 
-            {isLoadingAssignees ? (
-              <div className="flex items-center justify-center py-6 border rounded-md">
-                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                <span className="ml-2 text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : availableAssignees.length === 0 ? (
-              <div className="text-center py-6 border rounded-md bg-muted/30">
-                <p className="text-xs text-muted-foreground">No team members available</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Input
-                  placeholder="Search team members..."
-                  value={assigneeSearch}
-                  onChange={(e) => setAssigneeSearch(e.target.value)}
-                  className="h-8 text-sm"
-                />
-
-                <div className="border rounded-md max-h-[140px] overflow-y-auto">
-                  {availableAssignees.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-muted-foreground">
-                      No team members match your search
-                    </div>
-                  ) : (
-                    <div className="p-1">
-                      {availableAssignees.map((assignee) => {
-                        const isSelected = selectedAssignees.some((a) => a.id === assignee.id);
-                        return (
-                          <div
-                            key={assignee.id}
-                            className={cn(
-                              'flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors',
-                              isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
-                            )}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleAssignee(assignee);
-                            }}
-                          >
-                            <div
-                              className={cn(
-                                'flex h-3 w-3 items-center justify-center rounded border transition-colors',
-                                isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40',
-                              )}
-                            >
-                              {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium">{assignee.name}</p>
-                            </div>
-                            <Badge
-                              variant={assignee.type === 'team' ? 'default' : 'secondary'}
-                              className="text-[10px] h-4 px-1"
-                            >
-                              {assignee.type === 'team' ? 'Team' : 'Person'}
-                            </Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <SelectionList
+              items={availableAssignees}
+              selectedItems={formState.selectedAssignees}
+              onToggle={toggleAssignee}
+              searchValue={formState.assigneeSearch}
+              onSearchChange={(value) => updateFormState({ assigneeSearch: value })}
+              searchPlaceholder="Search team members..."
+              isLoading={isLoadingAssignees}
+              emptyMessage="No team members available"
+              noResultsMessage="No team members match your search"
+              getItemId={(assignee) => assignee.id}
+              renderItem={renderAssigneeItem}
+            />
           </div>
 
           {/* Compact Selection Summary */}
-          {(selectedProjects.length > 0 || selectedAssignees.length > 0) && (
+          {(formState.selectedProjects.length > 0 || formState.selectedAssignees.length > 0) && (
             <div className="bg-muted/30 rounded-md p-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Selected:</span>
                 <span className="font-medium">
-                  {selectedProjects.length} projects, {selectedAssignees.length} members
+                  {formState.selectedProjects.length} projects, {formState.selectedAssignees.length} members
                 </span>
               </div>
             </div>
@@ -398,7 +492,7 @@ function PlannerDialog({ mode, planner, onSubmit, yearValue, quarterValue, trigg
         <DialogFooter className="pt-3 border-t">
           <div className="flex items-center justify-between w-full">
             <div className="text-xs text-muted-foreground">{!isFormValid && <span>Select team members</span>}</div>
-            <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting} className="h-8 px-4">
+            <Button onClick={handleSubmit} disabled={!isFormValid || isSubmitting || hasError} className="h-8 px-4">
               {isSubmitting ? (
                 <>
                   <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-2"></div>
@@ -599,51 +693,59 @@ export function PlannerSelection() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {planners.map((planner) => (
-            <CompactCard
-              key={planner.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleOpenPlanner(planner.id)}
-            >
-              <CompactCardHeader>
-                <CompactCardTitle>{planner.name || `Lego Planner ${planner.id.substring(0, 8)}`}</CompactCardTitle>
-                <CompactCardDescription>
-                  {planner.projects.length} projects, {planner.assignees.length} assignees
-                </CompactCardDescription>
-              </CompactCardHeader>
-              <CompactCardContent>
-                <div className="text-sm text-muted-foreground">
-                  <div>Projects: {planner.projects.length}</div>
-                  <div>Assignees: {planner.assignees.length}</div>
-                </div>
-              </CompactCardContent>
-              <CompactCardFooter className="flex justify-between">
-                <div className="text-xs text-muted-foreground">
-                  Q{quarterValue} {yearValue}
-                </div>
-                <div className="flex gap-1">
-                  <PlannerDialog
-                    mode="edit"
-                    planner={planner}
-                    onSubmit={(data) => handleUpdatePlanner(planner.id, data)}
-                    yearValue={yearValue}
-                    quarterValue={quarterValue}
-                    trigger={
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
+            <div key={planner.id} className="relative">
+              <CompactCard
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleOpenPlanner(planner.id)}
+              >
+                <CompactCardHeader>
+                  <CompactCardTitle>{planner.name || `Lego Planner ${planner.id.substring(0, 8)}`}</CompactCardTitle>
+                  <CompactCardDescription>
+                    {planner.projects.length} projects, {planner.assignees.length} assignees
+                  </CompactCardDescription>
+                </CompactCardHeader>
+                <CompactCardContent>
+                  <div className="text-sm text-muted-foreground">
+                    <div>Projects: {planner.projects.length}</div>
+                    <div>Assignees: {planner.assignees.length}</div>
+                  </div>
+                </CompactCardContent>
+                <CompactCardFooter className="flex justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    Q{quarterValue} {yearValue}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={(e) => handleDeletePlanner(planner.id, e)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CompactCardFooter>
+              </CompactCard>
+
+              {/* Dialog outside the CompactCard to prevent click conflicts */}
+              <PlannerDialog
+                mode="edit"
+                planner={planner}
+                onSubmit={(data) => handleUpdatePlanner(planner.id, data)}
+                yearValue={yearValue}
+                quarterValue={quarterValue}
+                trigger={
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={(e) => handleDeletePlanner(planner.id, e)}
+                    className="absolute bottom-2 right-10 h-8 w-8 z-10"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Trash className="h-4 w-4" />
+                    <Edit className="h-4 w-4" />
                   </Button>
-                </div>
-              </CompactCardFooter>
-            </CompactCard>
+                }
+              />
+            </div>
           ))}
         </div>
       )}
