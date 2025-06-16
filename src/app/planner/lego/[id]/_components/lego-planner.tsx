@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { Planner, Assignment, Project, SetAssignment } from '@/lib/types';
 import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
 import { generateWeeks } from '@/lib/sample-data';
@@ -40,6 +40,7 @@ import { usePaintMode } from './hooks/use-paint-mode';
 import { DragSelectTableCell, DragSelectTableContainer, useDragSelectState } from '@/components/ui/table-drag-select';
 import { useHistory } from './hooks/use-history';
 import { usePlannerClipboard } from './hooks/use-planner-clipboard';
+import { usePlannerKeyboardShortcuts } from './hooks/use-planner-keyboard-shortcuts';
 import { toast } from '@/components/ui/use-toast';
 import { trpc } from '@/utils/trpc';
 
@@ -326,45 +327,15 @@ export function LegoPlanner({
   }, [paste, selectedCells, currentYear, currentQuarter]);
 
   // Keyboard shortcuts for undo/redo and clipboard operations
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if focus is in an input or textarea
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        (event.target as HTMLElement)?.isContentEditable
-      ) {
-        return;
-      }
-      // Cmd+Z (undo)
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        handleUndo();
-      }
-      // Cmd+Shift+Z (redo)
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        handleRedo();
-      }
-      // Cmd+C (copy)
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'c' && selectedCells.length > 0) {
-        event.preventDefault();
-        handleCopy();
-      }
-      // Cmd+X (cut)
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'x' && selectedCells.length > 0) {
-        event.preventDefault();
-        handleCut();
-      }
-      // Cmd+V (paste)
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'v' && canPaste && selectedCells.length > 0) {
-        event.preventDefault();
-        handlePaste();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, selectedCells, canPaste]);
+  usePlannerKeyboardShortcuts({
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onCopy: handleCopy,
+    onCut: handleCut,
+    onPaste: handlePaste,
+    canPaste,
+    hasSelection: selectedCells.length > 0,
+  });
 
   const handleAssignProjectFromSelectionPopover = useCallback(
     async (projectId: string) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MousePointer2, Paintbrush, Eraser, GlassesIcon, Undo2, Redo2 } from 'lucide-react';
@@ -11,8 +11,7 @@ import { cn } from '@/lib/utils';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-export type PlannerMode = 'pointer' | 'paint' | 'erase' | 'inspect';
+import { useToolbarKeyboardShortcuts, type PlannerMode } from './hooks/use-toolbar-keyboard-shortcuts';
 
 interface PlannerToolbarProps {
   selectedProjectId?: string;
@@ -60,83 +59,8 @@ export function PlannerToolbar({
     [onProjectSelect],
   );
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      console.log('handleKeyDown', event.key);
-      // Don't handle shortcuts if user is typing in an input
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      // Mode selection shortcuts
-      if (!isProjectSelectorOpen) {
-        switch (event.key.toLowerCase()) {
-          case 'v':
-            event.preventDefault();
-            setMode('pointer');
-            break;
-          case 'b':
-            event.preventDefault();
-            setMode('paint');
-            setIsProjectSelectorOpen(true);
-            setSelectedProjectIndex(0);
-            break;
-          case 'e':
-            event.preventDefault();
-            setMode('erase');
-            break;
-          case 'i':
-            event.preventDefault();
-            setMode('inspect');
-            break;
-        }
-      }
-
-      // Project selection shortcuts (when paint popover is open)
-      if (isProjectSelectorOpen && allProjects.length > 0) {
-        switch (event.key) {
-          case 'ArrowDown':
-            event.preventDefault();
-            setSelectedProjectIndex((prev) => (prev < allProjects.length - 1 ? prev + 1 : 0));
-            break;
-          case 'ArrowUp':
-            event.preventDefault();
-            setSelectedProjectIndex((prev) => (prev > 0 ? prev - 1 : allProjects.length - 1));
-            break;
-          case 'Enter':
-            event.preventDefault();
-            if (allProjects[selectedProjectIndex]) {
-              handleProjectSelect(allProjects[selectedProjectIndex].id);
-            }
-            break;
-          case 'Escape':
-            event.preventDefault();
-            setIsProjectSelectorOpen(false);
-            if (!selectedProjectId) {
-              setMode('pointer');
-            }
-            break;
-        }
-      }
-    };
-
-    // Use capture phase to ensure we get the events first
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, [mode, setMode, isProjectSelectorOpen, selectedProjectIndex, allProjects, selectedProjectId, handleProjectSelect]);
-
-  // Reset selected project index when popover opens
-  useEffect(() => {
-    if (isProjectSelectorOpen) {
-      setSelectedProjectIndex(0);
-    }
-  }, [isProjectSelectorOpen]);
-
-  const handleModeChange = (value: string | undefined) => {
-    if (value) {
-      const newMode = value as PlannerMode;
-
-      // If paint mode is selected, automatically open project selector
+  const handleModeChange = useCallback(
+    (newMode: PlannerMode) => {
       if (newMode === 'paint') {
         setMode(newMode);
         setIsProjectSelectorOpen(true);
@@ -145,6 +69,56 @@ export function PlannerToolbar({
         setMode(newMode);
         setIsProjectSelectorOpen(false);
       }
+    },
+    [setMode],
+  );
+
+  const handleProjectNavigate = useCallback(
+    (direction: 'up' | 'down') => {
+      if (direction === 'down') {
+        setSelectedProjectIndex((prev) => (prev < allProjects.length - 1 ? prev + 1 : 0));
+      } else {
+        setSelectedProjectIndex((prev) => (prev > 0 ? prev - 1 : allProjects.length - 1));
+      }
+    },
+    [allProjects.length],
+  );
+
+  const handleProjectSelectFromKeyboard = useCallback(() => {
+    if (allProjects[selectedProjectIndex]) {
+      handleProjectSelect(allProjects[selectedProjectIndex].id);
+    }
+  }, [allProjects, selectedProjectIndex, handleProjectSelect]);
+
+  const handleProjectSelectorEscape = useCallback(() => {
+    setIsProjectSelectorOpen(false);
+    if (!selectedProjectId) {
+      setMode('pointer');
+    }
+  }, [selectedProjectId, setMode]);
+
+  const handleProjectSelectorToggle = useCallback((open: boolean) => {
+    setIsProjectSelectorOpen(open);
+    if (open) {
+      setSelectedProjectIndex(0);
+    }
+  }, []);
+
+  // Use the toolbar keyboard shortcuts hook
+  useToolbarKeyboardShortcuts({
+    onModeChange: handleModeChange,
+    currentMode: mode,
+    isProjectSelectorOpen,
+    onProjectSelectorToggle: handleProjectSelectorToggle,
+    onProjectNavigate: handleProjectNavigate,
+    onProjectSelect: handleProjectSelectFromKeyboard,
+    onProjectSelectorEscape: handleProjectSelectorEscape,
+  });
+
+  const handleUIModeChange = (value: string | undefined) => {
+    if (value) {
+      const newMode = value as PlannerMode;
+      handleModeChange(newMode);
     }
   };
 
@@ -198,7 +172,7 @@ export function PlannerToolbar({
         </Tooltip>
       </TooltipProvider>
       {/* Mode Selection */}
-      <ToggleGroup type="single" variant="outline" value={mode} onValueChange={handleModeChange} className="h-8">
+      <ToggleGroup type="single" variant="outline" value={mode} onValueChange={handleUIModeChange} className="h-8">
         <ToggleGroupItem value="pointer" className="text-xs px-3 h-8 flex items-center gap-1">
           <MousePointer2 className="h-4 w-4" />
           <span>Pointer</span>
