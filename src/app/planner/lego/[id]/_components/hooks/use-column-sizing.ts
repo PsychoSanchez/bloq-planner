@@ -4,39 +4,39 @@ import { COLUMN_SIZES, ColumnSizeType } from '@/lib/utils/column-sizing';
 export const useColumnSizing = () => {
   const [selectedSize, setSelectedSize] = useState<ColumnSizeType>('normal');
 
-  // Load selected size from localStorage on initial render
+  // Determine column size based on screen width
   useEffect(() => {
-    const savedSize = localStorage.getItem('lego-planner-column-size');
-    if (savedSize) {
-      try {
-        const size = JSON.parse(savedSize) as ColumnSizeType;
-        if (size === 'compact' || size === 'normal' || size === 'wide') {
-          setSelectedSize(size);
+    const updateColumnSize = () => {
+      const width = window.innerWidth;
+
+      const getSize = () => {
+        if (width < 1600) {
+          return 'compact';
+        } else if (width < 1920) {
+          return 'normal';
+        } else {
+          return 'wide';
         }
-      } catch (e) {
-        console.error('Failed to parse saved column size', e);
+      };
+
+      const newSize = getSize();
+      if (selectedSize !== newSize) {
+        setSelectedSize(newSize);
       }
-    }
-  }, []);
+    };
 
-  // Save selected size to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('lego-planner-column-size', JSON.stringify(selectedSize));
+    // Set initial size
+    updateColumnSize();
+
+    // Add resize listener
+    window.addEventListener('resize', updateColumnSize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', updateColumnSize);
   }, [selectedSize]);
-
-  // Set column size
-  const setColumnSize = (size: ColumnSizeType) => {
-    setSelectedSize(size);
-  };
-
-  // Reset column widths to default
-  const resetColumnSize = () => {
-    setSelectedSize('normal');
-    localStorage.removeItem('lego-planner-column-size');
-  };
 
   // Get current column width value
   const columnWidth = COLUMN_SIZES[selectedSize];
 
-  return { selectedSize, setColumnSize, resetColumnSize, columnWidth };
+  return { selectedSize, columnWidth };
 };

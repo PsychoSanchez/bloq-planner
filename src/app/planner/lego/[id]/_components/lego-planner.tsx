@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { WeekBlock } from '@/components/week-block';
 import { AssigneeFilter } from '@/app/planner/lego/[id]/_components/assignee-filter';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { getAllAvailableProjects, isDefaultProject, DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
 import { ClipboardPasteIcon, CopyIcon, ScissorsIcon, TrashIcon, XIcon } from 'lucide-react';
@@ -23,7 +23,7 @@ import {
   getCurrentTimePositionInDay,
 } from '@/lib/utils/date-time';
 import { getRoleSortPriority } from '@/lib/utils/sorting';
-import { ColumnSizeType } from '@/lib/utils/column-sizing';
+
 import { getProjectIcon } from '@/lib/utils/icons';
 import { getThemeAwarePaintCursor, getThemeAwareEraseCursor } from '@/lib/utils/cursor';
 import { generateAssigneeKey, parseAssigneeKey } from './utils/assignee';
@@ -70,7 +70,7 @@ export function LegoPlanner({
   const [hoveredProjectId, setHoveredProjectId] = useState<string | undefined>(undefined);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
 
-  const { selectedSize, setColumnSize, columnWidth } = useColumnSizing();
+  const { selectedSize, columnWidth } = useColumnSizing();
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -260,15 +260,6 @@ export function LegoPlanner({
   const handleAssigneesChange = useCallback((assigneeIds: string[]) => {
     setSelectedAssigneeIds(assigneeIds);
   }, []);
-
-  const handleColumnSizeChange = useCallback(
-    (value: string | undefined) => {
-      if (value) {
-        setColumnSize(value as ColumnSizeType);
-      }
-    },
-    [setColumnSize],
-  );
 
   // Paint mode handlers
   const handleCellMouseDown = useCallback(
@@ -463,25 +454,7 @@ export function LegoPlanner({
             // TODO: Implement static toolbar methods to work with for cut / copy / paste that should be active based on the selection
           />
         </div>
-        <div className="flex items-center gap-1">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            className="h-8"
-            value={selectedSize}
-            onValueChange={handleColumnSizeChange}
-          >
-            <ToggleGroupItem value="compact" className="text-xs px-3 h-8">
-              Compact
-            </ToggleGroupItem>
-            <ToggleGroupItem value="normal" className="text-xs px-3 h-8">
-              Normal
-            </ToggleGroupItem>
-            <ToggleGroupItem value="wide" className="text-xs px-3 h-8">
-              Wide
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+
         <CalendarNavigation
           currentYear={currentYear}
           currentQuarter={currentQuarter}
