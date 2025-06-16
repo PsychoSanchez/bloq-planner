@@ -10,9 +10,9 @@ export const useColumnSizing = () => {
       const width = window.innerWidth;
 
       const getSize = () => {
-        if (width < 1600) {
+        if (width < 1920) {
           return 'compact';
-        } else if (width < 1920) {
+        } else if (width < 2560) {
           return 'normal';
         } else {
           return 'wide';
