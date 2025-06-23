@@ -454,10 +454,14 @@ export const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(function
                         <Input
                           type="number"
                           min="0"
+                          step="0.1"
                           value={field.value || ''}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
+                            // Round to 1 decimal place
+                            const roundedValue = Math.round(value * 10) / 10;
+                            field.onChange(roundedValue);
+                          }}
                           className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
                           placeholder="0"
                         />
