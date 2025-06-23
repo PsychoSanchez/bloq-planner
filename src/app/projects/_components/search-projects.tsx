@@ -3,12 +3,14 @@
 import { parseAsString, parseAsBoolean, useQueryState } from 'nuqs';
 import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { ArchiveIcon, SearchIcon } from 'lucide-react';
+import { ArchiveIcon, SearchIcon, SettingsIcon } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ProjectGroupSelector } from '@/app/projects/_components/project-group-selector';
 import { ProjectSortSelector } from '@/app/projects/_components/project-sort-selector';
 import { AdvancedProjectFilters } from '@/app/projects/_components/advanced-project-filters';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { TeamOption } from '@/components/team-selector';
 import { ColumnToggle } from '@/app/projects/_components/column-toggle';
 import { ColumnDefinition } from '@/hooks/use-column-visibility';
@@ -62,19 +64,14 @@ export function SearchProjects({
             <Input
               type="search"
               placeholder="Search projects..."
-              className="pl-9 h-10"
+              className="pl-9 h-8"
               defaultValue={search}
               onChange={handleSearchChange}
             />
           </div>
 
           {/* Archive Toggle */}
-          <Button
-            variant="outline"
-            size="default"
-            className="h-10 px-3 gap-2 whitespace-nowrap"
-            onClick={handleArchivedToggle}
-          >
+          <Button variant="outline" size="sm" className="px-3 gap-2 whitespace-nowrap" onClick={handleArchivedToggle}>
             <ArchiveIcon
               className={`h-4 w-4 ${includeArchived ? 'text-foreground' : 'text-muted-foreground'}`}
               strokeWidth={includeArchived ? 2 : 1}
@@ -83,26 +80,53 @@ export function SearchProjects({
           </Button>
         </div>
 
-        {/* View Controls Row */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 items-center justify-between">
-          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
-            <ViewToggle />
-            <ProjectGroupSelector />
-            <ProjectSortSelector />
-          </div>
-          {viewMode === 'table' && (
-            <ColumnToggle
-              columns={columns}
-              isColumnVisible={isColumnVisible}
-              toggleColumn={toggleColumn}
-              resetToDefaults={resetToDefaults}
-            />
-          )}
+        {/* Display Settings */}
+        <div className="flex items-center justify-between">
+          {/* Advanced Filters */}
+          <AdvancedProjectFilters teams={teams} teamsLoading={teamsLoading} />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="px-3 gap-2">
+                <SettingsIcon className="h-4 w-4" />
+                <span className="text-sm hidden sm:inline">Display Settings</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <div className="p-4 space-y-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">View</h4>
+                  <ViewToggle />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Grouping & Sorting</h4>
+                  <div className="space-y-2">
+                    <ProjectGroupSelector />
+                    <ProjectSortSelector />
+                  </div>
+                </div>
+
+                {viewMode === 'table' && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Columns</h4>
+                      <ColumnToggle
+                        columns={columns}
+                        isColumnVisible={isColumnVisible}
+                        toggleColumn={toggleColumn}
+                        resetToDefaults={resetToDefaults}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
-
-      {/* Advanced Filters */}
-      <AdvancedProjectFilters teams={teams} teamsLoading={teamsLoading} />
     </div>
   );
 }

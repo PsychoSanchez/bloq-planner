@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,9 @@ const EMPTY_ARRAY = [] as string[];
 const UNASSIGNED_VALUE = 'unassigned';
 
 export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectFiltersProps) {
+  // State for expanding/collapsing filters
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // URL state for each filter dimension
   const [priorities, setPriorities] = useQueryState(
     'priorities',
@@ -176,216 +179,227 @@ export function AdvancedProjectFilters({ teams, teamsLoading }: AdvancedProjectF
     <div className="space-y-3">
       {/* Filter Menu Bar */}
       <div className="flex items-center gap-3">
-        <Menubar className="pl-2">
-          <FilterIcon className="h-4 w-4 text-muted-foreground" />
-          {/* Priority Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2">
-              <SignalIcon className="h-4 w-4" />
-              <span className="text-sm">Priority</span>
-            </MenubarTrigger>
-            <MenubarContent>
-              <MenubarCheckboxItem
-                className="flex items-center gap-2"
-                checked={priorities.includes(UNASSIGNED_VALUE)}
-                onCheckedChange={() => togglePriority(UNASSIGNED_VALUE)}
-              >
-                <MinusIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Unassigned</span>
-              </MenubarCheckboxItem>
-              <MenubarSeparator />
-              {PRIORITY_OPTIONS.map((priority) => (
-                <MenubarCheckboxItem
-                  key={priority.id}
-                  className="flex items-center gap-2"
-                  checked={priorities.includes(priority.id)}
-                  onCheckedChange={() => togglePriority(priority.id)}
-                >
-                  <priority.icon className={`h-4 w-4 ${priority.cn}`} />
-                  <span className={priority.cn}>{priority.name}</span>
-                </MenubarCheckboxItem>
-              ))}
-            </MenubarContent>
-          </MenubarMenu>
-
-          {/* Quarter Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              <span className="text-sm">Quarter</span>
-            </MenubarTrigger>
-            <MenubarContent className="max-h-80 overflow-y-auto">
-              <MenubarCheckboxItem
-                className="flex items-center gap-2"
-                checked={quarters.includes(UNASSIGNED_VALUE)}
-                onCheckedChange={() => toggleQuarter(UNASSIGNED_VALUE)}
-              >
-                <MinusIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Unassigned</span>
-              </MenubarCheckboxItem>
-              <MenubarSeparator />
-              {QUARTER_OPTIONS.map((quarter) => (
-                <MenubarCheckboxItem
-                  key={quarter.id}
-                  checked={quarters.includes(quarter.value)}
-                  onCheckedChange={() => toggleQuarter(quarter.value)}
-                >
-                  {quarter.name}
-                </MenubarCheckboxItem>
-              ))}
-            </MenubarContent>
-          </MenubarMenu>
-
-          {/* Area Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2">
-              <MapPinIcon className="h-4 w-4" />
-              <span className="text-sm">Area</span>
-            </MenubarTrigger>
-            <MenubarContent>
-              <MenubarCheckboxItem
-                className="flex items-center gap-2"
-                checked={areas.includes(UNASSIGNED_VALUE)}
-                onCheckedChange={() => toggleArea(UNASSIGNED_VALUE)}
-              >
-                <MinusIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Unassigned</span>
-              </MenubarCheckboxItem>
-              <MenubarSeparator />
-              {PROJECT_AREAS.map((area) => (
-                <MenubarCheckboxItem
-                  key={area.id}
-                  className="flex items-center gap-2"
-                  checked={areas.includes(area.id)}
-                  onCheckedChange={() => toggleArea(area.id)}
-                >
-                  <area.icon className="h-4 w-4" />
-                  {area.name}
-                </MenubarCheckboxItem>
-              ))}
-            </MenubarContent>
-          </MenubarMenu>
-
-          {/* Lead Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
-              <UserIcon className="h-4 w-4" />
-              <span className="text-sm">Lead</span>
-            </MenubarTrigger>
-            <MenubarContent className="max-h-80 overflow-y-auto">
-              {teamsLoading ? (
-                <MenubarItem disabled>Loading...</MenubarItem>
-              ) : (
-                <>
+        <Menubar>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`p-2 ${isExpanded ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <FilterIcon className="h-4 w-4" />
+          </Button>
+          {isExpanded && (
+            <>
+              {/* Priority Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2">
+                  <SignalIcon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Priority</span>
+                </MenubarTrigger>
+                <MenubarContent>
                   <MenubarCheckboxItem
                     className="flex items-center gap-2"
-                    checked={leads.includes(UNASSIGNED_VALUE)}
-                    onCheckedChange={() => toggleLead(UNASSIGNED_VALUE)}
+                    checked={priorities.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => togglePriority(UNASSIGNED_VALUE)}
                   >
                     <MinusIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                  {availableLeads.length > 0 && <MenubarSeparator />}
-                  {availableLeads.length === 0 ? (
-                    <MenubarItem disabled>No leads available</MenubarItem>
-                  ) : (
-                    availableLeads.map((lead) => (
-                      <MenubarCheckboxItem
-                        key={lead.id}
-                        checked={leads.includes(lead.id)}
-                        onCheckedChange={() => toggleLead(lead.id)}
-                      >
-                        {lead.name}
-                      </MenubarCheckboxItem>
-                    ))
-                  )}
-                </>
-              )}
-            </MenubarContent>
-          </MenubarMenu>
+                  <MenubarSeparator />
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <MenubarCheckboxItem
+                      key={priority.id}
+                      className="flex items-center gap-2"
+                      checked={priorities.includes(priority.id)}
+                      onCheckedChange={() => togglePriority(priority.id)}
+                    >
+                      <priority.icon className={`h-4 w-4 ${priority.cn}`} />
+                      <span className={priority.cn}>{priority.name}</span>
+                    </MenubarCheckboxItem>
+                  ))}
+                </MenubarContent>
+              </MenubarMenu>
 
-          {/* Team Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
-              <Users2Icon className="h-4 w-4" />
-              <span className="text-sm">Team</span>
-            </MenubarTrigger>
-            <MenubarContent className="max-h-80 overflow-y-auto">
-              {teamsLoading ? (
-                <MenubarItem disabled>Loading...</MenubarItem>
-              ) : (
-                <>
+              {/* Quarter Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Quarter</span>
+                </MenubarTrigger>
+                <MenubarContent className="max-h-80 overflow-y-auto">
                   <MenubarCheckboxItem
                     className="flex items-center gap-2"
-                    checked={teamFilters.includes(UNASSIGNED_VALUE)}
-                    onCheckedChange={() => toggleTeam(UNASSIGNED_VALUE)}
+                    checked={quarters.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => toggleQuarter(UNASSIGNED_VALUE)}
                   >
                     <MinusIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                  {availableTeams.length > 0 && <MenubarSeparator />}
-                  {availableTeams.length === 0 ? (
-                    <MenubarItem disabled>No teams available</MenubarItem>
-                  ) : (
-                    availableTeams.map((team) => (
-                      <MenubarCheckboxItem
-                        key={team.id}
-                        checked={teamFilters.includes(team.id)}
-                        onCheckedChange={() => toggleTeam(team.id)}
-                      >
-                        {team.name}
-                      </MenubarCheckboxItem>
-                    ))
-                  )}
-                </>
-              )}
-            </MenubarContent>
-          </MenubarMenu>
+                  <MenubarSeparator />
+                  {QUARTER_OPTIONS.map((quarter) => (
+                    <MenubarCheckboxItem
+                      key={quarter.id}
+                      checked={quarters.includes(quarter.value)}
+                      onCheckedChange={() => toggleQuarter(quarter.value)}
+                    >
+                      {quarter.name}
+                    </MenubarCheckboxItem>
+                  ))}
+                </MenubarContent>
+              </MenubarMenu>
 
-          {/* Dependency Filter */}
-          <MenubarMenu>
-            <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
-              <LinkIcon className="h-4 w-4" />
-              <span className="text-sm">Dependencies</span>
-            </MenubarTrigger>
-            <MenubarContent className="max-h-80 overflow-y-auto">
-              {teamsLoading ? (
-                <MenubarItem disabled>Loading...</MenubarItem>
-              ) : (
-                <>
+              {/* Area Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2">
+                  <MapPinIcon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Area</span>
+                </MenubarTrigger>
+                <MenubarContent>
                   <MenubarCheckboxItem
                     className="flex items-center gap-2"
-                    checked={dependencies.includes(UNASSIGNED_VALUE)}
-                    onCheckedChange={() => toggleDependency(UNASSIGNED_VALUE)}
+                    checked={areas.includes(UNASSIGNED_VALUE)}
+                    onCheckedChange={() => toggleArea(UNASSIGNED_VALUE)}
                   >
                     <MinusIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Unassigned</span>
                   </MenubarCheckboxItem>
-                  {availableDependencies.length > 0 && <MenubarSeparator />}
-                  {availableDependencies.length === 0 ? (
-                    <MenubarItem disabled>No dependencies available</MenubarItem>
+                  <MenubarSeparator />
+                  {PROJECT_AREAS.map((area) => (
+                    <MenubarCheckboxItem
+                      key={area.id}
+                      className="flex items-center gap-2"
+                      checked={areas.includes(area.id)}
+                      onCheckedChange={() => toggleArea(area.id)}
+                    >
+                      <area.icon className="h-4 w-4" />
+                      {area.name}
+                    </MenubarCheckboxItem>
+                  ))}
+                </MenubarContent>
+              </MenubarMenu>
+
+              {/* Lead Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
+                  <UserIcon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Lead</span>
+                </MenubarTrigger>
+                <MenubarContent className="max-h-80 overflow-y-auto">
+                  {teamsLoading ? (
+                    <MenubarItem disabled>Loading...</MenubarItem>
                   ) : (
-                    availableDependencies.map((team) => (
+                    <>
                       <MenubarCheckboxItem
-                        key={team.id}
-                        checked={dependencies.includes(team.id)}
-                        onCheckedChange={() => toggleDependency(team.id)}
+                        className="flex items-center gap-2"
+                        checked={leads.includes(UNASSIGNED_VALUE)}
+                        onCheckedChange={() => toggleLead(UNASSIGNED_VALUE)}
                       >
-                        {team.name}
+                        <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Unassigned</span>
                       </MenubarCheckboxItem>
-                    ))
+                      {availableLeads.length > 0 && <MenubarSeparator />}
+                      {availableLeads.length === 0 ? (
+                        <MenubarItem disabled>No leads available</MenubarItem>
+                      ) : (
+                        availableLeads.map((lead) => (
+                          <MenubarCheckboxItem
+                            key={lead.id}
+                            checked={leads.includes(lead.id)}
+                            onCheckedChange={() => toggleLead(lead.id)}
+                          >
+                            {lead.name}
+                          </MenubarCheckboxItem>
+                        ))
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </MenubarContent>
-          </MenubarMenu>
+                </MenubarContent>
+              </MenubarMenu>
+
+              {/* Team Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
+                  <Users2Icon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Team</span>
+                </MenubarTrigger>
+                <MenubarContent className="max-h-80 overflow-y-auto">
+                  {teamsLoading ? (
+                    <MenubarItem disabled>Loading...</MenubarItem>
+                  ) : (
+                    <>
+                      <MenubarCheckboxItem
+                        className="flex items-center gap-2"
+                        checked={teamFilters.includes(UNASSIGNED_VALUE)}
+                        onCheckedChange={() => toggleTeam(UNASSIGNED_VALUE)}
+                      >
+                        <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Unassigned</span>
+                      </MenubarCheckboxItem>
+                      {availableTeams.length > 0 && <MenubarSeparator />}
+                      {availableTeams.length === 0 ? (
+                        <MenubarItem disabled>No teams available</MenubarItem>
+                      ) : (
+                        availableTeams.map((team) => (
+                          <MenubarCheckboxItem
+                            key={team.id}
+                            checked={teamFilters.includes(team.id)}
+                            onCheckedChange={() => toggleTeam(team.id)}
+                          >
+                            {team.name}
+                          </MenubarCheckboxItem>
+                        ))
+                      )}
+                    </>
+                  )}
+                </MenubarContent>
+              </MenubarMenu>
+
+              {/* Dependency Filter */}
+              <MenubarMenu>
+                <MenubarTrigger className="flex items-center gap-2" disabled={teamsLoading}>
+                  <LinkIcon className="h-4 w-4" />
+                  <span className="text-sm hidden sm:inline">Dependencies</span>
+                </MenubarTrigger>
+                <MenubarContent className="max-h-80 overflow-y-auto">
+                  {teamsLoading ? (
+                    <MenubarItem disabled>Loading...</MenubarItem>
+                  ) : (
+                    <>
+                      <MenubarCheckboxItem
+                        className="flex items-center gap-2"
+                        checked={dependencies.includes(UNASSIGNED_VALUE)}
+                        onCheckedChange={() => toggleDependency(UNASSIGNED_VALUE)}
+                      >
+                        <MinusIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Unassigned</span>
+                      </MenubarCheckboxItem>
+                      {availableDependencies.length > 0 && <MenubarSeparator />}
+                      {availableDependencies.length === 0 ? (
+                        <MenubarItem disabled>No dependencies available</MenubarItem>
+                      ) : (
+                        availableDependencies.map((team) => (
+                          <MenubarCheckboxItem
+                            key={team.id}
+                            checked={dependencies.includes(team.id)}
+                            onCheckedChange={() => toggleDependency(team.id)}
+                          >
+                            {team.name}
+                          </MenubarCheckboxItem>
+                        ))
+                      )}
+                    </>
+                  )}
+                </MenubarContent>
+              </MenubarMenu>
+            </>
+          )}
         </Menubar>
 
         {/* Clear All Filters Button */}
         {activeFiltersCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-9 px-3 gap-2 text-muted-foreground">
             <XIcon className="h-4 w-4" />
-            <span className="text-sm">Clear all</span>
+            <span className="text-sm hidden sm:inline">Clear all</span>
           </Button>
         )}
       </div>

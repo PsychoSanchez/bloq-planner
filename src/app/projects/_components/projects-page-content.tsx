@@ -21,7 +21,6 @@ const EMPTY_ARRAY = [] as string[];
 // Define the available columns for the projects table
 const PROJECT_COLUMNS: ColumnDefinition[] = [
   { id: 'name', label: 'Name', defaultVisible: true },
-  { id: 'type', label: 'Type', defaultVisible: true },
   { id: 'priority', label: 'Priority', defaultVisible: true },
   { id: 'quarter', label: 'Quarter', defaultVisible: true },
   { id: 'team', label: 'Team', defaultVisible: true },
@@ -53,13 +52,6 @@ function ProjectsCardSkeleton({ isGrouped }: { isGrouped: boolean }) {
             </div>
             <Skeleton className="h-2.5 w-2.5 rounded flex-shrink-0" />
           </div>
-        </div>
-
-        {/* Project type and priority badges */}
-        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-4 w-12 rounded" />
-          <Skeleton className="h-4 w-14 rounded-full" />
         </div>
 
         {/* Bottom section with metadata */}
@@ -159,13 +151,6 @@ function ProjectsTableSkeleton({
         </TableCell>,
       );
     }
-    if (isColumnVisible('type')) {
-      cells.push(
-        <TableCell key="type" className="py-2 px-2">
-          <Skeleton className="h-5 w-16 rounded-full" />
-        </TableCell>,
-      );
-    }
     if (isColumnVisible('priority')) {
       cells.push(
         <TableCell key="priority" className="py-2 px-2">
@@ -238,12 +223,6 @@ function ProjectsTableSkeleton({
       headers.push(
         <TableHead key="name" className="min-w-[200px]">
           Name
-        </TableHead>,
-      );
-    if (isColumnVisible('type'))
-      headers.push(
-        <TableHead key="type" className="w-[100px]">
-          Type
         </TableHead>,
       );
     if (isColumnVisible('priority'))
@@ -370,7 +349,6 @@ export function ProjectsPageContent() {
 
   // Basic filters
   const [search] = useQueryState('search', parseAsString.withDefault(''));
-  const [type] = useQueryState('type', parseAsString.withDefault('all'));
   const [includeArchived] = useQueryState('includeArchived', parseAsBoolean.withDefault(false));
 
   // View controls
@@ -400,7 +378,6 @@ export function ProjectsPageContent() {
     updateProject: handleUpdateProject,
   } = useOptimisticProjects({
     search: search || undefined,
-    type,
     includeArchived,
     priorities: priorities.length > 0 ? priorities : undefined,
     quarters: quarters.length > 0 ? quarters : undefined,

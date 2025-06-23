@@ -120,7 +120,7 @@ export function NewProjectDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="h-10 px-4 gap-2">
+        <Button size="sm" className="px-4 gap-2">
           <PlusIcon className="h-4 w-4" />
           <span className="hidden sm:inline">New Project</span>
           <span className="sm:hidden">New</span>
