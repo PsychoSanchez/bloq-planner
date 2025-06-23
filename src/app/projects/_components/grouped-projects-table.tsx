@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { ChevronDownIcon, ChevronRightIcon, ArchiveIcon, ExternalLinkIcon } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { TeamMultiSelector, TeamOption } from '@/components/team-multi-selector';
 import { DependenciesMultiSelector } from '@/components/dependencies-multi-selector';
 import { PersonSelector } from '@/components/person-selector';
@@ -33,7 +32,6 @@ interface GroupedProjectsTableProps {
 function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
   const visibleColumns = [
     { id: 'name', label: 'Name', className: 'w-[300px] min-w-[300px]' },
-    { id: 'type', label: 'Type', className: 'w-[100px]' },
     { id: 'priority', label: 'Priority', className: 'w-[100px]' },
     { id: 'quarter', label: 'Quarter', className: 'w-[200px]' },
     { id: 'team', label: 'Team', className: 'w-[200px]' },
@@ -61,7 +59,6 @@ function GroupedProjectsTableHeader({ isColumnVisible }: { isColumnVisible: (col
 function EmptyProjectRow({ isColumnVisible }: { isColumnVisible: (columnId: string) => boolean }) {
   const visibleColumnCount = [
     'name',
-    'type',
     'priority',
     'quarter',
     'team',
@@ -301,11 +298,6 @@ function ProjectRow({
                 <ExternalLinkIcon className="h-3 w-3 text-muted-foreground hover:text-foreground" />
               </Link>
             </div>
-          </TableCell>
-        )}
-        {isColumnVisible('type') && (
-          <TableCell className="py-1 px-2">
-            <ProjectTypeBadge type={project.type} />
           </TableCell>
         )}
         {isColumnVisible('priority') && (
