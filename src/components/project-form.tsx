@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, forwardRef } from 'react';
+import { useEffect, useMemo, forwardRef } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { CheckIcon, ArrowLeftIcon, CalendarIcon, ArchiveIcon, ArchiveRestoreIcon, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -38,7 +39,7 @@ export interface ProjectFormData {
   impact: string;
   roi: string;
   archived: boolean;
-  estimates: Record<string, number | ''>;
+  estimates: Record<string, number>;
 }
 
 export interface ProjectFormProps {
@@ -85,10 +86,10 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
   estimates: ROLES_TO_DISPLAY.reduce(
     (acc, role) => {
       const estimate = projectData?.estimates?.find((est) => est.department === role);
-      acc[role] = typeof estimate?.value === 'number' && estimate.value !== 0 ? estimate.value : '';
+      acc[role] = typeof estimate?.value === 'number' && estimate.value !== 0 ? estimate.value : 0;
       return acc;
     },
-    {} as Record<string, number | ''>,
+    {} as Record<string, number>,
   ),
 });
 
@@ -96,6 +97,11 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
 const getRoleDisplayName = (roleId: string): string => {
   const roleOption = ROLE_OPTIONS.find((option) => option.id === roleId);
   return roleOption?.name || roleId.charAt(0).toUpperCase() + roleId.slice(1).replace(/_/g, ' ');
+};
+
+// Slug validation function
+const isSlugValid = (slug: string) => {
+  return slug.length > 0 && slug.length <= 16 && /^[A-Z0-9-]+$/.test(slug);
 };
 
 export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(function ProjectForm(
@@ -118,57 +124,53 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
   ref,
 ) {
   // Create initial form data
-  const initialFormData = useMemo(() => createFormDataFromProject(initialData), [initialData]);
-  const [formData, setFormData] = useState(initialFormData);
+  const defaultValues = useMemo(() => createFormDataFromProject(initialData), [initialData]);
 
-  // Use ref to track the baseline for comparison (gets updated after saves)
-  const baselineFormData = useRef(initialFormData);
+  // Initialize React Hook Form
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<ProjectFormData>({
+    defaultValues,
+    mode: 'onChange',
+  });
 
-  // Update baseline when initialData changes
+  // Watch form values for auto-slug generation and validation
+  const watchedName = watch('name');
+  const watchedSlug = watch('slug');
+  const watchedArchived = watch('archived');
+
+  // Reset form when initialData changes
   useEffect(() => {
     const newFormData = createFormDataFromProject(initialData);
-    setFormData(newFormData);
-    baselineFormData.current = newFormData;
-  }, [initialData]);
+    reset(newFormData);
+  }, [initialData, reset]);
 
-  // Deep comparison function for detecting changes
+  // Auto-generate slug from name
+  useEffect(() => {
+    if (mode === 'create' || !watchedSlug) {
+      const autoSlug = watchedName
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s-]/g, '') // Remove non-English characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+        .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        .slice(0, 16); // Limit to 16 characters
+
+      setValue('slug', autoSlug, { shouldValidate: true });
+    }
+  }, [watchedName, watchedSlug, mode, setValue]);
+
+  // Determine if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
     if (!showUnsavedChanges || mode === 'create') return false;
-
-    const currentData = { ...formData };
-    const originalData = { ...baselineFormData.current };
-
-    // Convert estimates objects to comparable format
-    const currentEstimates = JSON.stringify(currentData.estimates);
-    const originalEstimates = JSON.stringify(originalData.estimates);
-
-    // Convert arrays to comparable format
-    const currentTeamIds = JSON.stringify(currentData.teamIds);
-    const originalTeamIds = JSON.stringify(originalData.teamIds);
-    const currentQuarters = JSON.stringify(currentData.quarters);
-    const originalQuarters = JSON.stringify(originalData.quarters);
-    const currentDependencies = JSON.stringify(currentData.dependencies);
-    const originalDependencies = JSON.stringify(originalData.dependencies);
-
-    return (
-      currentData.name !== originalData.name ||
-      currentData.slug !== originalData.slug ||
-      currentData.description !== originalData.description ||
-      currentData.priority !== originalData.priority ||
-      currentTeamIds !== originalTeamIds ||
-      currentData.leadId !== originalData.leadId ||
-      currentData.area !== originalData.area ||
-      currentQuarters !== originalQuarters ||
-      currentDependencies !== originalDependencies ||
-      currentData.color !== originalData.color ||
-      currentData.archived !== originalData.archived ||
-      currentData.roi !== originalData.roi ||
-      currentData.cost !== originalData.cost ||
-      currentData.impact !== originalData.impact ||
-      currentData.type !== originalData.type ||
-      currentEstimates !== originalEstimates
-    );
-  }, [formData, showUnsavedChanges, mode]);
+    return isDirty;
+  }, [isDirty, showUnsavedChanges, mode]);
 
   // Warning before leaving with unsaved changes
   useEffect(() => {
@@ -185,66 +187,17 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges, showUnsavedChanges]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-
-    if (name === 'slug') {
-      // Auto-format slug: uppercase, no spaces, only English letters/numbers/hyphens, max 16 chars
-      const formattedSlug = value
-        .toUpperCase()
-        .replace(/[^A-Z0-9-]/g, '') // Only allow uppercase letters, numbers, and hyphens
-        .slice(0, 16); // Limit to 16 characters
-
-      setFormData((prev) => ({ ...prev, [name]: formattedSlug }));
-    } else if (name === 'name') {
-      // Auto-generate slug from name if slug is empty or in create mode
-      const shouldAutoGenerateSlug = mode === 'create' || !formData.slug;
-
-      if (shouldAutoGenerateSlug) {
-        const autoSlug = value
-          .toUpperCase()
-          .replace(/[^A-Z0-9\s-]/g, '') // Remove non-English characters
-          .replace(/\s+/g, '-') // Replace spaces with hyphens
-          .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-          .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-          .slice(0, 16); // Limit to 16 characters
-
-        setFormData((prev) => ({ ...prev, [name]: value, slug: autoSlug }));
-      } else {
-        setFormData((prev) => ({ ...prev, [name]: value }));
-      }
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+  // Handle form submission
+  const onFormSubmit = async (data: ProjectFormData) => {
+    // Validate slug before submission
+    if (data.slug && !isSlugValid(data.slug)) {
+      return;
     }
+
+    await onSubmit(data);
   };
 
-  const handleSelectChange = (name: string, value: string | string[]) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleColorChange = (color: string) => {
-    setFormData((prev) => ({ ...prev, color: color }));
-  };
-
-  const handleEstimateChange = (role: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      estimates: {
-        ...prev.estimates,
-        [role]: value === '' ? '' : Math.max(0, parseInt(value, 10) || 0),
-      },
-    }));
-  };
-
-  const handleBusinessImpactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleToggleArchive = () => {
-    setFormData((prev) => ({ ...prev, archived: !prev.archived }));
-  };
-
+  // Handle cancel with unsaved changes check
   const handleCancel = () => {
     if (hasUnsavedChanges && showUnsavedChanges) {
       const confirmed = window.confirm(
@@ -255,30 +208,24 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
     onCancel?.();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle archive toggle
+  const handleToggleArchive = () => {
+    setValue('archived', !watchedArchived, { shouldDirty: true });
+  };
 
-    // Validate slug before submission
-    if (formData.slug && !isSlugValid(formData.slug)) {
-      return; // Don't submit if slug is invalid
-    }
-
-    // Coerce empty string estimates to 0 before submit
-    const cleanedEstimates = Object.fromEntries(
-      Object.entries(formData.estimates).map(([role, value]) => [role, value === '' ? 0 : value]),
-    );
-    await onSubmit({ ...formData, estimates: cleanedEstimates });
+  // Handle slug input change with formatting
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedSlug = e.target.value
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, '')
+      .slice(0, 16);
+    setValue('slug', formattedSlug, { shouldValidate: true, shouldDirty: true });
   };
 
   const defaultSubmitText = mode === 'create' ? 'Create Project' : 'Save Changes';
 
-  // Validate slug
-  const isSlugValid = (slug: string) => {
-    return slug.length > 0 && slug.length <= 16 && /^[A-Z0-9-]+$/.test(slug);
-  };
-
   return (
-    <form onSubmit={handleSubmit} ref={ref} className={cn('space-y-6', className)}>
+    <form onSubmit={handleSubmit(onFormSubmit)} ref={ref} className={cn('space-y-6', className)}>
       {(showBackButton || showArchiveButton || showUnsavedChanges) && (
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 flex-1">
@@ -303,7 +250,7 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
                 onClick={handleToggleArchive}
                 className="text-xs px-2 py-1 h-auto"
               >
-                {formData.archived ? (
+                {watchedArchived ? (
                   <>
                     <ArchiveRestoreIcon className="h-3 w-3 mr-1" />
                     Unarchive
@@ -334,7 +281,7 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
               disabled={
                 isSubmitting ||
                 (mode === 'edit' && !hasUnsavedChanges) ||
-                (formData.slug.length > 0 && !isSlugValid(formData.slug))
+                (watchedSlug.length > 0 && !isSlugValid(watchedSlug))
               }
               className={cn(
                 'text-xs px-2 py-1 h-auto transition-all',
@@ -350,34 +297,30 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
 
       <div className="space-y-1">
         <Input
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
+          {...register('name', { required: 'Project name is required' })}
           className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
           placeholder="Project Name"
-          required
         />
+        {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+
         <div className="space-y-1">
           <Input
-            id="slug"
-            name="slug"
-            value={formData.slug}
-            onChange={handleChange}
+            value={watchedSlug}
+            onChange={handleSlugChange}
             className={cn(
               'text-sm w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0 text-muted-foreground',
-              formData.slug && !isSlugValid(formData.slug) && 'text-red-500',
+              watchedSlug && !isSlugValid(watchedSlug) && 'text-red-500',
             )}
             placeholder="PROJECT-SLUG"
             maxLength={16}
           />
-          {formData.slug && !isSlugValid(formData.slug) && (
+          {watchedSlug && !isSlugValid(watchedSlug) && (
             <p className="text-xs text-red-500">
               Slug must be uppercase, only English letters/numbers/hyphens, max 16 characters
             </p>
           )}
-          {formData.slug && formData.slug.length > 0 && (
-            <p className="text-xs text-muted-foreground">{formData.slug.length}/16 characters</p>
+          {watchedSlug && watchedSlug.length > 0 && (
+            <p className="text-xs text-muted-foreground">{watchedSlug.length}/16 characters</p>
           )}
         </div>
       </div>
@@ -385,43 +328,65 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
       <div className="space-y-3">
         <h3 className="text-xs text-muted-foreground font-medium">PROPERTIES</h3>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
-          <ColorSelector selectedColorName={formData.color} onColorChange={handleColorChange} />
-          <PrioritySelector
-            type="inline"
-            value={formData.priority}
-            onSelect={(value) => handleSelectChange('priority', value as 'low' | 'medium' | 'high' | 'urgent')}
+          <Controller
+            name="color"
+            control={control}
+            render={({ field }) => <ColorSelector selectedColorName={field.value} onColorChange={field.onChange} />}
           />
-          <ProjectAreaSelector
-            type="inline"
-            value={formData.area}
-            onSelect={(value) => handleSelectChange('area', value)}
+          <Controller
+            name="priority"
+            control={control}
+            render={({ field }) => (
+              <PrioritySelector
+                type="inline"
+                value={field.value}
+                onSelect={(value) => field.onChange(value as 'low' | 'medium' | 'high' | 'urgent')}
+              />
+            )}
           />
-          <QuarterMultiSelector
-            type="inline"
-            value={formData.quarters}
-            onSelect={(value) => handleSelectChange('quarters', value)}
+          <Controller
+            name="area"
+            control={control}
+            render={({ field }) => <ProjectAreaSelector type="inline" value={field.value} onSelect={field.onChange} />}
           />
-          <TeamMultiSelector
-            type="inline"
-            value={formData.teamIds}
-            onSelect={(value) => handleSelectChange('teamIds', value)}
-            teams={teams}
-            loading={teamsLoading}
-            placeholder="Select teams"
-            maxDisplayItems={2}
+          <Controller
+            name="quarters"
+            control={control}
+            render={({ field }) => <QuarterMultiSelector type="inline" value={field.value} onSelect={field.onChange} />}
           />
-          <ProjectTypeSelector
-            type="inline"
-            value={formData.type}
-            onSelect={(value) => handleSelectChange('type', value)}
+          <Controller
+            name="teamIds"
+            control={control}
+            render={({ field }) => (
+              <TeamMultiSelector
+                type="inline"
+                value={field.value}
+                onSelect={field.onChange}
+                teams={teams}
+                loading={teamsLoading}
+                placeholder="Select teams"
+                maxDisplayItems={2}
+              />
+            )}
           />
-          <PersonSelector
-            type="inline"
-            value={formData.leadId}
-            onSelect={(value) => handleSelectChange('leadId', value)}
-            teams={teams}
-            loading={teamsLoading}
-            placeholder="Select lead"
+          <Controller
+            name="type"
+            control={control}
+            render={({ field }) => <ProjectTypeSelector type="inline" value={field.value} onSelect={field.onChange} />}
+          />
+          <Controller
+            name="leadId"
+            control={control}
+            render={({ field }) => (
+              <PersonSelector
+                type="inline"
+                value={field.value}
+                onSelect={field.onChange}
+                teams={teams}
+                loading={teamsLoading}
+                placeholder="Select lead"
+              />
+            )}
           />
         </div>
       </div>
@@ -431,10 +396,7 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
           DESCRIPTION
         </Label>
         <Textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
+          {...register('description')}
           className="w-full p-0 border border-transparent hover:border-muted focus:border-input focus:outline-none min-h-[60px] text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
           placeholder="Add a more detailed description..."
         />
@@ -444,12 +406,18 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
         <Label htmlFor="dependencies" className="text-xs text-muted-foreground font-medium">
           DEPENDENCIES
         </Label>
-        <DependenciesMultiSelector
-          value={formData.dependencies}
-          onSelect={(value) => handleSelectChange('dependencies', value)}
-          dependencies={teams}
-          loading={teamsLoading}
-          placeholder="Select dependencies..."
+        <Controller
+          name="dependencies"
+          control={control}
+          render={({ field }) => (
+            <DependenciesMultiSelector
+              value={field.value}
+              onSelect={field.onChange}
+              dependencies={teams}
+              loading={teamsLoading}
+              placeholder="Select dependencies..."
+            />
+          )}
         />
       </div>
 
@@ -465,11 +433,8 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
                 €
               </span>
               <Input
+                {...register('cost')}
                 type="number"
-                id="cost"
-                name="cost"
-                value={formData.cost}
-                onChange={handleBusinessImpactChange}
                 className="w-full pl-5 pr-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
                 placeholder="0"
                 min="0"
@@ -487,11 +452,8 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
                 €
               </span>
               <Input
+                {...register('impact')}
                 type="number"
-                id="impact"
-                name="impact"
-                value={formData.impact}
-                onChange={handleBusinessImpactChange}
                 className="w-full pl-5 pr-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
                 placeholder="0"
                 min="0"
@@ -506,10 +468,8 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
             </Label>
             <div className="relative">
               <Input
+                {...register('roi')}
                 type="text"
-                id="roi"
-                name="roi"
-                value={formData.roi}
                 readOnly
                 className="w-full pr-5 border border-transparent bg-muted/30 text-sm focus:outline-none h-auto shadow-none rounded-sm cursor-default opacity-70"
                 placeholder="Auto-calculated"
@@ -537,13 +497,21 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
                 <TableRow key={role}>
                   <TableCell className="font-medium py-1 px-2 text-sm capitalize">{getRoleDisplayName(role)}</TableCell>
                   <TableCell className="py-1 px-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.estimates[role]}
-                      onChange={(e) => handleEstimateChange(role, e.target.value)}
-                      className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
-                      placeholder="0"
+                    <Controller
+                      name={`estimates.${role}` as const}
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          type="number"
+                          min="0"
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0))
+                          }
+                          className="w-full p-1 border border-transparent hover:border-muted focus:border-input focus:outline-none h-auto text-sm focus-visible:ring-1 focus-visible:ring-offset-0 shadow-none rounded-sm bg-input/0 dark:bg-input/0"
+                          placeholder="0"
+                        />
+                      )}
                     />
                   </TableCell>
                 </TableRow>

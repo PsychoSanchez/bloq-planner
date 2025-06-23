@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
-import { ProjectTypeBadge } from '@/components/project-type-badge';
 import { ProjectForm, ProjectFormData } from '@/components/project-form';
 import { ArchiveIcon, ArchiveRestoreIcon, CheckIcon } from 'lucide-react';
 
@@ -95,24 +93,6 @@ export function ProjectDetailsSheet({
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-[600px] w-full overflow-y-auto px-4 py-6">
-        <SheetHeader className="pb-6 px-0 border-b">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <SheetTitle className="text-xl font-semibold">Edit Project</SheetTitle>
-              <p className="text-sm text-muted-foreground">Update project details and settings</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {project.archived && (
-                <Badge variant="secondary" className="gap-1">
-                  <ArchiveIcon className="h-3 w-3" />
-                  Archived
-                </Badge>
-              )}
-              <ProjectTypeBadge type={project.type} />
-            </div>
-          </div>
-        </SheetHeader>
-
         <ProjectForm
           mode="edit"
           initialData={project}
@@ -130,36 +110,38 @@ export function ProjectDetailsSheet({
           ref={setFormRef}
         />
 
-        {/* Action Buttons at Bottom */}
-        <div className="pt-6 border-t space-y-3">
-          {onUpdateProject && (
-            <>
-              <Button onClick={handleSaveClick} className="w-full h-10" disabled={isSubmitting}>
-                <CheckIcon className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
+        {/* Floating Action Buttons at Bottom */}
+        {onUpdateProject && (
+          <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-lg p-4 z-50">
+            <div className="max-w-[600px] mx-auto">
+              <div className="flex gap-3">
+                <Button onClick={handleSaveClick} className="flex-1 h-10" disabled={isSubmitting}>
+                  <CheckIcon className="h-4 w-4 mr-2" />
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
 
-              <Button
-                variant={project.archived ? 'default' : 'outline'}
-                onClick={handleArchiveToggle}
-                className="w-full h-10"
-                disabled={isSubmitting}
-              >
-                {project.archived ? (
-                  <>
-                    <ArchiveRestoreIcon className="h-4 w-4 mr-2" />
-                    Unarchive Project
-                  </>
-                ) : (
-                  <>
-                    <ArchiveIcon className="h-4 w-4 mr-2" />
-                    Archive Project
-                  </>
-                )}
-              </Button>
-            </>
-          )}
-        </div>
+                <Button
+                  variant={project.archived ? 'default' : 'destructive'}
+                  onClick={handleArchiveToggle}
+                  className="flex-1 h-10"
+                  disabled={isSubmitting}
+                >
+                  {project.archived ? (
+                    <>
+                      <ArchiveRestoreIcon className="h-4 w-4 mr-2" />
+                      Unarchive
+                    </>
+                  ) : (
+                    <>
+                      <ArchiveIcon className="h-4 w-4 mr-2" />
+                      Archive
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
