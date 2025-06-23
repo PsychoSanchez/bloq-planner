@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { trpc } from '@/utils/trpc';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,13 +15,13 @@ import {
 import { PlusIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { TeamOption } from '@/components/team-multi-selector';
-import { ProjectForm, ProjectFormData } from '@/components/project-form';
+import { ProjectForm, ProjectFormData, ProjectFormRef } from '@/components/project-form';
 
 export function NewProjectDialog() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formRef, setFormRef] = useState<HTMLFormElement | null>(null);
+  const formRef = useRef<ProjectFormRef>(null);
 
   // tRPC mutation for creating projects
   const utils = trpc.useUtils();
@@ -112,8 +112,8 @@ export function NewProjectDialog() {
   };
 
   const handleDialogSubmit = () => {
-    if (formRef) {
-      formRef.requestSubmit();
+    if (formRef.current) {
+      formRef.current.submit();
     }
   };
 
@@ -134,15 +134,12 @@ export function NewProjectDialog() {
 
         <div className="py-4">
           <ProjectForm
+            ref={formRef}
             mode="create"
             teams={teams}
             teamsLoading={teamsLoading}
-            isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
-            showUnsavedChanges={false}
-            showSubmitButton={false}
             className="space-y-4"
-            ref={setFormRef}
           />
         </div>
 

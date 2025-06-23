@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, forwardRef } from 'react';
+import { useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { CheckIcon, ArrowLeftIcon, CalendarIcon, ArchiveIcon, ArchiveRestoreIcon, AlertCircleIcon } from 'lucide-react';
+import { CalendarIcon, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +21,7 @@ import { PersonSelector } from '@/components/person-selector';
 import { QuarterMultiSelector } from '@/components/quarter-multi-selector';
 import { ProjectTypeSelector } from '@/components/project-type-selector';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 
 export interface ProjectFormData {
   name: string;
@@ -42,6 +42,17 @@ export interface ProjectFormData {
   estimates: Record<string, number>;
 }
 
+// Additional exports for external button implementations
+export interface ProjectFormRef {
+  submit: () => void;
+  hasUnsavedChanges: boolean;
+  isSlugValid: boolean;
+  formData: ProjectFormData;
+  setValue: (field: keyof ProjectFormData, value: string | boolean | string[] | Record<string, number>) => void;
+  handleCancel: () => void;
+  handleToggleArchive: () => void;
+}
+
 export interface ProjectFormProps {
   // Data
   initialData?: Partial<Project>;
@@ -50,19 +61,13 @@ export interface ProjectFormProps {
 
   // Behavior
   mode: 'create' | 'edit';
-  isSubmitting?: boolean;
 
   // Callbacks
   onSubmit: (data: ProjectFormData) => Promise<void> | void;
-  onCancel?: () => void;
+  onFormStateChange?: (hasUnsavedChanges: boolean, isSlugValid: boolean) => void;
 
   // UI customization
-  showBackButton?: boolean;
-  showArchiveButton?: boolean;
   showCreatedDate?: boolean;
-  showUnsavedChanges?: boolean;
-  showSubmitButton?: boolean;
-  submitButtonText?: string;
   className?: string;
 }
 
@@ -104,23 +109,8 @@ const isSlugValid = (slug: string) => {
   return slug.length > 0 && slug.length <= 16 && /^[A-Z0-9-]+$/.test(slug);
 };
 
-export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(function ProjectForm(
-  {
-    initialData,
-    teams,
-    teamsLoading,
-    mode,
-    isSubmitting = false,
-    onSubmit,
-    onCancel,
-    showBackButton = false,
-    showArchiveButton = false,
-    showCreatedDate = false,
-    showUnsavedChanges = true,
-    showSubmitButton = true,
-    submitButtonText,
-    className,
-  },
+export const ProjectForm = forwardRef<ProjectFormRef, ProjectFormProps>(function ProjectForm(
+  { initialData, teams, teamsLoading, mode, onSubmit, onFormStateChange, showCreatedDate = false, className },
   ref,
 ) {
   // Create initial form data
@@ -168,13 +158,13 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
 
   // Determine if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
-    if (!showUnsavedChanges || mode === 'create') return false;
+    if (mode === 'create') return false;
     return isDirty;
-  }, [isDirty, showUnsavedChanges, mode]);
+  }, [isDirty, mode]);
 
   // Warning before leaving with unsaved changes
   useEffect(() => {
-    if (!showUnsavedChanges) return;
+    if (mode === 'create') return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -185,7 +175,13 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges, showUnsavedChanges]);
+  }, [hasUnsavedChanges, mode]);
+
+  // Notify parent of form state changes
+  useEffect(() => {
+    const isSlugValidValue = watchedSlug.length === 0 || isSlugValid(watchedSlug);
+    onFormStateChange?.(hasUnsavedChanges, isSlugValidValue);
+  }, [hasUnsavedChanges, watchedSlug, onFormStateChange]);
 
   // Handle form submission
   const onFormSubmit = async (data: ProjectFormData) => {
@@ -199,13 +195,12 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
 
   // Handle cancel with unsaved changes check
   const handleCancel = () => {
-    if (hasUnsavedChanges && showUnsavedChanges) {
+    if (hasUnsavedChanges) {
       const confirmed = window.confirm(
         'You have unsaved changes. Are you sure you want to go back? Your changes will be lost.',
       );
       if (!confirmed) return;
     }
-    onCancel?.();
   };
 
   // Handle archive toggle
@@ -222,85 +217,40 @@ export const ProjectForm = forwardRef<HTMLFormElement, ProjectFormProps>(functio
     setValue('slug', formattedSlug, { shouldValidate: true, shouldDirty: true });
   };
 
-  const defaultSubmitText = mode === 'create' ? 'Create Project' : 'Save Changes';
+  // Expose form methods via ref
+  useImperativeHandle(ref, () => ({
+    submit: () => {
+      handleSubmit(onFormSubmit)();
+    },
+    hasUnsavedChanges,
+    isSlugValid: watchedSlug.length === 0 || isSlugValid(watchedSlug),
+    formData: watch(),
+    setValue,
+    handleCancel,
+    handleToggleArchive,
+  }));
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} ref={ref} className={cn('space-y-6', className)}>
-      {(showBackButton || showArchiveButton || showUnsavedChanges) && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 flex-1">
-            {showBackButton && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-                className="text-xs px-2 py-1 h-auto"
-              >
-                <ArrowLeftIcon className="h-3 w-3 mr-1" />
-                Back
-              </Button>
-            )}
-
-            {showArchiveButton && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleToggleArchive}
-                className="text-xs px-2 py-1 h-auto"
-              >
-                {watchedArchived ? (
-                  <>
-                    <ArchiveRestoreIcon className="h-3 w-3 mr-1" />
-                    Unarchive
-                  </>
-                ) : (
-                  <>
-                    <ArchiveIcon className="h-3 w-3 mr-1" />
-                    Archive
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Unsaved changes indicator */}
-            {hasUnsavedChanges && showUnsavedChanges && (
-              <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-xs font-medium">
-                <AlertCircleIcon className="h-3 w-3" />
-                <span>Unsaved changes</span>
-              </div>
-            )}
-          </div>
-
-          {showSubmitButton && (
-            <Button
-              type="submit"
-              variant="default"
-              size="sm"
-              disabled={
-                isSubmitting ||
-                (mode === 'edit' && !hasUnsavedChanges) ||
-                (watchedSlug.length > 0 && !isSlugValid(watchedSlug))
-              }
-              className={cn(
-                'text-xs px-2 py-1 h-auto transition-all',
-                hasUnsavedChanges && 'ring-2 ring-blue-500/20 shadow-sm',
-              )}
-            >
-              <CheckIcon className="h-3 w-3 mr-1" />
-              {isSubmitting ? 'Saving...' : submitButtonText || defaultSubmitText}
-            </Button>
+    <form onSubmit={handleSubmit(onFormSubmit)} className={cn('space-y-6', className)}>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <Input
+            {...register('name', { required: 'Project name is required' })}
+            className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
+            placeholder="Project Name"
+          />
+          {/* Unsaved changes indicator */}
+          {hasUnsavedChanges && (
+            <Popover>
+              <PopoverTrigger asChild className="cursor-pointer">
+                <AlertCircleIcon className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2 rounded-md bg-background border border-border shadow-md" side="left">
+                <p className="text-xs text-muted-foreground">Unsaved changes</p>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
-      )}
-
-      <div className="space-y-1">
-        <Input
-          {...register('name', { required: 'Project name is required' })}
-          className="md:text-xl text-xl font-bold w-full border-none focus:outline-none h-auto focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0 rounded-none bg-input/0 dark:bg-input/0"
-          placeholder="Project Name"
-        />
         {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
 
         <div className="space-y-1">

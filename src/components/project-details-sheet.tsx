@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useState, useRef } from 'react';
+import { Sheet, SheetContent, SheetTitle, SheetHeader } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
-import { ProjectForm, ProjectFormData } from '@/components/project-form';
+import { ProjectForm, ProjectFormData, ProjectFormRef } from '@/components/project-form';
 import { ArchiveIcon, ArchiveRestoreIcon, CheckIcon } from 'lucide-react';
 
 interface ProjectDetailsSheetProps {
@@ -26,7 +26,7 @@ export function ProjectDetailsSheet({
   teamsLoading,
 }: ProjectDetailsSheetProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formRef, setFormRef] = useState<HTMLFormElement | null>(null);
+  const formRef = useRef<ProjectFormRef>(null);
 
   if (!project) return null;
 
@@ -85,29 +85,26 @@ export function ProjectDetailsSheet({
   };
 
   const handleSaveClick = () => {
-    if (formRef) {
-      formRef.requestSubmit();
+    if (formRef.current) {
+      formRef.current.submit();
     }
   };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-[600px] w-full overflow-y-auto px-4 py-6">
+        <SheetHeader className="hidden">
+          <SheetTitle>Edit Project</SheetTitle>
+        </SheetHeader>
         <ProjectForm
+          ref={formRef}
           mode="edit"
           initialData={project}
           teams={teams}
           teamsLoading={teamsLoading}
-          isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
-          onCancel={onClose}
-          showBackButton={false}
-          showArchiveButton={false}
           showCreatedDate={true}
-          showUnsavedChanges={true}
-          showSubmitButton={false}
           className="space-y-6"
-          ref={setFormRef}
         />
 
         {/* Floating Action Buttons at Bottom */}

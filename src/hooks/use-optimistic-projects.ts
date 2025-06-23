@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Project } from '@/lib/types';
 import { trpc } from '@/utils/trpc';
-import { toast } from '@/components/ui/use-toast';
 
 interface UseOptimisticProjectsOptions {
   search?: string;
@@ -85,12 +84,6 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
 
       // Invalidate and refetch projects to ensure consistency
       utils.project.getProjects.invalidate();
-
-      // Show success toast
-      toast({
-        title: 'Project updated successfully',
-        description: `"${updatedProject.name}" has been updated.`,
-      });
     },
     onError: (error, variables) => {
       console.error('Error updating project:', error);
@@ -102,13 +95,6 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
           prev.map((project) => (project.id === variables.id ? originalProject : project)),
         );
       }
-
-      // Show error toast
-      toast({
-        title: 'Failed to update project',
-        description: error.message || 'There was an error updating the project. Please try again.',
-        variant: 'destructive',
-      });
     },
   });
 
@@ -131,12 +117,6 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
 
       // Invalidate and refetch projects to ensure consistency
       utils.project.getProjects.invalidate();
-
-      // Show success toast
-      toast({
-        title: 'Project created successfully',
-        description: `"${newProject.name}" has been created.`,
-      });
     },
     onError: (error, variables) => {
       console.error('Error creating project:', error);
@@ -150,13 +130,6 @@ export function useOptimisticProjects(options: UseOptimisticProjectsOptions = {}
         // Clean up the temporary ID tracking
         tempProjectsRef.current.delete(variables.name + variables.slug);
       }
-
-      // Show error toast
-      toast({
-        title: 'Error creating project',
-        description: error.message || 'An error occurred while creating the project. Please try again.',
-        variant: 'destructive',
-      });
     },
   });
 
