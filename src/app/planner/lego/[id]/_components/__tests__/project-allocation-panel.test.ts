@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { generateWeeks } from '@/lib/sample-data';
+import { generateWeeks } from '@/lib/dates';
 
 test('ProjectAllocationPanel capacity calculation - should calculate weeks correctly for quarter', () => {
   // Test Q1 2025 (should have 13 weeks)

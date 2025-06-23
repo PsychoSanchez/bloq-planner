@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { Planner, Assignment, Project, SetAssignment } from '@/lib/types';
 import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
-import { generateWeeks } from '@/lib/sample-data';
+import { generateWeeks } from '@/lib/dates';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { WeekBlock } from '@/components/week-block';
@@ -93,6 +93,13 @@ export function LegoPlanner({
 
   // Memoized computed values
   const weekColumns = useMemo(() => generateWeeks(currentYear, currentQuarter), [currentYear, currentQuarter]);
+  console.log(
+    'weekColumns for Q',
+    currentQuarter,
+    currentYear,
+    ':',
+    weekColumns.map((w) => w.weekNumber),
+  );
 
   const allAvailableProjects = useMemo(() => {
     return getAllAvailableProjects(plannerData.projects);

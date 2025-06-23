@@ -15,10 +15,12 @@ import { parseAsInteger, useQueryState } from 'nuqs';
 import { useAssignmentSubscription } from '@/hooks/use-assignment-subscription';
 import { LiveStatusBadge } from '@/components/live-status-badge';
 
-const useAssignments = (plannerId: string) => {
-  // Use tRPC to fetch assignments
+const useAssignments = (plannerId: string, year: number, quarter: number) => {
+  // Use tRPC to fetch assignments filtered by year and quarter
   const { data: assignmentsData, error: assignmentsError } = trpc.assignment.getAssignments.useQuery({
     plannerId: plannerId,
+    year: year,
+    quarter: quarter,
   });
 
   // Bulk mutations
@@ -128,7 +130,7 @@ export default function LegoPlannerDetailsPage() {
     },
   });
 
-  const { assignments, getAssignmentsForWeekAndAssignee } = useAssignments(plannerId);
+  const { assignments, getAssignmentsForWeekAndAssignee } = useAssignments(plannerId, currentYear, currentQuarter);
 
   // Enable real-time assignment updates via SSE
   const { lastAction, isConnected, toggleConnection } = useAssignmentSubscription({

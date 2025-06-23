@@ -8,7 +8,7 @@ import { TrendingUpIcon, TrendingDownIcon, PaintBucket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { getProjectColorByName, getDefaultProjectColor } from '@/lib/project-colors';
-import { generateWeeks } from '@/lib/sample-data';
+import { generateWeeks } from '@/lib/dates';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
