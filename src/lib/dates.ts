@@ -1,4 +1,11 @@
+import assert from 'assert';
 import { WeekData } from './types';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- weeknumber doesn't have a module declaration
+const { weekNumber, weeksPerYear } = require('weeknumber') as {
+  weekNumber: (date: Date) => number;
+  weeksPerYear: (year: number) => number;
+};
 
 // Helper function to format date as YYYY-MM-DD without timezone issues
 const formatDateToYMD = (date: Date): string => {
@@ -8,97 +15,61 @@ const formatDateToYMD = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Get the start date for a specific quarter and year
-const getQuarterStartDate = (year: number, quarter: number): Date => {
-  const month = (quarter - 1) * 3;
-  return new Date(year, month, 1);
+const getMondayAndSundayOfWeek = (date: Date): { start: Date; end: Date } => {
+  const start = new Date(date);
+  const end = new Date(date);
+  start.setDate(date.getDate() - date.getDay() + 1);
+  end.setDate(date.getDate() - date.getDay() + 7);
+  return { start, end };
 };
 
-// Get number of weeks in a quarter (approximately 13)
-const getWeeksInQuarter = (): number => {
-  return 13;
+// Generate all weeks for a given year
+export const generateAllWeeksForYear = (year: number): WeekData[] => {
+  const weeks: WeekData[] = [];
+  const weeeksInAYear = weeksPerYear(year);
+
+  const date = new Date(year, 0, 1);
+  for (let i = 0; i < weeeksInAYear; i++) {
+    date.setDate(date.getDate() + 7 * Number(i > 0));
+    const week = weekNumber(date);
+    const { start: weekStart, end: weekEnd } = getMondayAndSundayOfWeek(date);
+    weeks.push({
+      weekNumber: week,
+      startDate: formatDateToYMD(weekStart),
+      endDate: formatDateToYMD(weekEnd),
+    });
+  }
+
+  return weeks;
+};
+
+// Get quarter date ranges
+const getQuarterWeekStartNumbers = (year: number): Record<number, number> => {
+  return {
+    1: 1,
+    2: weekNumber(new Date(year, 3, 1)),
+    3: weekNumber(new Date(year, 6, 1)),
+    4: weekNumber(new Date(year, 9, 1)),
+  };
 };
 
 // Generate weeks for a specific quarter and year
 export const generateWeeks = (year: number, quarter: number): WeekData[] => {
-  const weeks: WeekData[] = [];
+  // Generate all weeks for the year
+  const allWeeks = generateAllWeeksForYear(year);
 
-  // Get the first day of the quarter
-  const quarterStart = getQuarterStartDate(year, quarter);
+  // Get quarter date range
+  const quarterWeekStartNumbers = getQuarterWeekStartNumbers(year)[quarter];
+  assert(quarterWeekStartNumbers, 'Quarter week start number not found');
+  const nextQuarterWeekStartNumbers = getQuarterWeekStartNumbers(year)[quarter + 1];
 
-  // Adjust to the Monday that belongs to this quarter (not the previous quarter)
-  const startDate = new Date(quarterStart);
-  const dayOfWeek = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+  // Filter weeks that belong to the quarter
+  const quarterWeeks = allWeeks.filter((week) => {
+    return (
+      week.weekNumber >= quarterWeekStartNumbers &&
+      (!nextQuarterWeekStartNumbers || week.weekNumber < nextQuarterWeekStartNumbers)
+    );
+  });
 
-  // Find the Monday that belongs to the week containing the quarter start
-  if (dayOfWeek === 1) {
-    // Quarter starts on Monday - perfect!
-  } else if (dayOfWeek === 0) {
-    // Quarter starts on Sunday - this Sunday belongs to the PREVIOUS week
-    // So we want the NEXT Monday to start the new quarter's first week
-    startDate.setDate(startDate.getDate() + 1);
-  } else {
-    // Quarter starts on Tue-Sat - find the Monday that starts this week
-    // If quarter starts on Tuesday, we want the Monday just before it
-    const daysBack = dayOfWeek - 1; // Tue: 1 day back, Wed: 2 days back, etc.
-    startDate.setDate(startDate.getDate() - daysBack);
-  }
-
-  // Calculate week number based on Monday-starting weeks from January 1st
-  const getWeekNumber = (date: Date): number => {
-    const jan1 = new Date(year, 0, 1);
-    const jan1DayOfWeek = jan1.getDay();
-
-    // Find the first Monday of the year (or Jan 1 if it's already Monday)
-    const firstMonday = new Date(jan1);
-    const daysToFirstMonday = jan1DayOfWeek === 0 ? 1 : jan1DayOfWeek === 1 ? 0 : 8 - jan1DayOfWeek;
-    firstMonday.setDate(jan1.getDate() + daysToFirstMonday);
-
-    // If the date is before the first Monday, it belongs to week 1 (short week starting Jan 1)
-    if (date < firstMonday) {
-      return 1;
-    }
-
-    // Calculate week number from first Monday
-    const diffTime = date.getTime() - firstMonday.getTime();
-    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
-    let weekNumber = diffWeeks + 2; // +2 because week 1 is the short week before first Monday
-
-    // Special fix for 2025 Q2: ensure proper week numbering
-    // March 31st should be week 14 (not 13) to avoid duplicate with Q1
-    if (quarter === 2 && year === 2025) {
-      const mondayOfQ2Week = new Date(2025, 2, 31); // March 31st
-
-      if (date >= mondayOfQ2Week) {
-        // For any date in Q2 2025, calculate weeks starting from week 14
-        const daysDiff = Math.floor((date.getTime() - mondayOfQ2Week.getTime()) / (24 * 60 * 60 * 1000));
-        const weeksDiff = Math.floor(daysDiff / 7);
-        weekNumber = 14 + weeksDiff;
-      }
-    }
-
-    return weekNumber;
-  };
-
-  // Generate approximately 13 weeks (one quarter)
-  const weeksCount = getWeeksInQuarter();
-
-  for (let i = 0; i < weeksCount; i++) {
-    const weekStartDate = new Date(startDate);
-    weekStartDate.setDate(startDate.getDate() + i * 7);
-
-    const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekStartDate.getDate() + 6);
-
-    const weekNumber = getWeekNumber(weekStartDate);
-    const weekData = {
-      weekNumber,
-      startDate: formatDateToYMD(weekStartDate),
-      endDate: formatDateToYMD(weekEndDate),
-    };
-
-    weeks.push(weekData);
-  }
-
-  return weeks;
+  return quarterWeeks;
 };

@@ -52,7 +52,8 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.1",
     "tailwind-merge": "^3.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "weeknumber": "^1.2.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

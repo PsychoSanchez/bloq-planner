@@ -3,6 +3,7 @@ import { generateWeeks } from '../dates';
 
 test('generateWeeks should generate the correct number of weeks', () => {
   const weeks = generateWeeks(2025, 1);
+  console.log(weeks);
   expect(weeks.length).toBe(13);
   expect(weeks[0]?.weekNumber).toBe(1);
   expect(weeks[12]?.weekNumber).toBe(13);
@@ -10,6 +11,7 @@ test('generateWeeks should generate the correct number of weeks', () => {
 
 test('generateWeeks should generate the correct number of weeks for Q2', () => {
   const weeks = generateWeeks(2025, 2);
+  console.log(weeks);
   expect(weeks.length).toBe(13);
   expect(weeks[0]?.weekNumber).toBe(14);
 });
