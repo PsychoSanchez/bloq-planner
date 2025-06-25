@@ -5,6 +5,7 @@ import { Project } from '@/lib/types';
 import { ProjectView } from '@/app/projects/[id]/_components/project-view';
 import { TeamOption } from '@/components/team-selector';
 import { fromTeamMemberDocument, TeamMemberModel } from '@/server/models/team-member';
+import { Metadata } from 'next';
 
 // Get project data
 async function getProjectData(id: string): Promise<Project | null> {
@@ -31,6 +32,21 @@ async function getTeams(): Promise<TeamOption[]> {
     role: team.role || 'other',
     type: team.type as 'person' | 'team' | 'dependency' | 'event',
   }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const project = await getProjectData((await params).id);
+
+  if (!project) {
+    return {
+      title: 'Project Not Found',
+    };
+  }
+
+  return {
+    title: `${project.name} - Project Details`,
+    description: project.description || `Details for project ${project.name}`,
+  };
 }
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
