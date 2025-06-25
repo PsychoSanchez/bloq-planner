@@ -7,12 +7,15 @@ import { Project } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
 import { ProjectForm, ProjectFormData, ProjectFormRef } from '@/components/project-form';
 import { ArchiveIcon, ArchiveRestoreIcon, CheckIcon } from 'lucide-react';
+import { RouterInput } from '@/utils/trpc';
+
+type UpdateProjectInput = RouterInput['project']['patchProject'];
 
 interface ProjectDetailsSheetProps {
   project: Project | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  onUpdateProject?: (updates: UpdateProjectInput) => Promise<void>;
   teams: TeamOption[];
   teamsLoading: boolean;
 }
@@ -37,7 +40,8 @@ export function ProjectDetailsSheet({
 
     try {
       // Convert form data to project updates
-      const updates: Partial<Project> = {
+      const updates = {
+        id: project.id,
         name: formData.name,
         slug: formData.slug,
         type: formData.type,
@@ -64,9 +68,9 @@ export function ProjectDetailsSheet({
             value: typeof value === 'string' ? parseInt(value, 10) || 0 : value,
           }))
           .filter(({ value }) => value > 0),
-      };
+      } satisfies UpdateProjectInput;
 
-      await onUpdateProject(project.id, updates);
+      await onUpdateProject(updates);
     } catch (error) {
       console.error('Error updating project:', error);
     } finally {
@@ -78,7 +82,7 @@ export function ProjectDetailsSheet({
     if (!onUpdateProject) return;
 
     try {
-      await onUpdateProject(project.id, { archived: !project.archived });
+      await onUpdateProject({ id: project.id, archived: !project.archived });
     } catch (error) {
       console.error('Error toggling archive status:', error);
     }

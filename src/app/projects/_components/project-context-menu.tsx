@@ -19,11 +19,14 @@ import { Project } from '@/lib/types';
 import { TeamOption } from '@/components/team-multi-selector';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { RouterInput } from '@/utils/trpc';
+
+type UpdateProjectInput = RouterInput['project']['patchProject'];
 
 interface ProjectContextMenuProps {
   project: Project;
   teams: TeamOption[];
-  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  onUpdateProject?: (updates: UpdateProjectInput) => Promise<void>;
   children: React.ReactNode;
 }
 
@@ -34,7 +37,7 @@ export function ProjectContextMenu({ project, teams, onUpdateProject, children }
   // Apply pending updates when context menu closes
   useEffect(() => {
     if (!isOpen && Object.keys(pendingUpdates).length > 0 && onUpdateProject) {
-      onUpdateProject(project.id, pendingUpdates);
+      onUpdateProject({ id: project.id, ...pendingUpdates });
       setPendingUpdates({});
     }
   }, [isOpen, pendingUpdates, onUpdateProject, project.id]);

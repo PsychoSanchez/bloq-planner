@@ -379,12 +379,12 @@ export function ProjectsPageContent() {
   } = useOptimisticProjects({
     search: search || undefined,
     includeArchived,
-    priorities: priorities.length > 0 ? priorities : undefined,
-    quarters: quarters.length > 0 ? quarters : undefined,
-    areas: areas.length > 0 ? areas : undefined,
-    leads: leads.length > 0 ? leads : undefined,
-    teams: teamFilters.length > 0 ? teamFilters : undefined,
-    dependencies: dependencies.length > 0 ? dependencies : undefined,
+    priorities,
+    quarters,
+    areas,
+    leads,
+    teams: teamFilters,
+    dependencies,
   });
 
   // Use tRPC to fetch team members

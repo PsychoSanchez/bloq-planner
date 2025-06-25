@@ -2,7 +2,6 @@
 
 import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { ProjectCard } from '@/app/projects/_components/project-card';
-import { Project } from '@/lib/types';
 import { ProjectGroup } from '@/lib/utils/group-projects';
 import { useState, useEffect } from 'react';
 import { TeamOption } from '@/components/team-selector';
@@ -10,12 +9,15 @@ import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { GroupByOption } from '@/app/projects/_components/project-group-selector';
 import { PROJECT_AREAS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
+import { RouterInput } from '@/utils/trpc';
+
+type UpdateProjectInput = RouterInput['project']['patchProject'];
 
 interface ProjectsGridProps {
   groups: ProjectGroup[];
   isGrouped: boolean;
   groupBy?: GroupByOption;
-  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  onUpdateProject?: (updates: UpdateProjectInput) => Promise<void>;
   teams: TeamOption[];
   teamsLoading: boolean;
 }

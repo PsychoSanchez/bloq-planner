@@ -14,6 +14,9 @@ import { trpc } from '@/utils/trpc';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { useAssignmentSubscription } from '@/hooks/use-assignment-subscription';
 import { LiveStatusBadge } from '@/components/live-status-badge';
+import { RouterInput } from '@/utils/trpc';
+
+type UpdateProjectInput = RouterInput['project']['patchProject'];
 
 const useAssignments = (plannerId: string, year: number, quarter: number) => {
   // Use tRPC to fetch assignments filtered by year and quarter
@@ -168,19 +171,14 @@ export default function LegoPlannerDetailsPage() {
   }, []);
 
   const handleProjectUpdate = useCallback(
-    async (projectId: string, updates: Partial<Project>) => {
+    async (updates: UpdateProjectInput) => {
       try {
-        const updatedProject = await updateProjectMutation.mutateAsync({
-          id: projectId,
-          ...updates,
-        });
+        await updateProjectMutation.mutateAsync(updates);
 
         // Update the selected project if it's the one being updated
-        if (selectedProject?.id === projectId) {
-          setSelectedProject(updatedProject);
+        if (selectedProject?.id === updates.id) {
+          setSelectedProject({ ...selectedProject, ...updates } as Project);
         }
-
-        return updatedProject;
       } catch (error) {
         console.error('Error updating project:', error);
         throw error;

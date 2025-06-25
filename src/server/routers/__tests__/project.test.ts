@@ -8,7 +8,6 @@ describe('Project tRPC Router', () => {
     expect(appRouter.project.getProjects).toBeDefined();
     expect(appRouter.project.getProjectById).toBeDefined();
     expect(appRouter.project.createProject).toBeDefined();
-    expect(appRouter.project.updateProject).toBeDefined();
     expect(appRouter.project.patchProject).toBeDefined();
     expect(appRouter.project.deleteProject).toBeDefined();
   });

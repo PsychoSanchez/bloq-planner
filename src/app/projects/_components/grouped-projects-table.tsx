@@ -18,12 +18,15 @@ import { ProjectDetailsSheet } from '@/components/project-details-sheet';
 import { InlineCurrencyEditor } from '@/app/projects/_components/inline-currency-editor';
 import { GroupByOption } from '@/app/projects/_components/project-group-selector';
 import { ProjectContextMenu } from '@/app/projects/_components/project-context-menu';
+import { RouterInput } from '@/utils/trpc';
+
+type UpdateProjectInput = RouterInput['project']['patchProject'];
 
 interface GroupedProjectsTableProps {
   groups: ProjectGroup[];
   isGrouped: boolean;
   groupBy?: GroupByOption;
-  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  onUpdateProject?: (updates: UpdateProjectInput) => Promise<void>;
   teams: TeamOption[];
   teamsLoading: boolean;
   isColumnVisible: (columnId: string) => boolean;
@@ -251,7 +254,7 @@ function ProjectRow({
   isColumnVisible,
 }: {
   project: Project;
-  onUpdateProject?: (projectId: string, updates: Partial<Project>) => void;
+  onUpdateProject?: (updates: UpdateProjectInput) => Promise<void>;
   teams: TeamOption[];
   teamsLoading: boolean;
   onOpenSheet: (project: Project) => void;
@@ -259,12 +262,12 @@ function ProjectRow({
 }) {
   const handleTeamChange = (teamIds: string[]) => {
     if (onUpdateProject) {
-      onUpdateProject(project.id, { teamIds });
+      onUpdateProject({ id: project.id, teamIds });
     }
   };
 
   const handleLeadChange = (leadId: string) => {
-    onUpdateProject?.(project.id, { leadId: leadId || undefined });
+    onUpdateProject?.({ id: project.id, leadId: leadId || undefined });
   };
 
   const handleDependenciesChange = (dependencyIds: string[]) => {
@@ -274,7 +277,7 @@ function ProjectRow({
       status: 'pending' as const,
       description: '',
     }));
-    onUpdateProject?.(project.id, { dependencies });
+    onUpdateProject?.({ id: project.id, dependencies });
   };
 
   return (
@@ -306,7 +309,7 @@ function ProjectRow({
               type="inline"
               value={project.priority || 'medium'}
               onSelect={(value) =>
-                onUpdateProject?.(project.id, { priority: value as 'low' | 'medium' | 'high' | 'urgent' })
+                onUpdateProject?.({ id: project.id, priority: value as 'low' | 'medium' | 'high' | 'urgent' })
               }
             />
           </TableCell>
@@ -316,7 +319,7 @@ function ProjectRow({
             <QuarterMultiSelector
               type="inline"
               value={project.quarters || []}
-              onSelect={(value) => onUpdateProject?.(project.id, { quarters: value })}
+              onSelect={(value) => onUpdateProject?.({ id: project.id, quarters: value })}
             />
           </TableCell>
         )}
@@ -403,7 +406,7 @@ function ProjectRow({
             <ProjectAreaSelector
               type="inline"
               value={project.area || ''}
-              onSelect={(value) => onUpdateProject?.(project.id, { area: value })}
+              onSelect={(value) => onUpdateProject?.({ id: project.id, area: value })}
             />
           </TableCell>
         )}
@@ -412,7 +415,7 @@ function ProjectRow({
             {onUpdateProject ? (
               <InlineCurrencyEditor
                 value={project.cost || 0}
-                onSave={(value) => onUpdateProject(project.id, { cost: value })}
+                onSave={(value) => onUpdateProject?.({ id: project.id, cost: value })}
                 placeholder="€0"
               />
             ) : project.cost ? (
@@ -427,7 +430,7 @@ function ProjectRow({
             {onUpdateProject ? (
               <InlineCurrencyEditor
                 value={project.impact || 0}
-                onSave={(value) => onUpdateProject(project.id, { impact: value })}
+                onSave={(value) => onUpdateProject?.({ id: project.id, impact: value })}
                 placeholder="€0"
               />
             ) : project.impact ? (

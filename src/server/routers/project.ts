@@ -6,9 +6,9 @@ import { type } from 'arktype';
 
 // Input schemas using ArkType
 const getProjectsInput = type({
+  '+': 'reject',
   'search?': 'string',
   'type?': 'string',
-  'quarter?': 'string < 7',
   'includeArchived?': 'boolean',
   'priorities?': 'string[]',
   'quarters?': 'string[]',
@@ -18,17 +18,16 @@ const getProjectsInput = type({
   'dependencies?': 'string[]',
 });
 
-const createProjectInput = type({
-  name: 'string < 255',
-  slug: 'string < 32',
-  type: 'string < 32',
-  'quarter?': 'string < 7',
+const partialProjectInput = type({
+  '+': 'reject',
+  'quarters?': '(string < 7)[]',
   'color?': 'string < 32',
   'description?': 'string < 2000',
   'priority?': "'low' | 'medium' | 'high' | 'urgent'",
-  'teamId?': 'string < 100',
+  'teamIds?': '(string < 100)[]',
   'leadId?': 'string < 100',
   'area?': 'string < 100',
+  'archived?': 'boolean',
   'dependencies?': type({
     team: 'string',
     'status?': "'pending' | 'submitted' | 'approved' | 'rejected'",
@@ -42,53 +41,31 @@ const createProjectInput = type({
   }).array(),
 });
 
-const updateProjectInput = type({
-  id: 'string',
+const createProjectInput = type({
+  '...': partialProjectInput,
+  '+': 'reject',
   name: 'string < 255',
   slug: 'string < 32',
   type: 'string < 32',
-  'quarter?': 'string < 7',
-  'color?': 'string < 32',
-  'description?': 'string < 2000',
-  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
-  'teamId?': 'string < 100',
-  'leadId?': 'string < 100',
-  'area?': 'string < 100',
-  'archived?': 'boolean',
 });
 
 const patchProjectInput = type({
+  '...': partialProjectInput,
+  '+': 'reject',
   id: 'string',
   'name?': 'string < 255',
   'slug?': 'string < 32',
   'type?': 'string < 32',
   'color?': 'string < 32',
-  'quarter?': 'string < 7',
-  'description?': 'string < 2000',
-  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
-  'teamIds?': 'string[]',
-  'leadId?': 'string < 100',
-  'area?': 'string < 100',
-  'quarters?': 'string[]',
-  'archived?': 'boolean',
-  'dependencies?': type({
-    team: 'string',
-    'status?': "'pending' | 'submitted' | 'approved' | 'rejected'",
-    'description?': 'string',
-  }).array(),
-  'cost?': 'number',
-  'impact?': 'number',
-  'estimates?': type({
-    department: 'string',
-    value: 'number',
-  }).array(),
 });
 
 const getProjectByIdInput = type({
+  '+': 'reject',
   id: 'string',
 });
 
 const deleteProjectInput = type({
+  '+': 'reject',
   id: 'string',
 });
 
@@ -100,7 +77,6 @@ export const projectRouter = router({
     const {
       search,
       type: projectType,
-      quarter,
       includeArchived = false,
       priorities = [],
       quarters = [],
@@ -125,20 +101,12 @@ export const projectRouter = router({
       query.name = { $regex: search, $options: 'i' };
     }
 
-    // Legacy single quarter filter (for backward compatibility)
-    if (quarter) {
-      // Use quarters array field instead of old quarter field
-      query.quarters = { $in: [quarter] };
-    }
-
     // New multidimensional filters using helper functions
     const priorityConditions = buildFilterConditions('priority', priorities, 'simple');
     mergeFilterConditions(query, priorityConditions);
 
-    if (quarters.length > 0 && !quarter) {
-      const quarterConditions = buildFilterConditions('quarters', quarters, 'array');
-      mergeFilterConditions(query, quarterConditions);
-    }
+    const quarterConditions = buildFilterConditions('quarters', quarters, 'array');
+    mergeFilterConditions(query, quarterConditions);
 
     const areaConditions = buildFilterConditions('area', areas, 'simple');
     mergeFilterConditions(query, areaConditions);
@@ -177,25 +145,6 @@ export const projectRouter = router({
 
     const newProject = await ProjectModel.create(input);
     return fromProjectDocument(newProject);
-  }),
-
-  // Update a project (full update)
-  updateProject: publicProcedure.input(updateProjectInput).mutation(async ({ input }) => {
-    await connectToDatabase();
-
-    const { id, ...updateData } = input;
-
-    const updatedProject = await ProjectModel.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true },
-    );
-
-    if (!updatedProject) {
-      throw new Error('Project not found');
-    }
-
-    return fromProjectDocument(updatedProject);
   }),
 
   // Patch a project (partial update)
