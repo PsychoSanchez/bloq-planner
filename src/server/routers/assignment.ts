@@ -12,6 +12,7 @@ const assignmentEventEmitter = new EventEmitter();
 
 // Assignment change event types
 type AssignmentChangeEvent = {
+  plannerId: string;
   data: unknown;
   timestamp: number;
   id: string;
@@ -34,7 +35,7 @@ const assignInput = type({
 
 // Subscription input schema
 const assignmentSubscriptionInput = type({
-  'plannerId?': 'string',
+  plannerId: 'string',
   'assigneeId?': 'string',
   'projectId?': 'string',
   'lastEventId?': 'string',
@@ -94,7 +95,9 @@ export const assignmentRouter = router({
 
       // Listen for assignment change events
       for await (const [event] of iterable) {
-        yield tracked(event.id, event as AssignmentChangeEvent);
+        if (opts.input.plannerId === event.plannerId) {
+          yield tracked(event.id, event as AssignmentChangeEvent);
+        }
       }
     } finally {
       // Cleanup any resources if needed
@@ -204,6 +207,7 @@ export const assignmentRouter = router({
       }
 
       emitAssignmentEvent({
+        plannerId: input.plannerId,
         data: {
           assignments: toUpsert,
           assignedAssignments,

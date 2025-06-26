@@ -1,32 +1,11 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 import { Project } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
+import { projectDocumentSerializedType, ProjectDocumentType } from './project-document.arktype';
+import { omitUndefined } from '@/lib/utils/object';
 
 // We need to add MongoDB-specific fields to our Project interface
-export interface ProjectDocument extends Omit<Project, 'id' | 'createdAt' | 'updatedAt'> {
-  _id: mongoose.Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-  description?: string;
-  priority?: 'low' | 'medium' | 'high';
-  teamIds?: string[];
-  leadId?: string;
-  area?: string;
-  quarters?: string[];
-  archived?: boolean;
-  dependencies?: Array<{
-    team: string;
-    status: 'pending' | 'submitted' | 'approved' | 'rejected';
-    description: string;
-  }>;
-  roi?: number;
-  impact?: number;
-  cost?: number;
-  estimates?: Array<{
-    department: string; // engineering, design, product, ds, analytics, etc.
-    value: number;
-  }>;
-}
+export type ProjectDocument = ProjectDocumentType;
 
 const projectSchema = new Schema<ProjectDocument>(
   {
@@ -143,22 +122,18 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
   }
 
   // Safely transform estimates and dependencies to prevent circular references
-  const safeEstimates = doc.estimates
-    ? doc.estimates.map((est) => ({
-        department: est.department,
-        value: est.value,
-      }))
-    : undefined;
+  const safeEstimates = doc.estimates?.map((est) => ({
+    department: est.department,
+    value: est.value,
+  }));
 
-  const safeDependencies = doc.dependencies
-    ? doc.dependencies.map((dep) => ({
-        team: dep.team,
-        status: dep.status,
-        description: dep.description,
-      }))
-    : undefined;
+  const safeDependencies = doc.dependencies?.map((dep) => ({
+    team: dep.team,
+    status: dep.status,
+    description: dep.description,
+  }));
 
-  return {
+  const serializedProject = omitUndefined({
     id: doc._id.toString(),
     name: doc.name,
     slug: doc.slug,
@@ -172,14 +147,18 @@ export const fromProjectDocument = (doc: ProjectDocument): Project => {
     area: doc.area,
     quarters: doc.quarters,
     archived: doc.archived,
-    roi: calculatedRoi,
-    impact: doc.impact,
-    cost: doc.cost,
+    roi: calculatedRoi || 0,
+    impact: doc.impact || 0,
+    cost: doc.cost || 0,
     estimates: safeEstimates,
     dependencies: safeDependencies,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
-  };
+  });
+
+  projectDocumentSerializedType.assert(serializedProject);
+
+  return serializedProject;
 };
 
 export const ProjectModel = getOrCreateModel<ProjectDocument>(ModelIds.Project, projectSchema);

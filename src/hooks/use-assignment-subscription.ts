@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { trpc } from '@/utils/trpc';
 
 interface UseAssignmentSubscriptionOptions {
-  plannerId?: string;
+  plannerId: string;
   assigneeId?: string;
   projectId?: string;
   enabled?: boolean;
@@ -15,7 +15,7 @@ interface LastAction {
   timestamp: number;
 }
 
-export function useAssignmentSubscription(options: UseAssignmentSubscriptionOptions = {}) {
+export function useAssignmentSubscription(options: UseAssignmentSubscriptionOptions) {
   const { plannerId, assigneeId, projectId, enabled = true } = options;
 
   const [lastAction, setLastAction] = useState<LastAction | undefined>();

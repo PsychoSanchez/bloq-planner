@@ -16,7 +16,7 @@ test('Project with complex estimates and dependencies - should not cause stack o
     teamIds: ['team1', 'team2', 'team3', 'team4'],
     leadId: 'lead1',
     area: 'engineering',
-    quarters: ['2024-Q1', '2024-Q2', '2024-Q3'],
+    quarters: ['Q12024', 'Q22024', 'Q32024'],
     archived: false,
     roi: 3.5,
     impact: 250000,

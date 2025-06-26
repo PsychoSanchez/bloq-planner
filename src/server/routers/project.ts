@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ProjectModel, fromProjectDocument } from '@/server/models/project';
 import { buildFilterConditions, mergeFilterConditions } from '@/server/shared/mongodb-query-builders';
 import { type } from 'arktype';
+import { projectDocumentCreateType } from '../models/project-document.arktype';
 
 // Input schemas using ArkType
 const getProjectsInput = type({
@@ -18,45 +19,12 @@ const getProjectsInput = type({
   'dependencies?': 'string[]',
 });
 
-const partialProjectInput = type({
-  '+': 'reject',
-  'quarters?': '(string < 7)[]',
-  'color?': 'string < 32',
-  'description?': 'string < 2000',
-  'priority?': "'low' | 'medium' | 'high' | 'urgent'",
-  'teamIds?': '(string < 100)[]',
-  'leadId?': 'string < 100',
-  'area?': 'string < 100',
-  'archived?': 'boolean',
-  'dependencies?': type({
-    team: 'string',
-    'status?': "'pending' | 'submitted' | 'approved' | 'rejected'",
-    'description?': 'string',
-  }).array(),
-  'cost?': 'number | string',
-  'impact?': 'number | string',
-  'estimates?': type({
-    department: 'string',
-    value: 'number',
-  }).array(),
-});
-
-const createProjectInput = type({
-  '...': partialProjectInput,
-  '+': 'reject',
-  name: 'string < 255',
-  slug: 'string < 32',
-  type: 'string < 32',
-});
+const createProjectInput = projectDocumentCreateType;
 
 const patchProjectInput = type({
-  '...': partialProjectInput,
+  '...': projectDocumentCreateType.partial(),
   '+': 'reject',
   id: 'string',
-  'name?': 'string < 255',
-  'slug?': 'string < 32',
-  'type?': 'string < 32',
-  'color?': 'string < 32',
 });
 
 const getProjectByIdInput = type({

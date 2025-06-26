@@ -35,9 +35,9 @@ export interface ProjectFormData {
   leadId: string;
   quarters: string[];
   dependencies: string[];
-  cost: string;
-  impact: string;
-  roi: string;
+  cost: number;
+  impact: number;
+  roi: number;
   archived: boolean;
   estimates: Record<string, number>;
 }
@@ -84,9 +84,9 @@ const createFormDataFromProject = (projectData?: Partial<Project>): ProjectFormD
   leadId: projectData?.leadId || '',
   quarters: projectData?.quarters || [],
   dependencies: projectData?.dependencies?.map((dep) => dep.team) || [],
-  cost: projectData?.cost?.toString() || '',
-  impact: projectData?.impact?.toString() || '',
-  roi: projectData?.roi?.toString() || '',
+  cost: projectData?.cost || 0,
+  impact: projectData?.impact || 0,
+  roi: projectData?.roi || 0,
   archived: projectData?.archived || false,
   estimates: ROLES_TO_DISPLAY.reduce(
     (acc, role) => {

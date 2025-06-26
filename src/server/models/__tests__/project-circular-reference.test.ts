@@ -15,7 +15,7 @@ test('Project schema - should not cause circular reference with estimates and de
     teamIds: ['team1', 'team2'],
     leadId: 'lead1',
     area: 'engineering',
-    quarters: ['2024-Q1', '2024-Q2'],
+    quarters: ['Q12024', 'Q22024'],
     archived: false,
     roi: 2.5,
     impact: 100000,
