@@ -8,6 +8,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from '@/components/ui/toaster';
 import { TRPCProvider } from '@/components/providers/trpc-provider';
+import { GoogleAnalytics } from '@/components/google-analytics';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''} />
         <TRPCProvider>
           <NuqsAdapter>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

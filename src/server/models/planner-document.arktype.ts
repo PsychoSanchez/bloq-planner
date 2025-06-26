@@ -1,7 +1,7 @@
 import { type } from 'arktype';
 import mongoose from 'mongoose';
-import { projectDocumentType } from './project-document.arktype';
-import { teamMemberDocumentType } from './team-member-document.arktype';
+import { projectDocumentSerializedType, projectDocumentType } from './project-document.arktype';
+import { teamMemberDocumentSerializedType, teamMemberDocumentType } from './team-member-document.arktype';
 
 export const plannerDocumentType = type({
   '+': 'reject',
@@ -16,9 +16,11 @@ export const plannerDocumentType = type({
 export const plannerDocumentCreateType = plannerDocumentType.omit('_id', 'createdAt', 'updatedAt');
 
 export const plannerDocumentSerializedType = type({
-  '...': plannerDocumentCreateType,
+  '...': plannerDocumentCreateType.omit('assignees', 'projects'),
   '+': 'reject',
   id: 'string < 255',
+  assignees: teamMemberDocumentSerializedType.array(),
+  projects: projectDocumentSerializedType.array(),
 });
 
 export type PlannerDocumentType = typeof plannerDocumentType.infer;
