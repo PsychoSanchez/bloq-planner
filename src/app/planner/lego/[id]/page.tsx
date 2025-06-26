@@ -97,15 +97,7 @@ export default function LegoPlannerDetailsPage() {
   const { data: teamMembers, isLoading: teamsLoading } = trpc.team.getTeamMembers.useQuery({});
 
   // Convert team members to team options format
-  const teams: TeamOption[] =
-    teamMembers
-      ?.filter((member) => member.type === 'team' || member.type === 'person')
-      .map((member) => ({
-        id: member.id,
-        name: member.name,
-        role: member.role,
-        type: member.type as 'person' | 'team' | 'dependency' | 'event',
-      })) || [];
+  const teams: TeamOption[] = teamMembers?.filter((member) => member.type === 'team' || member.type === 'person') || [];
 
   // Project details sheet state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);

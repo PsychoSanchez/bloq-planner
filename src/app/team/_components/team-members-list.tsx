@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { trpc } from '@/utils/trpc';
+import { RouterInput, trpc } from '@/utils/trpc';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SearchTeamMembers } from '@/app/team/_components/search-team-members';
 import { NewTeamMemberDialog } from '@/app/team/_components/new-team-member-dialog';
 import { EditableRoleCell } from '@/app/team/_components/editable-role-cell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryState, parseAsString } from 'nuqs';
+
+type UpdateTeamMemberRoleInput = RouterInput['team']['updateTeamMemberRole'];
 
 export function TeamMembersList() {
   const [currentSearch] = useQueryState('search', parseAsString.withDefault(''));
@@ -32,11 +34,8 @@ export function TeamMembersList() {
     },
   });
 
-  const handleRoleUpdate = async (memberId: string, newRole: string) => {
-    await updateTeamMemberRole.mutateAsync({
-      id: memberId,
-      role: newRole,
-    });
+  const handleRoleUpdate = async (props: UpdateTeamMemberRoleInput) => {
+    await updateTeamMemberRole.mutateAsync(props);
   };
 
   if (error) {

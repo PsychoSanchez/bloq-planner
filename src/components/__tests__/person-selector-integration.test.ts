@@ -9,7 +9,7 @@ const mockTeamsWithMixedTypes: TeamOption[] = [
   { id: 'team-1', name: 'Frontend Team', role: 'engineering', type: 'team' },
   { id: 'team-2', name: 'Design System Team', role: 'design', type: 'team' },
   { id: 'dep-1', name: 'External API', role: 'operations', type: 'dependency' },
-  { id: 'event-1', name: 'Product Launch', role: 'marketing', type: 'event' },
+  { id: 'event-1', name: 'Product Launch', role: 'other', type: 'event' },
 ];
 
 test('PersonSelector integration - should only show persons for lead selection', () => {

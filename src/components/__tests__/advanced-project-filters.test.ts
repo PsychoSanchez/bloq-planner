@@ -5,11 +5,11 @@ import { TeamOption } from '@/components/team-multi-selector';
 const mockTeams: TeamOption[] = [
   { id: 'team1', name: 'Engineering Team', role: 'engineering', type: 'team' },
   { id: 'team2', name: 'Design Team', role: 'design', type: 'team' },
-  { id: 'team3', name: 'Product Team', role: 'product', type: 'team' },
+  { id: 'team3', name: 'Product Team', role: 'product_management', type: 'team' },
   { id: 'person1', name: 'John Doe', role: 'engineering', type: 'person' },
   { id: 'person2', name: 'Jane Smith', role: 'design', type: 'person' },
   { id: 'dep1', name: 'External API', role: 'operations', type: 'dependency' },
-  { id: 'event1', name: 'Product Launch', role: 'marketing', type: 'event' },
+  { id: 'event1', name: 'Product Launch', role: 'other', type: 'event' },
 ];
 
 test('AdvancedProjectFilters - should filter teams correctly for team filter', () => {
@@ -64,7 +64,7 @@ test('AdvancedProjectFilters - should handle empty teams array', () => {
 test('AdvancedProjectFilters - should handle array with no teams or persons', () => {
   const nonTeamMembers: TeamOption[] = [
     { id: 'dep1', name: 'External API', role: 'operations', type: 'dependency' },
-    { id: 'event1', name: 'Product Launch', role: 'marketing', type: 'event' },
+    { id: 'event1', name: 'Product Launch', role: 'other', type: 'event' },
   ];
 
   const availableTeams = nonTeamMembers.filter((team) => team.type === 'team');

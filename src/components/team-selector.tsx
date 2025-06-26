@@ -12,11 +12,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserIcon } from 'lucide-react';
+import { Role } from '@/lib/types';
 
 export interface TeamOption {
   id: string;
   name: string;
-  role: string;
+  role: Role;
   type: 'person' | 'team' | 'dependency' | 'event';
 }
 

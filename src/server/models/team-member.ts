@@ -1,14 +1,9 @@
-import mongoose, { Schema } from 'mongoose';
-import { Assignee, Role } from '../../lib/types';
+import { Schema } from 'mongoose';
+import { Assignee } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
+import { teamMemberDocumentSerializedType, TeamMemberDocumentType } from './team-member-document.arktype';
 
-// We need to add MongoDB-specific fields to our TeamMember interface
-export interface TeamMemberDocument extends Omit<Assignee, 'id'> {
-  _id: mongoose.Types.ObjectId;
-  role: Role;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type TeamMemberDocument = TeamMemberDocumentType;
 
 const teamMemberSchema = new Schema<TeamMemberDocument>(
   {
@@ -25,12 +20,18 @@ const teamMemberSchema = new Schema<TeamMemberDocument>(
 );
 
 export const fromTeamMemberDocument = (doc: TeamMemberDocument): Assignee => {
-  return {
+  const newDoc = {
     id: doc._id.toString(),
     name: doc.name,
     type: doc.type,
     role: doc.role,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   };
+
+  teamMemberDocumentSerializedType.assert(newDoc);
+
+  return newDoc;
 };
 
 export const TeamMemberModel = getOrCreateModel<TeamMemberDocument>(ModelIds.TeamMember, teamMemberSchema);

@@ -3,11 +3,12 @@
 import { useMemo } from 'react';
 import { UsersIcon } from 'lucide-react';
 import { MultiSelector, MultiSelectorOption } from '@/components/ui/multi-selector';
+import { Role } from '@/lib/types';
 
 export interface TeamOption {
   id: string;
   name: string;
-  role: string;
+  role: Role;
   type: 'person' | 'team' | 'dependency' | 'event';
 }
 

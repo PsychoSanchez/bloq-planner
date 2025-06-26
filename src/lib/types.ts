@@ -14,7 +14,7 @@ export interface Assignee {
   id: string;
   name: string;
   type: 'person' | 'team' | 'dependency' | 'event';
-  role?: Role; // Added role field
+  role: Role;
 }
 
 export interface WeekData {

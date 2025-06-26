@@ -77,15 +77,7 @@ function usePlannerDialogData(open: boolean) {
     }
   }, [projectsQuery.error, toast]);
 
-  const availableAssignees: Assignee[] = useMemo(
-    () =>
-      teamQuery.data?.map((member) => ({
-        id: member.id,
-        name: member.name,
-        type: (member.type as 'person' | 'team' | 'dependency' | 'event') || 'person',
-      })) || [],
-    [teamQuery.data],
-  );
+  const availableAssignees: Assignee[] = useMemo(() => teamQuery.data || [], [teamQuery.data]);
 
   const availableProjects = useMemo(() => projectsQuery.data?.projects || [], [projectsQuery.data]);
 

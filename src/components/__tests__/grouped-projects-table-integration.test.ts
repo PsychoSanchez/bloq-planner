@@ -167,9 +167,9 @@ test('GroupedProjectsTable - team grouping should work like quarter grouping', (
 // Dependencies multi-selector tests
 test('GroupedProjectsTable - should handle multiple dependency selection', () => {
   const mockTeams: TeamOption[] = [
-    { id: 'dep1', name: 'Team Alpha', role: 'Backend', type: 'team' },
-    { id: 'dep2', name: 'Team Beta', role: 'Frontend', type: 'team' },
-    { id: 'dep3', name: 'External Service', role: 'API', type: 'dependency' },
+    { id: 'dep1', name: 'Team Alpha', role: 'engineering', type: 'team' },
+    { id: 'dep2', name: 'Team Beta', role: 'design', type: 'team' },
+    { id: 'dep3', name: 'External Service', role: 'operations', type: 'dependency' },
   ];
 
   const mockProject: Project = {
@@ -255,9 +255,9 @@ test('GroupedProjectsTable - should handle empty dependency selection', () => {
 
 test('GroupedProjectsTable - should display dependency names correctly', () => {
   const mockTeams: TeamOption[] = [
-    { id: 'dep1', name: 'Team Alpha', role: 'Backend', type: 'team' },
-    { id: 'dep2', name: 'Team Beta', role: 'Frontend', type: 'team' },
-    { id: 'dep3', name: 'External Service', role: 'API', type: 'dependency' },
+    { id: 'dep1', name: 'Team Alpha', role: 'engineering', type: 'team' },
+    { id: 'dep2', name: 'Team Beta', role: 'design', type: 'team' },
+    { id: 'dep3', name: 'External Service', role: 'operations', type: 'dependency' },
   ];
 
   const mockProject: Project = {
@@ -314,10 +314,10 @@ test('GroupedProjectsTable - should handle dependency toggle functionality', () 
 
 test('GroupedProjectsTable - should include all types for dependency selection', () => {
   const mockTeams: TeamOption[] = [
-    { id: 'team1', name: 'Team Alpha', role: 'Backend', type: 'team' },
-    { id: 'person1', name: 'John Doe', role: 'Developer', type: 'person' },
-    { id: 'dep1', name: 'External Service', role: 'API', type: 'dependency' },
-    { id: 'event1', name: 'Conference', role: 'Event', type: 'event' },
+    { id: 'team1', name: 'Team Alpha', role: 'engineering', type: 'team' },
+    { id: 'person1', name: 'John Doe', role: 'engineering', type: 'person' },
+    { id: 'dep1', name: 'External Service', role: 'operations', type: 'dependency' },
+    { id: 'event1', name: 'Conference', role: 'other', type: 'event' },
   ];
 
   // Dependencies multi-selector should include all types (unlike team selector which only includes 'team' type)

@@ -8,7 +8,7 @@ const mockTeams: TeamOption[] = [
   { id: 'person1', name: 'John Doe', role: 'engineering', type: 'person' },
   { id: 'person2', name: 'Jane Smith', role: 'design', type: 'person' },
   { id: 'dep1', name: 'External API', role: 'operations', type: 'dependency' },
-  { id: 'event1', name: 'Product Launch', role: 'marketing', type: 'event' },
+  { id: 'event1', name: 'Product Launch', role: 'other', type: 'event' },
 ];
 
 test('TeamMultiSelector - should have correct interface', () => {
@@ -100,7 +100,7 @@ test('TeamMultiSelector - should handle array with no teams', () => {
   const nonTeamMembers: TeamOption[] = [
     { id: 'person1', name: 'John Doe', role: 'engineering', type: 'person' },
     { id: 'dep1', name: 'External API', role: 'operations', type: 'dependency' },
-    { id: 'event1', name: 'Product Launch', role: 'marketing', type: 'event' },
+    { id: 'event1', name: 'Product Launch', role: 'other', type: 'event' },
   ];
 
   const teamsOnly = nonTeamMembers.filter((team) => team.type === 'team');

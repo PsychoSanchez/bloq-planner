@@ -9,11 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../components/ui/select';
+import { Role } from '@/lib/types';
 
 interface RoleSelectorProps {
   type?: 'inline' | 'dropdown';
   value: string;
-  onSelect: (value: string) => void;
+  onSelect: (value: Role) => void;
   placeholder?: string;
   readonly?: boolean;
 }

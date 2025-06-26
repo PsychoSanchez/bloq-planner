@@ -1,24 +1,20 @@
 import { type } from 'arktype';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../trpc';
-import { TeamMemberModel } from '@/server/models/team-member';
+import { fromTeamMemberDocument, TeamMemberModel } from '@/server/models/team-member';
 import { connectToDatabase } from '@/lib/mongodb';
+import {
+  teamMemberDocumentCreateType,
+  teamMemberDocumentSerializedType,
+} from '@/server/models/team-member-document.arktype';
 
 // Define arktype schemas
 const getTeamMembersInput = type({
-  'search?': 'string',
+  'search?': 'string < 1024',
 });
 
-const createTeamMemberInput = type({
-  name: 'string < 255',
-  role: 'string < 100',
-  type: 'string < 32',
-});
-
-const updateTeamMemberRoleInput = type({
-  id: 'string',
-  role: 'string < 100',
-});
+const createTeamMemberInput = teamMemberDocumentCreateType.pick('name', 'role', 'type');
+const updateTeamMemberRoleInput = teamMemberDocumentSerializedType.pick('id', 'role');
 
 export const teamRouter = router({
   getTeamMembers: publicProcedure.input(getTeamMembersInput).query(async ({ input }) => {
@@ -33,12 +29,7 @@ export const teamRouter = router({
       }
 
       const teamMembers = await TeamMemberModel.find(query).sort({ name: 1 }).lean();
-      return teamMembers.map((member) => ({
-        id: member._id.toString(),
-        name: member.name,
-        role: member.role,
-        type: member.type,
-      }));
+      return teamMembers.map(fromTeamMemberDocument);
     } catch (error) {
       console.error('Error fetching team members:', error);
       throw new TRPCError({
@@ -56,12 +47,7 @@ export const teamRouter = router({
       const teamMember = new TeamMemberModel(input);
       await teamMember.save();
 
-      return {
-        id: teamMember._id.toString(),
-        name: teamMember.name,
-        role: teamMember.role,
-        type: teamMember.type,
-      };
+      return fromTeamMemberDocument(teamMember);
     } catch (error: unknown) {
       console.error('Error creating team member:', error);
 
@@ -97,12 +83,7 @@ export const teamRouter = router({
         });
       }
 
-      return {
-        id: updatedMember._id.toString(),
-        name: updatedMember.name,
-        role: updatedMember.role,
-        type: updatedMember.type,
-      };
+      return fromTeamMemberDocument(updatedMember);
     } catch (error: unknown) {
       console.error('Error updating team member role:', error);
 

@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 import { RoleSelector } from '@/app/team/_components/role-selector';
+import { RouterInput } from '@/utils/trpc';
+import { Role } from '@/lib/types';
+
+type UpdateTeamMemberRoleInput = RouterInput['team']['updateTeamMemberRole'];
 
 interface EditableRoleCellProps {
   memberId: string;
   initialRole?: string;
-  onRoleUpdate?: (memberId: string, newRole: string) => Promise<void>;
+  onRoleUpdate?: (props: UpdateTeamMemberRoleInput) => Promise<void>;
   isEditable?: boolean;
 }
 
@@ -19,7 +23,7 @@ export function EditableRoleCell({
   const [role, setRole] = useState(initialRole);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleRoleChange = async (newRole: string) => {
+  const handleRoleChange = async (newRole: Role) => {
     if (!onRoleUpdate) {
       setRole(newRole);
       return;
@@ -27,7 +31,7 @@ export function EditableRoleCell({
 
     setIsUpdating(true);
     try {
-      await onRoleUpdate(memberId, newRole);
+      await onRoleUpdate({ id: memberId, role: newRole });
       setRole(newRole);
     } catch (error) {
       console.error('Failed to update role:', error);

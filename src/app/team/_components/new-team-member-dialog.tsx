@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RoleSelector } from '@/app/team/_components/role-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { PlusIcon } from 'lucide-react';
+import { Role } from '@/lib/types';
 
 export function NewTeamMemberDialog() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export function NewTeamMemberDialog() {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    role: '',
+    role: 'engineering' as Role,
     type: 'person' as const,
   });
 
@@ -43,7 +44,7 @@ export function NewTeamMemberDialog() {
       setOpen(false);
       setFormData({
         name: '',
-        role: '',
+        role: 'engineering',
         type: 'person',
       });
       // Invalidate and refetch team members
