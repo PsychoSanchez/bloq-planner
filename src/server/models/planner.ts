@@ -1,17 +1,11 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 import { Planner } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
-import { fromTeamMemberDocument, TeamMemberDocument } from './team-member';
-import { fromProjectDocument, ProjectDocument } from './project';
-import { AssignmentDocument } from './planner-assignment';
+import { fromTeamMemberDocument } from './team-member';
+import { fromProjectDocument } from './project';
+import { plannerDocumentSerializedType, PlannerDocumentType } from './planner-document.arktype';
 
-// We need to add MongoDB-specific fields to our TeamMember interface
-export interface PlannerDocument extends Omit<Planner, 'id' | 'assignees' | 'projects' | 'assignments'> {
-  _id: mongoose.Types.ObjectId;
-  assignees: TeamMemberDocument[];
-  projects: ProjectDocument[];
-  assignments: AssignmentDocument[];
-}
+export type PlannerDocument = PlannerDocumentType;
 
 const plannerSchema = new Schema<PlannerDocument>(
   {
@@ -23,12 +17,15 @@ const plannerSchema = new Schema<PlannerDocument>(
 );
 
 export const fromPlannerDocument = (doc: PlannerDocument): Planner => {
-  return {
+  const newDoc = {
     id: doc._id.toString(),
     name: doc.name,
     assignees: doc.assignees.map(fromTeamMemberDocument),
     projects: doc.projects.map(fromProjectDocument),
   };
+
+  plannerDocumentSerializedType.assert(newDoc);
+  return newDoc;
 };
 
 // Check if models are already defined to prevent errors during hot reload

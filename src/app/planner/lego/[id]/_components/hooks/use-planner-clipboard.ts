@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Assignment, SetAssignment } from '@/lib/types';
+import { Assignment, AssignProjectAssignment } from '@/lib/types';
 import { parseAssigneeKey } from '../utils/assignee';
 
 export interface ClipboardData {
@@ -8,13 +8,11 @@ export interface ClipboardData {
 }
 
 export interface UsePlannerClipboardOptions {
-  getAssignment: (
-    weekNumber: number,
-    assigneeId: string,
-  ) =>
-    | Assignment
-    | (SetAssignment & { assigneeId: string; week: number; year: number; quarter: number; projectId: string | null });
-  onHistoricAssign: (newAssignments: SetAssignment[], oldAssignments: SetAssignment[]) => Promise<void>;
+  getAssignment: (weekNumber: number, assigneeId: string) => Assignment | AssignProjectAssignment;
+  onHistoricAssign: (
+    newAssignments: AssignProjectAssignment[],
+    oldAssignments: AssignProjectAssignment[],
+  ) => Promise<void>;
 }
 
 export function usePlannerClipboard({ getAssignment, onHistoricAssign }: UsePlannerClipboardOptions) {
@@ -87,7 +85,7 @@ export function usePlannerClipboard({ getAssignment, onHistoricAssign }: UsePlan
         .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
 
       // Create new assignments for target cells
-      const newTargetAssignments: SetAssignment[] = targetCells.map((cellId, index) => {
+      const newTargetAssignments: AssignProjectAssignment[] = targetCells.map((cellId, index) => {
         const { assigneeId, weekNumber } = parseAssigneeKey(cellId);
         // Cycle through source assignments if target has more cells
         const sourceAssignment = sourceAssignments[index % sourceAssignments.length];
@@ -110,7 +108,7 @@ export function usePlannerClipboard({ getAssignment, onHistoricAssign }: UsePlan
           .map(parseAssigneeKey)
           .map(({ assigneeId, weekNumber }) => getAssignment(weekNumber, assigneeId));
 
-        const newSourceAssignments: SetAssignment[] = cutCells.map((cellId) => {
+        const newSourceAssignments: AssignProjectAssignment[] = cutCells.map((cellId) => {
           const { assigneeId, weekNumber } = parseAssigneeKey(cellId);
           return {
             assigneeId,

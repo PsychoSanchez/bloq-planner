@@ -534,14 +534,7 @@ export function PlannerSelection() {
   const router = useRouter();
 
   // Use tRPC to fetch planners
-  const {
-    data: plannersData,
-    isLoading,
-    error: plannersError,
-  } = trpc.planner.getPlanners.useQuery({
-    year: yearValue,
-    quarter: quarterValue,
-  });
+  const { data: plannersData, isLoading, error: plannersError } = trpc.planner.getPlanners.useQuery();
 
   const planners = plannersData?.planners || [];
 

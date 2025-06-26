@@ -1,10 +1,10 @@
-import { SetAssignment } from '@/lib/types';
+import { AssignProjectAssignment } from '@/lib/types';
 import { useCallback, useState } from 'react';
 
 export type AssignmentAction = {
   payload: {
-    before: SetAssignment[];
-    after: SetAssignment[];
+    before: AssignProjectAssignment[];
+    after: AssignProjectAssignment[];
   };
 };
 

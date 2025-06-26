@@ -1,6 +1,6 @@
 import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
-import { PlannerModel } from '@/server/models/planner';
+import { fromPlannerDocument, PlannerModel } from '@/server/models/planner';
 import { fromTeamMemberDocument } from '@/server/models/team-member';
 import { fromProjectDocument } from '@/server/models/project';
 import { DEFAULT_PROJECTS } from '@/lib/constants/default-projects';
@@ -8,57 +8,35 @@ import { type } from 'arktype';
 import mongoose from 'mongoose';
 
 // Input schemas using ArkType
-const getPlannersInput = type({
-  'year?': 'number',
-  'quarter?': 'number',
-});
-
 const getPlannerByIdInput = type({
-  id: 'string',
-  'year?': 'number',
-  'quarter?': 'number',
+  id: 'string < 255',
 });
 
 const createPlannerInput = type({
   name: 'string',
-  assignees: 'string[]',
-  projects: 'string[]',
-  'assignments?': 'unknown[]',
+  assignees: '(string < 255)[]',
+  projects: '(string < 255)[]',
 });
 
 const updatePlannerInput = type({
-  id: 'string',
+  id: 'string < 255',
   name: 'string',
-  assignees: 'string[]',
-  projects: 'string[]',
+  assignees: '(string < 255)[]',
+  projects: '(string < 255)[]',
 });
 
 const deletePlannerInput = type({
-  id: 'string',
+  id: 'string < 255',
 });
 
 export const plannerRouter = router({
   // Get all planners with optional filtering
-  getPlanners: publicProcedure.input(getPlannersInput).query(async ({ input }) => {
+  getPlanners: publicProcedure.query(async () => {
     await connectToDatabase();
-
-    // Note: The original API doesn't actually filter by year/quarter in the database
-    // but accepts these parameters for potential future use
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { year, quarter } = input;
 
     const planners = await PlannerModel.find().populate('assignees').populate('projects').lean();
 
-    // Transform MongoDB documents to match Planner interface
-    const formattedPlanners = planners.map((planner) => ({
-      id: planner._id.toString(),
-      name: planner.name,
-      assignees: planner.assignees.map(fromTeamMemberDocument) || [],
-      // Always include default projects in every planner
-      projects: [...(planner.projects.map(fromProjectDocument) || []), ...DEFAULT_PROJECTS],
-    }));
-
-    return { planners: formattedPlanners };
+    return { planners: planners.map(fromPlannerDocument) };
   }),
 
   // Get a specific planner by ID

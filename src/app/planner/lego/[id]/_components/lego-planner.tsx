@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo, useCallback } from 'react';
-import { Planner, Assignment, Project, SetAssignment } from '@/lib/types';
+import { Planner, Assignment, Project, AssignProjectAssignment } from '@/lib/types';
 import { CalendarNavigation } from '@/app/planner/lego/[id]/_components/calendar-navigation';
 import { generateWeeks } from '@/lib/dates';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -154,7 +154,7 @@ export function LegoPlanner({
 
   // Wrap assignment actions to buffer them
   const handleHistoricAssign = useCallback(
-    async (newAssignments: SetAssignment[], oldAssignments: SetAssignment[]) => {
+    async (newAssignments: AssignProjectAssignment[], oldAssignments: AssignProjectAssignment[]) => {
       // Save action to history
       addAction({
         payload: {

@@ -1,11 +1,11 @@
 import { router, publicProcedure } from '../trpc';
 import { connectToDatabase } from '@/lib/mongodb';
-import { AssignmentModel } from '@/server/models/planner-assignment';
+import { AssignmentModel, fromAssignmentDocument } from '@/server/models/planner-assignment';
 import { type } from 'arktype';
 import mongoose from 'mongoose';
 import EventEmitter, { on } from 'events';
 import { tracked } from '@trpc/server';
-import { setAssignmentSchema } from '@/lib/types';
+import { assignmentDocumentCreateType } from '../models/planner-assignment-document.arktype';
 
 // Create a shared EventEmitter for assignment events
 const assignmentEventEmitter = new EventEmitter();
@@ -19,26 +19,30 @@ type AssignmentChangeEvent = {
 };
 
 // Input schemas using ArkType
-const getAssignmentsInput = type({
-  'year?': '1970 <= number.integer <= 2100',
-  'quarter?': '0 < number <= 5',
-  'assigneeId?': 'string',
-  'projectId?': 'string',
-  'plannerId?': 'string',
-});
+const getAssignmentsInput = assignmentDocumentCreateType
+  .pick('year', 'quarter', 'assigneeId', 'projectId')
+  .partial()
+  .merge(assignmentDocumentCreateType.pick('plannerId').required());
 
 // New simplified assign input schema
 const assignInput = type({
-  assignments: setAssignmentSchema.array(),
-  plannerId: 'string',
+  assignments: assignmentDocumentCreateType
+    .omit('projectId', 'plannerId')
+    .merge(
+      type({
+        projectId: 'string < 255 | null',
+      }),
+    )
+    .array(),
+  plannerId: assignmentDocumentCreateType.get('plannerId'),
 });
 
 // Subscription input schema
 const assignmentSubscriptionInput = type({
-  plannerId: 'string',
-  'assigneeId?': 'string',
-  'projectId?': 'string',
-  'lastEventId?': 'string',
+  plannerId: assignmentDocumentCreateType.get('plannerId'),
+  'assigneeId?': 'string < 255',
+  'projectId?': 'string < 255',
+  'lastEventId?': 'string < 255',
 });
 
 // Type definitions for better type safety
@@ -55,27 +59,6 @@ type AssignmentItem = {
 const emitAssignmentEvent = (event: AssignmentChangeEvent) => {
   assignmentEventEmitter.emit('change', event);
 };
-
-// Helper function to format assignment
-const formatAssignment = (assignment: {
-  _id: mongoose.Types.ObjectId;
-  assigneeId: string;
-  projectId: string;
-  plannerId: string;
-  week: number;
-  year: number;
-  quarter: number;
-  status?: string;
-}) => ({
-  id: assignment._id.toString(),
-  assigneeId: assignment.assigneeId,
-  projectId: assignment.projectId,
-  plannerId: assignment.plannerId,
-  week: assignment.week,
-  year: assignment.year,
-  quarter: assignment.quarter,
-  status: assignment.status,
-});
 
 export const assignmentRouter = router({
   // SSE Subscriptions
@@ -125,7 +108,7 @@ export const assignmentRouter = router({
     const assignments = await AssignmentModel.find(query).lean();
 
     // Transform MongoDB documents to match Assignment interface
-    const formattedAssignments = assignments.map(formatAssignment);
+    const formattedAssignments = assignments.map(fromAssignmentDocument);
 
     return formattedAssignments;
   }),
@@ -143,8 +126,8 @@ export const assignmentRouter = router({
     const toUpsert = input.assignments.filter((assignment) => assignment.projectId !== null);
 
     try {
-      let removedAssignments: ReturnType<typeof formatAssignment>[] = [];
-      let assignedAssignments: ReturnType<typeof formatAssignment>[] = [];
+      let removedAssignments: ReturnType<typeof fromAssignmentDocument>[] = [];
+      let assignedAssignments: ReturnType<typeof fromAssignmentDocument>[] = [];
       let removedCount = 0;
       let upsertedCount = 0;
       let modifiedCount = 0;
@@ -161,7 +144,7 @@ export const assignmentRouter = router({
 
         // Find existing assignments to return them before deletion
         const existingAssignments = await AssignmentModel.find({ $or: removeFilters }).lean();
-        removedAssignments = existingAssignments.map(formatAssignment);
+        removedAssignments = existingAssignments.map(fromAssignmentDocument);
 
         // Delete the assignments
         const removeResult = await AssignmentModel.deleteMany({ $or: removeFilters });
@@ -203,7 +186,7 @@ export const assignmentRouter = router({
         }));
 
         const assignments = await AssignmentModel.find({ $or: upsertFilters }).lean();
-        assignedAssignments = assignments.map(formatAssignment);
+        assignedAssignments = assignments.map(fromAssignmentDocument);
       }
 
       emitAssignmentEvent({

@@ -1,11 +1,9 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 import { Assignment } from '../../lib/types';
 import { getOrCreateModel, ModelIds } from './model-ids';
+import { assignmentDocumentSerializedType, AssignmentDocumentType } from './planner-assignment-document.arktype';
 
-// MongoDB-specific fields for Assignment
-export interface AssignmentDocument extends Omit<Assignment, 'id'> {
-  _id: mongoose.Types.ObjectId;
-}
+export type AssignmentDocument = AssignmentDocumentType;
 
 const assignmentSchema = new Schema<AssignmentDocument>(
   {
@@ -20,10 +18,10 @@ const assignmentSchema = new Schema<AssignmentDocument>(
   { timestamps: true },
 );
 
-assignmentSchema.index({ plannerId: 1, assigneeId: 1, week: 1 }, { unique: true });
+assignmentSchema.index({ plannerId: 1, assigneeId: 1, week: 1, year: 1 }, { unique: true });
 
 export const fromAssignmentDocument = (doc: AssignmentDocument): Assignment => {
-  return {
+  const newDoc = {
     id: doc._id.toString(),
     plannerId: doc.plannerId,
     assigneeId: doc.assigneeId,
@@ -33,8 +31,10 @@ export const fromAssignmentDocument = (doc: AssignmentDocument): Assignment => {
     quarter: doc.quarter,
     status: doc.status,
   };
+
+  assignmentDocumentSerializedType.assert(newDoc);
+
+  return newDoc;
 };
 
 export const AssignmentModel = getOrCreateModel<AssignmentDocument>(ModelIds.Assignment, assignmentSchema);
-
-export default AssignmentModel;
